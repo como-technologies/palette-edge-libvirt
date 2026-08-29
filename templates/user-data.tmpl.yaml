@@ -1,0 +1,45 @@
+#cloud-config
+# The Palette Edge site user-data template.
+#
+# scripts/seed-iso.sh replaces each placeholder and writes the result into a
+# CIDATA ISO. The VM gets that ISO as a second CD-ROM. A placeholder is a name
+# between two at signs.
+#
+# Do not put your token in this file. The token comes from .env at build time.
+
+# ANCHOR: stylus
+# The stylus.site block registers the host with your tenant. The Edge installer
+# reads this block. The rest of the file is standard cloud-init.
+#
+# The placeholders carry no quotation marks. scripts/seed-iso.sh adds the
+# quotation marks and the necessary escapes. A value with a quotation mark or a
+# backslash stays correct YAML.
+stylus:
+  site:
+    paletteEndpoint: @PALETTE_ENDPOINT@
+    edgeHostToken: @PALETTE_EDGE_TOKEN@
+    projectName: @PALETTE_PROJECT@
+    # The registration name in Palette. The name is the same as the libvirt
+    # domain name, so `just ls` and the Palette Edge Hosts list agree.
+    name: @HOSTNAME@
+# ANCHOR_END: stylus
+
+# ANCHOR: install
+# The installer writes to the first virtio disk and then reboots. See the boot
+# order note in scripts/host-up.sh for the reason there is no install loop.
+install:
+  device: "/dev/vda"
+  poweroff: false
+  reboot: true
+# ANCHOR_END: install
+
+# A local login for the serial console. Use `just console <name>`.
+# The lab uses an isolated NAT network. Change this password before you use
+# this template in a different environment.
+users:
+  - name: kairos
+    passwd: kairos
+    groups:
+      - admin
+
+hostname: @HOSTNAME@

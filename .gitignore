@@ -1,0 +1,20 @@
+# Local secrets / tenant configuration
+.env
+*.local
+
+# Generated per-host cloud-init seeds (contain the registration token)
+build/
+seeds/
+
+# Downloaded installer media
+iso/
+*.iso
+
+# mdBook output
+docs/book/
+
+# mdbook-mermaid / mdbook-gruvbox installed assets are committed on purpose;
+# only strip editor and OS noise below.
+*.swp
+*~
+.DS_Store

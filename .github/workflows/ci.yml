@@ -1,0 +1,33 @@
+# Test the format, the shell scripts, and the documentation build.
+#
+# The workflow runs the same `just lint` recipe that you run on the workstation.
+# See project rule 1: every action is a recipe.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Install mdbook and the preprocessors
+        run: |
+          cargo install --locked mdbook mdbook-mermaid mdbook-gruvbox
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Lint
+        run: just lint

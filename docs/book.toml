@@ -1,0 +1,23 @@
+[book]
+title = "palette-edge-libvirt"
+description = "A local Kubernetes test lab that uses Spectro Cloud Palette Edge on libvirt/KVM."
+authors = ["Como Technologies"]
+language = "en"
+src = "src"
+
+[build]
+build-dir = "book"
+# Fail the build if SUMMARY.md points to a file that does not exist. `just lint`
+# builds the book, so a broken link stops the lint.
+create-missing = false
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[output.html]
+git-repository-url = "https://github.com/como-technologies/palette-edge-libvirt"
+edit-url-template = "https://github.com/como-technologies/palette-edge-libvirt/edit/main/docs/{path}"
+additional-js = ["mermaid.min.js", "mermaid-init.js", "gruvbox/gruvbox.js"]
+default-theme = "gruvbox"
+preferred-dark-theme = "gruvbox"
+additional-css = ["gruvbox/css/variables.css", "gruvbox/highlight.css"]
