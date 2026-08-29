@@ -69,13 +69,35 @@ in_session() { id -nG | tr ' ' '\n' | grep -qx "$1"; }
 # The kvm group has no test here, because the /dev/kvm access test above
 # measures that capability directly. On some systems udev gives access to
 # /dev/kvm without the kvm group.
+# manager_stale: the systemd user manager is older than the group database.
+#
+# systemd-logind keeps the user manager while one process of the user runs. The
+# default setting KillUserProcesses=no permits this. The manager then holds the
+# group list from its own start time. Every new shell is a child of the manager,
+# so a new login gives the same old group list. Only a restart of the manager
+# corrects it.
+manager_stale() {
+	command -v systemctl >/dev/null 2>&1 || return 1
+	local started changed
+	started="$(systemctl show "user@$(id -u).service" -P ActiveEnterTimestamp 2>/dev/null)"
+	[ -n "$started" ] || return 1
+	started="$(date -d "$started" +%s 2>/dev/null)" || return 1
+	changed="$(stat -c %Y /etc/group 2>/dev/null)" || return 1
+	[ "$started" -lt "$changed" ]
+}
+
 stale=""
 if ! in_db libvirt; then
 	check "libvirt group" no "" "you are not in the libvirt group. Run: just host-setup"
 elif ! in_session libvirt; then
 	stale=yes
-	check "libvirt group" no "" \
-		"the group database has it, but this session does not. Log out and log in again."
+	if manager_stale; then
+		check "libvirt group" no "" \
+			"the systemd user manager is older than the group. Restart the workstation."
+	else
+		check "libvirt group" no "" \
+			"the group database has it, but this session does not. Log out and log in again."
+	fi
 else
 	check "libvirt group" yes "this session has the group"
 fi
@@ -93,7 +115,7 @@ uri="${LIBVIRT_DEFAULT_URI:-qemu:///system}"
 if virsh -c "$uri" version >/dev/null 2>&1; then
 	check "connection" yes "$uri"
 elif [ -n "$stale" ]; then
-	check "connection" no "" "$uri refuses this session. Log out and log in again."
+	check "connection" no "" "$uri refuses this session. See the libvirt group line."
 else
 	check "connection" no "" "cannot reach $uri"
 fi

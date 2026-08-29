@@ -69,7 +69,7 @@ host-setup:
         ovmf genisoimage curl shellcheck
     sudo usermod -aG libvirt,kvm "$USER"
     @echo
-    @echo "The group membership changed. Log out and log in again."
+    @echo "The group membership changed. Restart the workstation."
     @echo "Then run: just preflight"
 
 # Remove the packages that host-setup installed. Asks for the sudo password.

@@ -22,11 +22,48 @@ socket refuses the connection:
 error: Failed to connect socket to '/var/run/libvirt/libvirt-sock': Permission denied
 ```
 
-**Log out and log in again. A restart is not necessary.** Then run
-`just preflight` again.
+**Log out and log in again.** Then run `just preflight` again.
 
 `just preflight` reports this cause directly. It compares the group database
 with the groups of the current process.
+
+## The libvirt group is still absent after a new login
+
+`just preflight` shows this message:
+
+```text
+FAIL  libvirt group   the systemd user manager is older than the group. Restart the workstation.
+```
+
+The systemd user manager (`user@UID.service`) holds the group list from its own
+start time. `systemd-logind` keeps the manager while one process of the user
+runs. The default setting `KillUserProcesses=no` permits this. A background
+process therefore keeps the manager alive across a logout.
+
+Each new shell is a child of that manager, so a new login gives the same old
+group list. The group database is correct, but no new process can see it.
+
+**Restart the workstation.** This is the reliable correction.
+
+To correct it without a restart, stop every process of the user. This also
+stops the manager:
+
+```bash
+sudo loginctl terminate-user "$USER"
+```
+
+Then log in again. This command closes your terminals, your editor, and your
+graphical session, so save your work first.
+
+To see the two times that `just preflight` compares:
+
+```bash
+systemctl show "user@$(id -u).service" -P ActiveEnterTimestamp
+stat -c '%y' /etc/group
+```
+
+If the manager time is earlier than the `/etc/group` time, a new login does not
+help.
 
 To test one command before you log out again, use `sg`:
 
