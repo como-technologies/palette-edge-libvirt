@@ -55,9 +55,45 @@ else
 fi
 
 info "libvirt"
+
+# in_db: the group database gives this group to the user.
+in_db() { id -nG "$USER" | tr ' ' '\n' | grep -qx "$1"; }
+# in_session: this process has this group now.
+in_session() { id -nG | tr ' ' '\n' | grep -qx "$1"; }
+
+# A new group applies only to a new login session. The group database can hold
+# the group while the current shell does not. The libvirt socket then refuses
+# the connection, and the reason is not obvious.
+#
+# This test covers the libvirt group only. The libvirt group gates the socket.
+# The kvm group has no test here, because the /dev/kvm access test above
+# measures that capability directly. On some systems udev gives access to
+# /dev/kvm without the kvm group.
+stale=""
+if ! in_db libvirt; then
+	check "libvirt group" no "" "you are not in the libvirt group. Run: just host-setup"
+elif ! in_session libvirt; then
+	stale=yes
+	check "libvirt group" no "" \
+		"the group database has it, but this session does not. Log out and log in again."
+else
+	check "libvirt group" yes "this session has the group"
+fi
+
+# One of these units gives the socket. The name depends on the libvirt version.
+if systemctl is-active --quiet libvirtd.socket ||
+	systemctl is-active --quiet virtqemud.socket ||
+	systemctl is-active --quiet libvirtd; then
+	check "daemon" yes "the libvirt socket is active"
+else
+	check "daemon" no "" "run: sudo systemctl enable --now libvirtd.socket"
+fi
+
 uri="${LIBVIRT_DEFAULT_URI:-qemu:///system}"
 if virsh -c "$uri" version >/dev/null 2>&1; then
 	check "connection" yes "$uri"
+elif [ -n "$stale" ]; then
+	check "connection" no "" "$uri refuses this session. Log out and log in again."
 else
 	check "connection" no "" "cannot reach $uri"
 fi

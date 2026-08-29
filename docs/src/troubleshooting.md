@@ -7,9 +7,39 @@ Read the detail column. It names the fix. The usual causes are:
 | Item | Cause | Fix |
 | --- | --- | --- |
 | `/dev/kvm` | The BIOS disables virtualization. | Enable VT-x or AMD-V in the BIOS. |
-| `/dev/kvm access` | Your groups are not current. | Log out and log in again. |
+| `libvirt group` | Your session is older than `just host-setup`. | Log out and log in again. |
+| `daemon` | The libvirt socket is not active. | Run `sudo systemctl enable --now libvirtd.socket`. |
 | `virsh`, `virt-install` | The packages are absent. | Run `just host-setup`. |
 | `PALETTE_EDGE_TOKEN` | There is no `.env` file. | Run `cp .env.example .env` and edit it. |
+
+## The libvirt connection fails after host-setup
+
+`just host-setup` adds you to the `libvirt` group. A new group applies only to a
+new login session. Your current shell keeps the old group list, so the libvirt
+socket refuses the connection:
+
+```text
+error: Failed to connect socket to '/var/run/libvirt/libvirt-sock': Permission denied
+```
+
+**Log out and log in again. A restart is not necessary.** Then run
+`just preflight` again.
+
+`just preflight` reports this cause directly. It compares the group database
+with the groups of the current process.
+
+To test one command before you log out again, use `sg`:
+
+```bash
+sg libvirt -c 'just preflight'
+```
+
+`sg` applies the group to one command only. Use it for a test. Do not use it for
+normal work.
+
+The `/dev/kvm access` test can pass while the `libvirt group` test fails. These
+are two different permissions. On many systems udev gives access to `/dev/kvm`
+without the `kvm` group.
 
 ## A host does not show in Palette
 

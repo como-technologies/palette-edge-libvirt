@@ -19,7 +19,12 @@ To remove these packages again, run `just host-setup-undo`.
 
 ## 2. Apply the new group membership
 
-Log out and log in again. Your shell gets the new groups only after a new login.
+**Log out and log in again. A restart is not necessary.**
+
+Your shell gets the new groups only at a new login. Without the `libvirt` group,
+the libvirt socket refuses the connection, and every `virsh` command fails.
+
+`just preflight` tests for this exact condition and names the fix.
 
 ## 3. Test the result
 
