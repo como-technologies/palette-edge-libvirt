@@ -32,6 +32,12 @@ shell. See
 
 `just preflight` tests for both conditions and names the correct fix.
 
+**Before you restart, make SSH access available from a second computer.** The
+qemu and libvirt packages start a rebuild of the initramfs. After the restart,
+the screen can stay blank. You then need a second computer to correct the
+condition. See
+[The screen is blank after the restart](./troubleshooting.md#the-screen-is-blank-after-the-restart).
+
 ## 3. Test the result
 
 ```bash

@@ -70,7 +70,10 @@ host-setup:
     sudo usermod -aG libvirt,kvm "$USER"
     @echo
     @echo "The group membership changed. Restart the workstation."
-    @echo "Then run: just preflight"
+    @echo "Make SSH access available first. These packages rebuild the initramfs,"
+    @echo "and the screen can stay blank after the restart. See the docs at"
+    @echo "docs/src/troubleshooting.md for the correction."
+    @echo "After the restart, run: just preflight"
 
 # Remove the packages that host-setup installed. Asks for the sudo password.
 host-setup-undo:

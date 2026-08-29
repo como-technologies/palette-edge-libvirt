@@ -12,6 +12,43 @@ Read the detail column. It names the fix. The usual causes are:
 | `virsh`, `virt-install` | The packages are absent. | Run `just host-setup`. |
 | `PALETTE_EDGE_TOKEN` | There is no `.env` file. | Run `cp .env.example .env` and edit it. |
 
+## The screen is blank after the restart
+
+`just host-setup` installs the qemu and libvirt packages. Those packages start a
+rebuild of the initramfs. After the restart, the boot splash (Plymouth) can keep
+control of the GPU. The login screen runs behind the splash, so the monitor
+stays blank.
+
+Connect to the workstation with SSH from a second computer. Then test the boot:
+
+```bash
+systemd-analyze                 # reports that the boot is not finished
+systemctl list-jobs             # plymouth-quit-wait.service is "running"
+```
+
+Each remaining boot job waits for `plymouth-quit-wait.service`.
+`graphical.target` never becomes active.
+
+To correct the condition:
+
+```bash
+sudo plymouth quit              # release the GPU and let the boot finish
+sudo systemctl restart gdm      # give the login screen a new start
+```
+
+The login screen shows on the monitor again. `sudo plymouth quit` needs a
+terminal for the password, so use a normal SSH shell for it.
+
+To prevent the condition, remove the boot splash. Edit `/etc/default/grub` and
+delete the word `splash` from `GRUB_CMDLINE_LINUX_DEFAULT`. Then:
+
+```bash
+sudo update-grub
+```
+
+The workstation then shows the boot messages instead of a splash image. This
+change is a workstation setting. It is not part of the lab, so it has no recipe.
+
 ## The libvirt connection fails after host-setup
 
 `just host-setup` adds you to the `libvirt` group. A new group applies only to a
