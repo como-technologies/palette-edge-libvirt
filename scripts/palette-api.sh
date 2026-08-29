@@ -12,28 +12,19 @@
 #   palette-api.sh hosts
 
 set -euo pipefail
-# shellcheck source=scripts/lib.sh
-source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=scripts/palette-lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/palette-lib.sh"
 
 action="${1:?give an action: projects or hosts}"
-: "${PALETTE_API_KEY:?PALETTE_API_KEY is empty. See .env.example.}"
-endpoint="${PALETTE_ENDPOINT:-api.spectrocloud.com}"
 project="${PALETTE_PROJECT:-Default}"
 
 need curl
 need python3
 
-# api: GET a path. The key goes in a header, never in the URL.
-api() {
-	local path="$1"
-	shift
-	curl -sS --fail-with-body -H "ApiKey: $PALETTE_API_KEY" \
-		-H "Accept: application/json" "$@" "https://$endpoint/$path"
-}
-
-# project_uid: print the uid of PALETTE_PROJECT, or stop with a clear message.
-project_uid() {
-	api "v1/projects?limit=100" | PROJECT="$project" python3 -c '
+# require_project_uid: print the uid of PALETTE_PROJECT, or stop with a clear
+# message that names the projects that do exist.
+require_project_uid() {
+	api GET "v1/projects?limit=100" | PROJECT="$project" python3 -c '
 import json, os, sys
 want = os.environ["PROJECT"]
 items = json.load(sys.stdin).get("items") or []
@@ -54,7 +45,7 @@ sys.exit(
 case "$action" in
 projects)
 	info "projects in this tenant"
-	api "v1/projects?limit=100" | PROJECT="$project" python3 -c '
+	api GET "v1/projects?limit=100" | PROJECT="$project" python3 -c '
 import json, os, sys
 want = os.environ["PROJECT"]
 items = json.load(sys.stdin).get("items") or []
@@ -71,9 +62,9 @@ if want not in [p["metadata"]["name"] for p in items]:
 '
 	;;
 hosts)
-	uid="$(project_uid)"
+	uid="$(require_project_uid)"
 	info "registered hosts in project $project"
-	api "v1/edgehosts?limit=100" -H "ProjectUid: $uid" | python3 -c '
+	api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid" | python3 -c '
 import json, sys
 items = json.load(sys.stdin).get("items") or []
 if not items:

@@ -37,6 +37,10 @@ just cluster-up           # full lab: preflight, infra, image, seeds, VMs
 just cluster-down         # remove the VMs, keep infra and image
 just nuke                 # cluster-down + infra-down + seed-clean
 
+just projects             # local project env files, * marks default
+just new-project NAME [d] # create Palette project + envs/NAME.env + set default
+just remove-project NAME  # twin: delete project, env file, and link
+just default-project NAME # re-point .env at another project
 just palette-projects     # list tenant projects, verify PALETTE_PROJECT
 just palette-hosts        # list hosts that registered
 just seed NAME            # build one CIDATA seed ISO
@@ -125,6 +129,17 @@ list line up. Two labs coexist if `LAB_NAME` and `LAB_SUBNET` both differ.
 ## Configuration
 
 All configuration lives in `.env`, loaded by `set dotenv-load`. Git ignores it.
+
+`.env` is normally a **symlink** into `envs/<project>.env` — one file per
+Palette project, so several labs coexist. `just default-project NAME` re-points
+the symlink; `just new-project` creates the tenant project, writes the env file
+(auto-allocating a free `LAB_NAME` and `LAB_SUBNET`, scanning both `envs/*.env`
+and live libvirt networks), and sets it default. `envs/` is gitignored: those
+files hold tokens. A plain `.env` still works — `just adopt-project NAME`
+migrates one into the layout, `just unadopt-project` reverses it.
+
+Palette keeps a project description in `metadata.annotations.description`, not
+in a `description` field.
 `.env.example` is the documented template and carries the anchors that
 `docs/src/configuration.md` includes, so **edit `.env.example` when you add a
 variable**, or the docs go stale.

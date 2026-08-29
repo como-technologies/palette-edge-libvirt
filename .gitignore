@@ -1,6 +1,7 @@
 # Local secrets / tenant configuration
 .env
 .env.bak*
+envs/
 *.local
 
 # Generated per-host cloud-init seeds (contain the registration token)

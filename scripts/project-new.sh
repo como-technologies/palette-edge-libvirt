@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# Create a Palette project and its environment file, then make it the default.
+#
+# The script does three things:
+#   1. It creates the project in your Palette tenant.
+#   2. It writes envs/<name>.env with good defaults for that project.
+#   3. It points the .env symbolic link at the new file.
+#
+# The lab keeps one environment file for each project. A different LAB_NAME and
+# a different LAB_SUBNET for each project let two labs run at the same time.
+#
+# This script is idempotent. An existing project or an existing file stays as
+# it is, and the script only points the link.
+#
+#   project-new.sh <name> [description]
+
+set -euo pipefail
+# shellcheck source=scripts/palette-lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/palette-lib.sh"
+
+name="${1:?give a project name}"
+description="${2:-}"
+root="$(repo_root)"
+envs="$root/envs"
+target="$envs/$name.env"
+
+need curl
+need python3
+
+# Palette project names permit letters, numbers, and the hyphen. Stop early
+# with a clear message instead of an API error.
+if ! printf '%s' "$name" | grep -qE '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$'; then
+	die "'$name' is not a valid project name.
+     Use lower case letters, numbers, and the hyphen. Start and end with a
+     letter or a number. Use 3 to 63 characters."
+fi
+
+[ -n "$description" ] ||
+	description="Palette Edge lab on $(hostname --short). Managed by palette-edge-libvirt."
+
+mkdir -p "$envs"
+chmod 700 "$envs"
+
+# --- 1. the Palette project -------------------------------------------------
+
+uid="$(project_uid "$name" || true)"
+if [ -n "$uid" ]; then
+	skip "project $name already exists ($uid)"
+else
+	info "create the project $name"
+	body="$(NAME="$name" DESC="$description" python3 -c '
+import json, os
+print(json.dumps({
+    "metadata": {
+        "name": os.environ["NAME"],
+        # Palette keeps the description in an annotation, not in a field.
+        "annotations": {"description": os.environ["DESC"]},
+        "labels": {"managedBy": "palette-edge-libvirt"},
+    }
+}))
+')"
+	api POST "v1/projects" -H "Content-Type: application/json" -d "$body" >/dev/null
+	uid="$(project_uid "$name" || true)"
+	[ -n "$uid" ] || die "the project was created but does not appear in the list"
+	info "created $name ($uid)"
+fi
+
+# --- 2. the environment file ------------------------------------------------
+
+if [ -f "$target" ]; then
+	skip "envs/$name.env already exists"
+else
+	# lab_name: a short prefix for the libvirt objects. It must be unique, so
+	# every object of two labs stays separate.
+	lab_name="$(printf '%s' "$name" | tr -cd 'a-z0-9' | cut -c1-8)"
+	[ -n "$lab_name" ] || lab_name="lab"
+	suffix=""
+	while grep -qsE "^LAB_NAME=${lab_name}${suffix}$" "$envs"/*.env 2>/dev/null; do
+		suffix=$((${suffix:-1} + 1))
+	done
+	lab_name="${lab_name}${suffix}"
+
+	# lab_subnet: the first free 192.168.N.0/24. The script reads the subnets
+	# of the other environment files and of the libvirt networks, so a new
+	# project never collides with a running lab.
+	used="$(
+		{
+			grep -hsE '^LAB_SUBNET=' "$envs"/*.env 2>/dev/null | cut -d= -f2
+			if command -v virsh >/dev/null 2>&1; then
+				for net in $(virsh net-list --all --name 2>/dev/null); do
+					virsh net-dumpxml "$net" 2>/dev/null |
+						sed -n "s/.*<ip address='\([0-9.]*\)\.[0-9]*'.*/\1/p"
+				done
+			fi
+		} | sort -u
+	)"
+	lab_subnet=""
+	for n in $(seq 140 199); do
+		if ! printf '%s\n' "$used" | grep -qx "192.168.$n"; then
+			lab_subnet="192.168.$n"
+			break
+		fi
+	done
+	[ -n "$lab_subnet" ] || die "no free subnet between 192.168.140 and 192.168.199"
+
+	info "write envs/$name.env (lab $lab_name, subnet $lab_subnet.0/24)"
+
+	NAME="$name" LAB="$lab_name" SUBNET="$lab_subnet" \
+		SRC="$root/.env.example" DST="$target" \
+		ENDPOINT="$(palette_endpoint)" \
+		python3 -c '
+import os, re, sys
+
+subs = {
+    "PALETTE_ENDPOINT": os.environ["ENDPOINT"],
+    "PALETTE_PROJECT": os.environ["NAME"],
+    "PALETTE_EDGE_TOKEN": os.environ.get("PALETTE_EDGE_TOKEN", ""),
+    "PALETTE_API_KEY": os.environ.get("PALETTE_API_KEY", ""),
+    "LAB_NAME": os.environ["LAB"],
+    "LAB_SUBNET": os.environ["SUBNET"],
+}
+out = []
+for line in open(os.environ["SRC"]):
+    m = re.match(r"^([A-Z_]+)=", line)
+    if m and m.group(1) in subs:
+        out.append("{}={}\n".format(m.group(1), subs[m.group(1)]))
+    else:
+        out.append(line)
+open(os.environ["DST"], "w").write("".join(out))
+'
+	chmod 600 "$target"
+fi
+
+# --- 3. the default ---------------------------------------------------------
+
+"$(dirname "${BASH_SOURCE[0]}")/project-default.sh" "$name"
+
+if [ -z "${PALETTE_EDGE_TOKEN:-}" ]; then
+	warn "PALETTE_EDGE_TOKEN is empty in envs/$name.env. Add it before you run
+         just cluster-up. Palette shows it at Tenant Settings >
+         Registration Tokens."
+fi

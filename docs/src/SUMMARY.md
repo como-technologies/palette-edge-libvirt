@@ -7,6 +7,7 @@
 
 - [Prepare the workstation](./host-setup.md)
 - [Configure the tenant](./configuration.md)
+- [Projects](./projects.md)
 
 # Operation
 

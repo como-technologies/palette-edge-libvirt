@@ -168,6 +168,32 @@ ip name:
 ls:
     @scripts/lab-ls.sh "{{ lab }}"
 
+# --- projects ---------------------------------------------------------------
+
+# List the projects that have an environment file. The * marks the default.
+projects:
+    @scripts/project-ls.sh
+
+# Create a Palette project, write envs/NAME.env, and make it the default
+new-project name description="":
+    @scripts/project-new.sh "{{ name }}" "{{ description }}"
+
+# Delete a Palette project and its environment file. Asks before it deletes.
+remove-project name:
+    @scripts/project-remove.sh "{{ name }}"
+
+# Point .env at the environment file of NAME
+default-project name:
+    @scripts/project-default.sh "{{ name }}"
+
+# Move an existing regular .env into envs/NAME.env and link .env to it
+adopt-project name:
+    @scripts/project-adopt.sh "{{ name }}"
+
+# Make .env a regular file again. The twin of adopt-project.
+unadopt-project:
+    @scripts/project-unadopt.sh
+
 # --- palette ----------------------------------------------------------------
 
 # List the projects in your tenant and test PALETTE_PROJECT

@@ -3,6 +3,11 @@
 All configuration goes in a `.env` file. Git ignores this file, because it holds
 your registration token.
 
+The recommended way is one project for each lab. `just new-project NAME` writes
+the file and fills in good defaults. See [Projects](./projects.md).
+
+To write the file by hand instead:
+
 ```bash
 cp .env.example .env
 ```
