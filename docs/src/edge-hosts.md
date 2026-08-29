@@ -1,7 +1,7 @@
-# Edge host registration
+# Host registration
 
-An edge host registers itself with your Palette tenant. The seed ISO gives it
-the necessary values.
+A host registers itself with your Palette tenant at the first boot. The seed ISO
+gives it the necessary values.
 
 ## The seed ISO
 
@@ -12,32 +12,46 @@ into an ISO. The ISO volume label is `CIDATA`:
 {{#include ../../scripts/seed-iso.sh:mkiso}}
 ```
 
-The virtual machine gets this ISO as a second CD-ROM. The Edge installer looks
-for a volume with the label `CIDATA` and reads the `user-data` file from it.
+The virtual machine gets this ISO as a CD-ROM. cloud-init looks for a volume
+with the label `CIDATA` and reads `user-data` and `meta-data` from it.
 
-## The registration block
+## The packages
 
-This is the part of the template that does the registration:
+The agent install script tests for these commands and stops without them:
 
 ```yaml
-{{#include ../../templates/user-data.tmpl.yaml:stylus}}
+{{#include ../../templates/user-data.tmpl.yaml:packages}}
+```
+
+## The site configuration
+
+cloud-init writes this file, and the agent reads it:
+
+```yaml
+{{#include ../../templates/user-data.tmpl.yaml:siteconfig}}
 ```
 
 `scripts/seed-iso.sh` replaces each placeholder with a value from `.env`. The
-script passes the values in the environment, not in the program text. A token
-with a quote, a backslash, or an ampersand is safe.
+script passes the values in the environment, not in the program text, so a value
+with a quotation mark or a backslash is safe.
 
-The script also tests the result. If a placeholder stays in the file, the script
-stops with an error.
+The script tests the result. If a placeholder stays in the file, or the token is
+empty, or `stylus.vip.skip` is not a boolean, the script stops with an error.
 
-## The installation block
+## The installation
 
 ```yaml
 {{#include ../../templates/user-data.tmpl.yaml:install}}
 ```
 
-The installer writes to `/dev/vda`, the first virtio disk. Then it reboots. See
-[Architecture](./architecture.md#why-the-boot-order-matters) for the boot order.
+The script comes from the agent-mode releases:
+
+```bash
+{{#include ../../scripts/seed-iso.sh:agenturl}}
+```
+
+Set `PALETTE_AGENT_VERSION` in `.env` to pin a version. An empty value gives the
+latest release.
 
 ## Build a seed
 
@@ -52,11 +66,21 @@ Each ISO goes to `seeds/` with the file mode 0600. The directory has the mode
 
 ## After the registration
 
-Eject both ISO files. The host then keeps no copy of the token:
+Eject the seed ISO. The host then keeps no copy of the token:
 
 ```bash
 just host-eject pe-cp-1
 ```
+
+## Test the registration
+
+```bash
+just palette-hosts
+```
+
+The recipe reads your tenant through the API and lists the hosts in your
+project. It also tests that `PALETTE_PROJECT` exists, and it names the correct
+projects if the value is wrong.
 
 ## Remove a host
 
@@ -65,8 +89,7 @@ just host-down pe-cp-1
 ```
 
 This recipe removes the virtual machine and its disk. It does not remove the
-Edge Host entry in Palette. Remove that entry in Palette at **Clusters**, then
-**Edge Hosts**.
+host entry in Palette. Remove that entry in Palette.
 
 ## Rotate the token
 

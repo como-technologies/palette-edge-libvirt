@@ -31,9 +31,11 @@ if [ "$(domain_state "$name")" != "shut off" ]; then
 	virsh destroy "$name" >/dev/null
 fi
 
-# The domains boot UEFI, so libvirt keeps an NVRAM variable store for each one.
-# --nvram deletes that store. Without it, the undefine fails.
-virsh undefine "$name" --nvram >/dev/null
+# --nvram deletes the UEFI variable store if the domain has one. A domain with
+# the standard firmware has none, and older libvirt versions reject the option
+# in that case. Try it, then undefine without it.
+virsh undefine "$name" --nvram >/dev/null 2>&1 ||
+	virsh undefine "$name" >/dev/null
 
 for disk in "${disks[@]}"; do
 	[ -f "$disk" ] || continue

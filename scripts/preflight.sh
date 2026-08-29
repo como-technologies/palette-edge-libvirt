@@ -47,12 +47,8 @@ else
 	check "iso tool" no "" "install genisoimage or xorriso"
 fi
 
-# The Edge installer images boot UEFI, so the host needs the OVMF firmware.
-if compgen -G "/usr/share/OVMF/OVMF_CODE*.fd" >/dev/null; then
-	check "OVMF (UEFI)" yes "/usr/share/OVMF"
-else
-	check "OVMF (UEFI)" no "" "install the ovmf package"
-fi
+# The hosts boot a stock cloud image with the standard firmware. The lab needs
+# no UEFI firmware package.
 
 info "libvirt"
 

@@ -10,8 +10,8 @@ just cluster-down
 ```
 
 This recipe stops each `$LAB_NAME-*` domain, removes the definition, and deletes
-the disk image. It keeps the network, the storage pool, and the installer ISO,
-so the next `just cluster-up` is fast.
+the disk image. It keeps the network, the storage pool, and the cloud image, so
+the next `just cluster-up` is fast.
 
 ## Remove everything local
 
@@ -19,9 +19,9 @@ so the next `just cluster-up` is fast.
 just nuke
 ```
 
-`nuke` runs `cluster-down`, `infra-down`, and `seed-clean`. It keeps the
-installer ISO, because that file takes a long time to download. To delete the
-ISO too, run `just iso-clean`.
+`nuke` runs `cluster-down`, `infra-down`, and `seed-clean`. It keeps the Ubuntu
+cloud image, because that file takes a long time to download. To delete the
+image too, run `just image-clean`.
 
 ## Remove the packages
 
@@ -40,11 +40,12 @@ these in Palette:
 | Object | Location in Palette |
 | --- | --- |
 | Cluster | Clusters |
-| Edge Hosts | Clusters > Edge Hosts |
+| Registered hosts | Clusters > Edge Hosts |
 | Cluster profile | Profiles |
 | Registration token | Tenant Settings > Registration Tokens |
 
-Delete the cluster first. Then deregister the edge hosts.
+Delete the cluster first. Then deregister the hosts. `just palette-hosts` lists
+the hosts that are still registered.
 
 ## Remove the secrets
 

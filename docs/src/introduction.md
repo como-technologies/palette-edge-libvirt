@@ -17,12 +17,16 @@ Any Linux workstation with KVM and sufficient memory works.
 
 | Part | Function |
 | --- | --- |
-| Palette SaaS | Holds the cluster profiles and the packs. Registers the edge hosts. |
-| Edge installer ISO | Installs the edge agent on each virtual machine. |
+| Palette SaaS | Holds the cluster profiles and the packs. Registers the hosts. |
+| Ubuntu cloud image | The stock operating system. The lab builds no image. |
 | Seed ISO | Gives the agent your tenant endpoint, project, and token. |
+| Palette agent | Installs at the first boot and registers the host. |
 | libvirt / KVM | Runs the virtual machines. |
 | `just` | Runs every action in this repository. |
 | mdBook | Builds this documentation. |
+
+The lab uses Palette **agent mode**. It needs no Docker and no custom operating
+system image. See [Why agent mode](./architecture.md#why-agent-mode).
 
 ## Start here
 

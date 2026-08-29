@@ -10,19 +10,24 @@ passes.
 
 The reference workstation is a System76 Thelio with 32 cores and 128 GB of RAM.
 
+The lab uses Palette **agent mode**. Each host boots the stock Ubuntu cloud
+image, and cloud-init installs the Palette agent. The lab builds no operating
+system image, so it needs no Docker and no CanvOS.
+
 ## Quick start
 
 ```bash
 just host-setup          # install libvirt, KVM, and the helper tools
-# log out and log in again for the new group membership
+# restart the workstation for the new group membership
 cp .env.example .env     # add your Palette endpoint, project, and token
 just preflight           # test the workstation
-just cluster-up          # create the network, the pool, the ISO, and the nodes
+just palette-projects    # confirm PALETTE_PROJECT matches your tenant
+just cluster-up          # create the network, pool, image, seeds, and hosts
+just palette-hosts       # confirm the hosts registered
 ```
 
-The hosts register with your Palette tenant. They show at **Clusters** >
-**Edge Hosts**. Then you make an Edge Native cluster from those hosts in
-Palette.
+Then you make a cluster profile and a cluster from those hosts in Palette. Use
+**Palette eXtended Kubernetes - Edge (PXK-E)** for the Kubernetes layer.
 
 To remove everything on the workstation:
 
@@ -55,7 +60,6 @@ diagrams and `mdbook-gruvbox` for the theme.
 | --- | --- |
 | `just` | Runs every recipe. |
 | `libvirt`, `qemu-kvm`, `virtinst` | Runs the virtual machines. |
-| `ovmf` | Gives UEFI firmware to the virtual machines. |
 | `genisoimage` or `xorriso` | Builds the seed ISO. |
 | `mdbook`, `mdbook-mermaid`, `mdbook-gruvbox` | Builds the documentation. |
 | `shellcheck` | Tests the shell scripts. |
@@ -66,5 +70,8 @@ diagrams and `mdbook-gruvbox` for the theme.
 ## Security
 
 Git ignores `.env` and `seeds/`. Both hold your Palette registration token.
-Run `just host-eject NAME` after a host installs. That recipe removes the seed
+Run `just host-eject NAME` after a host registers. That recipe removes the seed
 ISO from the virtual machine, so the host keeps no copy of the token.
+
+`just config` and `just preflight` print the length of the token, never the
+value.

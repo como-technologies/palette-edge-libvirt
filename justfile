@@ -21,15 +21,12 @@ set dotenv-load
 lab := env_var_or_default("LAB_NAME", "pe")
 uri := env_var_or_default("LIBVIRT_DEFAULT_URI", "qemu:///system")
 subnet := env_var_or_default("LAB_SUBNET", "192.168.140")
-palette_endpoint := env_var_or_default("PALETTE_ENDPOINT", "api.spectrocloud.com")
-palette_project := env_var_or_default("PALETTE_PROJECT", "Default")
-palette_token := env_var_or_default("PALETTE_EDGE_TOKEN", "")
-installer_version := env_var_or_default("EDGE_INSTALLER_VERSION", "v4.7.6")
-installer_url := env_var_or_default("EDGE_INSTALLER_URL", "")
+ubuntu_release := env_var_or_default("UBUNTU_RELEASE", "noble")
+ubuntu_image_url := env_var_or_default("UBUNTU_IMAGE_URL", "")
 control_count := env_var_or_default("CONTROL_COUNT", "1")
 control_vcpus := env_var_or_default("CONTROL_VCPUS", "4")
 control_memory := env_var_or_default("CONTROL_MEMORY_MB", "8192")
-control_disk := env_var_or_default("CONTROL_DISK_GB", "60")
+control_disk := env_var_or_default("CONTROL_DISK_GB", "100")
 worker_count := env_var_or_default("WORKER_COUNT", "2")
 worker_vcpus := env_var_or_default("WORKER_VCPUS", "6")
 worker_memory := env_var_or_default("WORKER_MEMORY_MB", "16384")
@@ -37,7 +34,7 @@ worker_disk := env_var_or_default("WORKER_DISK_GB", "100")
 
 # Derived paths and names.
 root := justfile_directory()
-iso_dir := root / "iso"
+image_dir := root / "images"
 seed_dir := root / "seeds"
 build_dir := root / "build"
 pool := lab + "-pool"
@@ -66,7 +63,7 @@ host-setup:
     sudo apt-get update
     sudo apt-get install -y \
         qemu-kvm libvirt-daemon-system libvirt-clients virtinst \
-        ovmf genisoimage curl shellcheck
+        genisoimage curl shellcheck
     sudo usermod -aG libvirt,kvm "$USER"
     @echo
     @echo "The group membership changed. Restart the workstation."
@@ -78,7 +75,7 @@ host-setup:
 # Remove the packages that host-setup installed. Asks for the sudo password.
 host-setup-undo:
     sudo apt-get remove -y \
-        qemu-kvm libvirt-daemon-system libvirt-clients virtinst ovmf genisoimage
+        qemu-kvm libvirt-daemon-system libvirt-clients virtinst genisoimage
     sudo apt-get autoremove -y
     -sudo gpasswd -d "$USER" libvirt
     -sudo gpasswd -d "$USER" kvm
@@ -107,15 +104,15 @@ pool-up:
 pool-down:
     @POOL="{{ pool }}" scripts/pool-down.sh
 
-# --- installer media --------------------------------------------------------
+# --- host image -------------------------------------------------------------
 
-# Download the Palette Edge installer ISO into iso/
-iso-fetch:
-    @scripts/iso-fetch.sh "{{ installer_version }}" "{{ installer_url }}" "{{ iso_dir }}"
+# Download the stock Ubuntu cloud image and test its checksum
+image-fetch:
+    @scripts/image-fetch.sh "{{ ubuntu_release }}" "{{ ubuntu_image_url }}" "{{ image_dir }}"
 
-# Delete the downloaded installer ISO files
-iso-clean:
-    rm -rf "{{ iso_dir }}"
+# Delete the downloaded cloud image
+image-clean:
+    rm -rf "{{ image_dir }}"
 
 # --- seeds ------------------------------------------------------------------
 
@@ -132,9 +129,9 @@ seed-all:
 seed-clean:
     rm -rf "{{ seed_dir }}" "{{ build_dir }}"
 
-# --- edge hosts -------------------------------------------------------------
+# --- hosts ------------------------------------------------------------------
 
-# Create one edge host VM. ROLE is control or worker and sets the size.
+# Create one host VM. ROLE is control or worker and sets the size.
 host-up name role="worker":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -144,14 +141,18 @@ host-up name role="worker":
       *) echo "error: role must be control or worker. You gave '{{ role }}'." >&2; exit 2 ;;
     esac
     VCPUS="$vcpus" MEMORY_MB="$mem" DISK_GB="$disk" \
-    NETWORK="{{ net }}" POOL="{{ pool }}" ISO_DIR="{{ iso_dir }}" SEED_DIR="{{ seed_dir }}" \
+    NETWORK="{{ net }}" POOL="{{ pool }}" IMAGE_DIR="{{ image_dir }}" SEED_DIR="{{ seed_dir }}" \
         scripts/host-up.sh "{{ name }}"
 
-# Stop one edge host VM, remove it, and delete its disk
+# Stop one host VM, remove it, and delete its disk
 host-down name:
     @scripts/host-down.sh "{{ name }}"
 
-# Remove the installer ISO from a host after the installation is complete
+# Show the progress of the agent installation on one host
+host-status name:
+    @scripts/host-status.sh "{{ name }}"
+
+# Remove the seed ISO from a host after the agent installs
 host-eject name:
     @scripts/host-eject.sh "{{ name }}"
 
@@ -167,11 +168,21 @@ ip name:
 ls:
     @scripts/lab-ls.sh "{{ lab }}"
 
+# --- palette ----------------------------------------------------------------
+
+# List the projects in your tenant and test PALETTE_PROJECT
+palette-projects:
+    @scripts/palette-api.sh projects
+
+# List the hosts that registered with your Palette project
+palette-hosts:
+    @scripts/palette-api.sh hosts
+
 # --- cluster ----------------------------------------------------------------
 
 # ANCHOR: clusterup
-# Create the full lab: infrastructure, installer ISO, seeds, and all nodes
-cluster-up: preflight infra-up iso-fetch
+# Create the full lab: infrastructure, image, seeds, and all hosts
+cluster-up: preflight infra-up image-fetch
     #!/usr/bin/env bash
     set -euo pipefail
     for i in $(seq 1 {{ control_count }}); do
@@ -183,14 +194,15 @@ cluster-up: preflight infra-up iso-fetch
         just host-up "{{ lab }}-wk-$i" worker
     done
     echo
-    echo "The hosts install now. To watch one host: just console {{ lab }}-cp-1"
-    echo "The hosts show in Palette at Clusters > Edge Hosts after they register."
+    echo "The hosts boot now. cloud-init installs the agent, which takes minutes."
+    echo "To watch one host:   just console {{ lab }}-cp-1"
+    echo "To test registration: just palette-hosts"
 
-# Remove all VMs in the lab. Keeps the network, the pool, and the ISO.
+# Remove all VMs in the lab. Keeps the network, the pool, and the image.
 cluster-down:
     @LAB="{{ lab }}" scripts/cluster-down.sh
 
-# Remove everything this repository creates, except the downloaded ISO
+# Remove everything this repository creates, except the downloaded image
 nuke: cluster-down infra-down seed-clean
 # ANCHOR_END: clusterup
 

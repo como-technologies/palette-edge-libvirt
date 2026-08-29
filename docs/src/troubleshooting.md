@@ -117,39 +117,49 @@ without the `kvm` group.
 
 ## A host does not show in Palette
 
-Open the console first:
+Test the project name first. This is the most common cause, and it takes one
+second:
 
 ```bash
-just console pe-cp-1
+just palette-projects
 ```
 
-Then test each item:
+A wrong `PALETTE_PROJECT` gives no error. The host starts correctly, the agent
+runs, and the host never shows. The name is case sensitive.
 
-1. **The host has no address.** Run `just ip pe-cp-1`. If the command reports no
-   lease, the host is still in the installation, or the network is down. Run
-   `just net-up`.
-2. **The host has no route to the internet.** The agent needs
-   `api.spectrocloud.com` on port 443. Test the NAT network from the workstation.
-3. **The token is wrong.** Open Palette at **Tenant Settings**, then
+If the project name is correct, test each item:
+
+1. **The agent is still installing.** cloud-init installs the packages first,
+   which takes some minutes. Run `just host-status pe-cp-1`.
+2. **The host has no address.** Run `just ip pe-cp-1`. If the command reports no
+   lease, the network is down. Run `just net-up`.
+3. **cloud-init failed.** Open the console with `just console pe-cp-1`. Log in
+   as `ubuntu` with the password from `HOST_PASSWORD`. Then run:
+
+   ```bash
+   sudo cloud-init status --long
+   sudo journalctl -u cloud-final --no-pager | tail -40
+   ```
+
+4. **The host has no route to the internet.** The agent needs
+   `api.spectrocloud.com` on port 443, and cloud-init needs the Ubuntu archive.
+   Test the NAT network from the workstation.
+5. **The token is wrong.** Open Palette at **Tenant Settings**, then
    **Registration Tokens**. Confirm that the token is active and not expired.
    Then follow [Rotate the token](./edge-hosts.md#rotate-the-token).
-4. **The project name is wrong.** `PALETTE_PROJECT` must match the project name
-   in Palette exactly. The name is case sensitive.
-5. **The seed ISO is old.** A change to `.env` does not change an existing seed.
+6. **The seed ISO is old.** A change to `.env` does not change an existing seed.
    Run `just seed-clean`, then `just seed-all`, then rebuild the host.
 
-## The host installs again at each boot
+## The agent installs again at each boot
 
-The system disk has no boot loader, so the firmware goes back to the installer
-ISO. This means that the installation failed. Read the console output for the
-error. Confirm that `install.device` in `templates/user-data.tmpl.yaml` names
-the correct disk. The disk is `/dev/vda`, because `host-up.sh` uses `bus=virtio`.
+cloud-init writes a marker file at `/var/lib/palette-agent-installed` after a
+correct installation. A second boot reads the marker and makes no change. If the
+agent installs again, the first installation did not finish. Read the console
+output for the error.
 
 ## `just host-down` fails on the undefine
 
-The domains boot UEFI, so libvirt keeps an NVRAM variable store for each domain.
-`host-down.sh` passes `--nvram` to delete that store. If the command still fails,
-a snapshot or a checkpoint holds the domain:
+A snapshot or a checkpoint holds the domain:
 
 ```bash
 virsh snapshot-list pe-cp-1
@@ -167,15 +177,18 @@ just cluster-down
 just net-down
 ```
 
-## `just iso-fetch` fails
+## `just image-fetch` fails
 
-The release asset for `EDGE_INSTALLER_VERSION` does not exist, or the
-workstation has no route to GitHub. Test the version, or use the direct link
-from your tenant. Open Palette, go to **Clusters**, then **Edge Hosts**, then
-**Add Edge Host**. Put the link in `EDGE_INSTALLER_URL` in `.env`.
+The release name in `UBUNTU_RELEASE` does not exist, or the workstation has no
+route to `cloud-images.ubuntu.com`. Use a release code name, such as `noble` or
+`jammy`, not a number.
 
-A failed download leaves a `.part` file. `iso-fetch` continues that download on
-the next run. Delete the `.part` file to start again.
+A failed download leaves a `.part` file. `image-fetch` continues that download
+on the next run. Delete the `.part` file to start again.
+
+If the message says that the image does not match the checksum, the recipe
+deletes the image and downloads it again. Canonical rebuilds the current image,
+so an old cached image can be correct but different.
 
 ## The docs build fails on an include
 
@@ -198,3 +211,15 @@ The GitHub Actions workflow always installs it, so the check runs there.
 `just preflight` prints the requested memory and the physical memory. Lower
 `WORKER_COUNT` or `WORKER_MEMORY_MB` in `.env`. Then run `just cluster-down` and
 `just cluster-up`.
+
+## `just host-up` cannot write to the pool directory
+
+`just pool-up` gives the pool directory to your user, so `host-up` copies the
+cloud image without sudo. If the directory still belongs to root, run:
+
+```bash
+just pool-up
+```
+
+The recipe tests the ownership and corrects it. It is idempotent, so it makes no
+other change.

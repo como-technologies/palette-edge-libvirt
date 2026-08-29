@@ -1,14 +1,16 @@
 # Local secrets / tenant configuration
 .env
+.env.bak*
 *.local
 
 # Generated per-host cloud-init seeds (contain the registration token)
 build/
 seeds/
 
-# Downloaded installer media
-iso/
+# Downloaded host image
+images/
 *.iso
+*.img
 
 # mdBook output
 docs/book/

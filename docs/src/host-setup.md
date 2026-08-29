@@ -12,7 +12,7 @@ just host-setup
 ```
 
 The recipe installs `qemu-kvm`, `libvirt-daemon-system`, `libvirt-clients`,
-`virtinst`, `ovmf`, `genisoimage`, `curl`, and `shellcheck`. It also adds your
+`virtinst`, `genisoimage`, `curl`, and `shellcheck`. It also adds your
 user to the `libvirt` group and the `kvm` group.
 
 To remove these packages again, run `just host-setup-undo`.
@@ -50,7 +50,6 @@ code if an item fails. The recipe tests:
 - The `/dev/kvm` device and your access to it.
 - The `virsh`, `virt-install`, `qemu-img`, and `curl` commands.
 - An ISO tool, either `genisoimage` or `xorriso`.
-- The OVMF firmware for UEFI boot.
 - The connection to libvirt.
 - The `PALETTE_EDGE_TOKEN` value.
 - The CPU and memory that your topology needs against the workstation capacity.
@@ -60,7 +59,8 @@ lab before it makes any object.
 
 ## Capacity
 
-The default topology needs 16 vCPU and 40 GB of RAM. The reference workstation
+The default topology needs 16 vCPU and 40 GB of RAM. It also needs about 300 GB
+of disk, but the qcow2 files are sparse, so the true use is much lower. The reference workstation
 has 32 cores and 128 GB. `just preflight` prints the request and the capacity.
 Change the values in `.env` for a smaller workstation. See
 [Configure the tenant](./configuration.md).

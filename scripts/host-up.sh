@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
-# Create and start one edge host VM.
+# Create and start one lab host VM.
 #
-# The boot order controls the installation. The system disk is boot.order=1 and
-# the installer ISO is boot.order=2. The disk is empty at the first boot, so the
-# firmware finds no boot loader and goes to the ISO. The Edge installer writes
-# the disk. At the next boot the disk has a boot loader and the firmware uses
-# it. The result is one installation and no installation loop.
+# The host boots a copy of the stock Ubuntu cloud image. There is no operating
+# system installation and no installer media. cloud-init reads the seed ISO at
+# the first boot, installs the Palette agent, and the agent registers the host.
+#
+# The script copies the cloud image for each host. A copy costs about one second
+# on an NVMe disk, and it keeps each host independent. qemu-img then grows the
+# copy to the requested size. cloud-init grows the file system to fill it.
 #
 # This script is idempotent. If the domain exists, the script starts it and
 # stops. Run `just host-down NAME` to replace a host.
 #
-# Env: VCPUS MEMORY_MB DISK_GB NETWORK POOL ISO_DIR SEED_DIR
+# Env: VCPUS MEMORY_MB DISK_GB NETWORK POOL IMAGE_DIR SEED_DIR
 #
 #   host-up.sh <name>
 
@@ -20,10 +22,11 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 name="${1:?name required}"
 : "${VCPUS:?}" "${MEMORY_MB:?}" "${DISK_GB:?}" "${NETWORK:?}" "${POOL:?}"
-: "${ISO_DIR:?}" "${SEED_DIR:?}"
+: "${IMAGE_DIR:?}" "${SEED_DIR:?}"
 
 need virt-install
 need virsh
+need qemu-img
 
 if have_domain "$name"; then
 	state="$(domain_state "$name")"
@@ -39,29 +42,36 @@ fi
 seed="$SEED_DIR/$name-seed.iso"
 [ -s "$seed" ] || die "no seed ISO for $name. Run: just seed $name"
 
-# Use the newest installer ISO in the cache. iso-fetch.sh adds the version to
-# each file name.
-installer="$(find "$ISO_DIR" -maxdepth 1 -name 'palette-edge-installer-*.iso' -print0 2>/dev/null |
+# Use the newest cloud image in the cache.
+image="$(find "$IMAGE_DIR" -maxdepth 1 -name '*-server-cloudimg-amd64.img' -print0 2>/dev/null |
 	xargs -0 -r ls -t | head -n1 || true)"
-[ -n "$installer" ] || die "no installer ISO in $ISO_DIR. Run: just iso-fetch"
+[ -n "$image" ] || die "no cloud image in $IMAGE_DIR. Run: just image-fetch"
 
 pool_dir="$(virsh pool-dumpxml "$POOL" | sed -n 's:.*<path>\(.*\)</path>.*:\1:p' | head -n1)"
 [ -n "$pool_dir" ] || die "cannot read the target path of pool $POOL. Run: just pool-up"
+[ -w "$pool_dir" ] || die "cannot write to $pool_dir. Run: just pool-up"
+
+disk="$pool_dir/$name.qcow2"
 
 info "create $name: ${VCPUS} vcpu, ${MEMORY_MB} MB, ${DISK_GB} GB, network $NETWORK"
-info "installer: $(basename "$installer")"
+info "image: $(basename "$image")"
+
+# Copy the image, then grow it. The cloud image is about 600 MB. qcow2 files
+# are sparse, so the grown file uses only the space that the host writes.
+qemu-img convert -f qcow2 -O qcow2 "$image" "$disk"
+qemu-img resize -q "$disk" "${DISK_GB}G"
 
 # ANCHOR: virtinstall
+# --import boots the disk that already holds an operating system. There is no
+# installation phase and no boot order to manage.
 virt-install \
 	--name "$name" \
 	--memory "$MEMORY_MB" \
 	--vcpus "$VCPUS" \
 	--cpu host-passthrough \
 	--machine q35 \
-	--boot uefi \
 	--osinfo detect=on,require=off \
-	--disk "path=$pool_dir/$name.qcow2,size=$DISK_GB,format=qcow2,bus=virtio,boot.order=1" \
-	--disk "path=$installer,device=cdrom,readonly=on,boot.order=2" \
+	--disk "path=$disk,format=qcow2,bus=virtio" \
 	--disk "path=$seed,device=cdrom,readonly=on" \
 	--network "network=$NETWORK,model=virtio" \
 	--graphics none \
@@ -74,4 +84,4 @@ virt-install \
 # The lab is a test tool. A host must not start with the workstation.
 virsh autostart --disable "$name" >/dev/null 2>&1 || true
 
-info "$name installs now. To watch it: just console $name"
+info "$name starts now. To watch it: just console $name"

@@ -21,22 +21,37 @@ You get these values from your Palette tenant.
 To find the registration token, open Palette. Go to **Tenant Settings**, then
 **Registration Tokens**. Make a token, or use an existing token.
 
-## Installer media
+`PALETTE_PROJECT` is the value that causes the most lost time. The name is case
+sensitive, and a wrong name gives no error. Test it before you make any host:
 
 ```bash
-{{#include ../../.env.example:installer}}
+just palette-projects
 ```
 
-Keep `EDGE_INSTALLER_URL` empty for the standard installer ISO. `just iso-fetch`
-then builds the URL from the version:
+## The Palette agent
 
 ```bash
-{{#include ../../scripts/iso-fetch.sh:url}}
+{{#include ../../.env.example:agent}}
 ```
 
-Your tenant can also give you a direct link. Open Palette, go to **Clusters**,
-then **Edge Hosts**, then **Add Edge Host**. Put that link in
-`EDGE_INSTALLER_URL`.
+## The host image
+
+The lab uses the stock Ubuntu cloud image. It builds no custom image.
+
+```bash
+{{#include ../../.env.example:image}}
+```
+
+Keep `UBUNTU_IMAGE_URL` empty. `just image-fetch` then builds the URL from the
+release:
+
+```bash
+{{#include ../../scripts/image-fetch.sh:url}}
+```
+
+`just image-fetch` also reads the published `SHA256SUMS` file and tests the
+image against it. A image that does not match is deleted and downloaded
+again.
 
 ## Topology
 
@@ -49,6 +64,9 @@ These values set the number of nodes and the size of each node.
 `LAB_NAME` is the prefix of every libvirt object. The default prefix `pe` gives
 the network `pe-net`, the pool `pe-pool`, and the domains `pe-cp-1`, `pe-wk-1`,
 and `pe-wk-2`. Change the prefix to run a second lab at the same time.
+
+The Palette agent needs 2 CPU, 8 GB of memory, and 100 GB of storage for each
+host. The default values give that minimum or more.
 
 ## libvirt
 

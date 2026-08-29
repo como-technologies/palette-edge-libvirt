@@ -1,45 +1,93 @@
 #cloud-config
-# The Palette Edge site user-data template.
+# The cloud-init user-data for one lab host.
 #
 # scripts/seed-iso.sh replaces each placeholder and writes the result into a
-# CIDATA ISO. The VM gets that ISO as a second CD-ROM. A placeholder is a name
-# between two at signs.
+# CIDATA ISO. The VM gets that ISO as a CD-ROM. A placeholder is a name between
+# two at signs.
+#
+# The host boots a stock Ubuntu cloud image. cloud-init then installs the
+# Palette agent. The lab builds no custom operating system image.
 #
 # Do not put your token in this file. The token comes from .env at build time.
 
-# ANCHOR: stylus
-# The stylus.site block registers the host with your tenant. The Edge installer
-# reads this block. The rest of the file is standard cloud-init.
-#
-# The placeholders carry no quotation marks. scripts/seed-iso.sh adds the
-# quotation marks and the necessary escapes. A value with a quotation mark or a
-# backslash stays correct YAML.
-stylus:
-  site:
-    paletteEndpoint: @PALETTE_ENDPOINT@
-    edgeHostToken: @PALETTE_EDGE_TOKEN@
-    projectName: @PALETTE_PROJECT@
-    # The registration name in Palette. The name is the same as the libvirt
-    # domain name, so `just ls` and the Palette Edge Hosts list agree.
-    name: @HOSTNAME@
-# ANCHOR_END: stylus
+hostname: @HOSTNAME@
+# The libvirt domain name and the Palette host name are the same. `just ls` and
+# the Palette host list then agree.
+preserve_hostname: false
+
+users:
+  - name: ubuntu
+    groups: [adm, sudo]
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    shell: /bin/bash
+    lock_passwd: false
+    plain_text_passwd: @HOST_PASSWORD@
+
+# Give a login on the serial console. Use `just console <name>`.
+ssh_pwauth: true
+
+# ANCHOR: packages
+# The agent install script tests for these commands and stops without them.
+# The agent itself needs the network and time packages.
+package_update: true
+packages:
+  - jq
+  - zstd
+  - rsync
+  - conntrack
+  - iptables
+  - rsyslog
+  - systemd-timesyncd
+  - curl
+# ANCHOR_END: packages
+
+write_files:
+  # ANCHOR: siteconfig
+  # The agent reads this file. The stylus.site block registers the host with
+  # your tenant.
+  #
+  # The placeholders carry no quotation marks. scripts/seed-iso.sh adds the
+  # quotation marks and the necessary escapes. A value with a quotation mark or
+  # a backslash stays correct YAML.
+  - path: /etc/palette/site-config.yaml
+    permissions: "0600"
+    owner: root:root
+    content: |
+      #cloud-config
+      stylus:
+        vip:
+          skip: @PALETTE_VIP_SKIP@
+        site:
+          paletteEndpoint: @PALETTE_ENDPOINT@
+          edgeHostToken: @PALETTE_EDGE_TOKEN@
+          projectName: @PALETTE_PROJECT@
+          name: @HOSTNAME@
+  # ANCHOR_END: siteconfig
 
 # ANCHOR: install
-# The installer writes to the first virtio disk and then reboots. See the boot
-# order note in scripts/host-up.sh for the reason there is no install loop.
-install:
-  device: "/dev/vda"
-  poweroff: false
-  reboot: true
+# runcmd runs one time, after the packages install. The agent installer
+# downloads the palette-agent binary and registers the host.
+#
+# The script writes a marker file at the end. `just host-status NAME` reads it,
+# and a second boot does not install the agent again.
+runcmd:
+  - [ systemctl, enable, --now, systemd-timesyncd ]
+  - |
+    set -euxo pipefail
+    if [ -f /var/lib/palette-agent-installed ]; then
+      echo "the agent is already installed"
+      exit 0
+    fi
+    cd /root
+    curl --location --fail --retry 3 \
+      --output ./palette-agent-install.sh \
+      "@AGENT_SCRIPT_URL@"
+    chmod +x ./palette-agent-install.sh
+    USERDATA=/etc/palette/site-config.yaml \
+      ./palette-agent-install.sh
+    touch /var/lib/palette-agent-installed
 # ANCHOR_END: install
 
-# A local login for the serial console. Use `just console <name>`.
-# The lab uses an isolated NAT network. Change this password before you use
-# this template in a different environment.
-users:
-  - name: kairos
-    passwd: kairos
-    groups:
-      - admin
-
-hostname: @HOSTNAME@
+# Write the result of the installation to the console and to a file that
+# `just host-status NAME` reads.
+final_message: "cloud-init finished after $UPTIME seconds"
