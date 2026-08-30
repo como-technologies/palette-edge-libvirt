@@ -3,8 +3,9 @@
 #
 # The script does three things:
 #   1. It creates the project in your Palette tenant.
-#   2. It writes envs/<name>.env with good defaults for that project.
-#   3. It points the .env symbolic link at the new file.
+#   2. It creates a registration token that belongs to that project.
+#   3. It writes envs/<name>.env with good defaults and that token.
+#   4. It points the .env symbolic link at the new file.
 #
 # The lab keeps one environment file for each project. A different LAB_NAME and
 # a different LAB_SUBNET for each project let two labs run at the same time.
@@ -65,7 +66,27 @@ print(json.dumps({
 	info "created $name ($uid)"
 fi
 
-# --- 2. the environment file ------------------------------------------------
+# --- 2. the registration token ----------------------------------------------
+
+# Each project gets its own token. The token registers a host into that project
+# only, and `remove-project` deletes it with the project. This also removes the
+# one manual step that remained: nobody has to copy a token from the console.
+
+token_uid="$(token_for_project "$uid" || true)"
+if [ -n "$token_uid" ]; then
+	skip "the project already has a registration token"
+else
+	info "create the registration token $name"
+	token_uid="$(token_create "$name" "$description" "$uid" "${PALETTE_TOKEN_DAYS:-90}")"
+	[ -n "$token_uid" ] || die "the token was created but the API returned no uid"
+	info "created the token (expires in ${PALETTE_TOKEN_DAYS:-90} days)"
+fi
+
+# Never print this value.
+token="$(token_value "$token_uid")"
+[ -n "$token" ] || warn "the API returned no token value. Add PALETTE_EDGE_TOKEN by hand."
+
+# --- 3. the environment file ------------------------------------------------
 
 if [ -f "$target" ]; then
 	skip "envs/$name.env already exists"
@@ -107,14 +128,14 @@ else
 
 	NAME="$name" LAB="$lab_name" SUBNET="$lab_subnet" \
 		SRC="$root/.env.example" DST="$target" \
-		ENDPOINT="$(palette_endpoint)" \
+		ENDPOINT="$(palette_endpoint)" NEW_TOKEN="$token" \
 		python3 -c '
 import os, re, sys
 
 subs = {
     "PALETTE_ENDPOINT": os.environ["ENDPOINT"],
     "PALETTE_PROJECT": os.environ["NAME"],
-    "PALETTE_EDGE_TOKEN": os.environ.get("PALETTE_EDGE_TOKEN", ""),
+    "PALETTE_EDGE_TOKEN": os.environ.get("NEW_TOKEN", ""),
     "PALETTE_API_KEY": os.environ.get("PALETTE_API_KEY", ""),
     "LAB_NAME": os.environ["LAB"],
     "LAB_SUBNET": os.environ["SUBNET"],
@@ -131,12 +152,11 @@ open(os.environ["DST"], "w").write("".join(out))
 	chmod 600 "$target"
 fi
 
-# --- 3. the default ---------------------------------------------------------
+# --- 4. the default ---------------------------------------------------------
 
 "$(dirname "${BASH_SOURCE[0]}")/project-default.sh" "$name"
 
-if [ -z "${PALETTE_EDGE_TOKEN:-}" ]; then
+if ! grep -qE '^PALETTE_EDGE_TOKEN=.+$' "$target"; then
 	warn "PALETTE_EDGE_TOKEN is empty in envs/$name.env. Add it before you run
-         just cluster-up. Palette shows it at Tenant Settings >
-         Registration Tokens."
+         just cluster-up."
 fi

@@ -142,6 +142,13 @@ migrates one into the layout, `just unadopt-project` reverses it.
 Palette keeps a project description in `metadata.annotations.description`, not
 in a `description` field.
 
+**Each project owns a registration token.** `new-project` creates one bound to
+the project (`spec.defaultProject.uid`) and writes `spec.token` straight into
+the env file, so no token is ever copied by hand. `remove-project` deletes the
+token *before* the project: Palette returns HTTP 500
+`DeletionResourceInUseError` if a token still names the project. Token API is
+`/v1/edgehosts/tokens`.
+
 ## Recipe parameters name a kind, not a position
 
 `host-up host role="worker"`, `default-project project`. The bash completion

@@ -21,13 +21,17 @@ just new-project iris
 just new-project iris "The iris application on Palette Edge"
 ```
 
-The recipe does three things:
+The recipe does four things:
 
 1. It creates the project in your Palette tenant, with the description.
-2. It writes `envs/iris.env` with good defaults.
-3. It points `.env` at the new file, so the new project becomes the default.
+2. It creates a registration token that belongs to that project.
+3. It writes `envs/iris.env` with good defaults and that token.
+4. It points `.env` at the new file, so the new project becomes the default.
 
-The second step gives values that do not collide with an existing lab:
+Step 2 removes the last manual step. Nobody copies a token from the console.
+`PALETTE_TOKEN_DAYS` in `.env` sets the lifetime, and the default is 90 days.
+
+Step 3 gives values that do not collide with an existing lab:
 
 | Value | How the recipe chooses it |
 | --- | --- |
@@ -35,7 +39,7 @@ The second step gives values that do not collide with an existing lab:
 | `LAB_NAME` | The first 8 characters of the name, with a number if that prefix is in use. |
 | `LAB_SUBNET` | The first free subnet from 192.168.140 to 192.168.199. |
 | `PALETTE_API_KEY` | Copied from the current environment. |
-| `PALETTE_EDGE_TOKEN` | Copied from the current environment. |
+| `PALETTE_EDGE_TOKEN` | The token that step 2 makes for this project. |
 
 The recipe reads the subnets of the other environment files **and** of the
 libvirt networks. A new project therefore never takes the subnet of a running
@@ -46,13 +50,14 @@ topology for that project.
 
 ### The first project
 
-A new checkout has no token and no key. Give them for the one command:
+A new checkout has no API key. Give it for the one command. The recipe makes
+the registration token, so you need no token:
 
 ```bash
-PALETTE_API_KEY=... PALETTE_EDGE_TOKEN=... just new-project iris
+PALETTE_API_KEY=... just new-project iris
 ```
 
-Later projects copy both values from the current environment.
+Later projects copy the API key from the current environment.
 
 ## Change the default
 
@@ -70,15 +75,21 @@ tenant, run `just palette-projects`.
 just remove-project iris
 ```
 
-This is the twin of `new-project`. It reverses all three steps: it deletes the
-project from the tenant, it deletes `envs/iris.env`, and it removes the `.env`
-link if that link pointed at the removed file.
+This is the twin of `new-project`. It reverses all four steps: it deletes the
+registration token, it deletes the project from the tenant, it deletes
+`envs/iris.env`, and it removes the `.env` link if that link pointed at the
+removed file.
+
+The token goes first. **Palette refuses to delete a project while a token names
+it as its default project**, and the API reports that as an HTTP 500 with the
+message `Unable to delete the resource as <name> edgetoken(s) in-use`.
 
 The recipe protects you two times:
 
 - It refuses while the project holds a cluster or a host. Delete the cluster in
   Palette, run `just cluster-down`, then deregister the hosts.
-- It asks you to type the project name. A delete is not reversible.
+- It asks you to type the project name, and it names the token that it deletes
+  with the project. A delete is not reversible.
 
 Give `FORCE=1` to answer in advance:
 

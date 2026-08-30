@@ -20,16 +20,110 @@ need_api_key() {
 }
 
 # api METHOD PATH [curl args...]
-# Prints the response body. Stops the script on an HTTP error and shows the
-# body, because the Palette error message names the cause.
+# Prints the response body on the standard output.
+#
+# On an HTTP error the script stops and prints the Palette message. That
+# message names the cause, for example a token that still uses a project. An
+# earlier version sent the body to the caller, and a caller that discarded the
+# standard output lost the reason for the failure.
 api() {
 	local method="$1" path="$2"
 	shift 2
 	need_api_key
-	curl -sS --fail-with-body -X "$method" \
+
+	local response code body
+	response="$(curl -sS -w $'\n%{http_code}' -X "$method" \
 		-H "ApiKey: $PALETTE_API_KEY" \
 		-H "Accept: application/json" \
-		"$@" "https://$(palette_endpoint)/$path"
+		"$@" "https://$(palette_endpoint)/$path")" ||
+		die "cannot reach https://$(palette_endpoint)/$path"
+
+	code="${response##*$'\n'}"
+	body="${response%$'\n'*}"
+
+	if [ "${code:-0}" -ge 400 ]; then
+		printf '%s' "$body" | python3 -c '
+import json, sys
+raw = sys.stdin.read()
+try:
+    data = json.loads(raw)
+except Exception:
+    print(raw.strip()[:500], file=sys.stderr)
+else:
+    message = data.get("message") or raw.strip()[:500]
+    print("  Palette says: " + message, file=sys.stderr)
+    if data.get("code"):
+        print("  Palette code: " + str(data["code"]), file=sys.stderr)
+' >&2 || printf '  %s\n' "$body" >&2
+		die "$method $path returned HTTP $code"
+	fi
+
+	printf '%s' "$body"
+}
+
+# token_for_project UID: print the uid of the registration token that names
+# this project as its default project. Prints nothing if there is none.
+#
+# Palette refuses to delete a project while a token still names it.
+token_for_project() {
+	api GET "v1/edgehosts/tokens?limit=100" | UID="$1" python3 -c '
+import json, os, sys
+want = os.environ["UID"]
+for token in json.load(sys.stdin).get("items") or []:
+    project = (token.get("spec") or {}).get("defaultProject") or {}
+    if project.get("uid") == want:
+        print(token["metadata"]["uid"])
+        break
+'
+}
+
+# token_name UID: print the name of one registration token.
+token_name() {
+	api GET "v1/edgehosts/tokens?limit=100" | UID="$1" python3 -c '
+import json, os, sys
+want = os.environ["UID"]
+for token in json.load(sys.stdin).get("items") or []:
+    if token["metadata"]["uid"] == want:
+        print(token["metadata"]["name"])
+        break
+'
+}
+
+# token_value UID: print the registration token itself. Never log this value.
+token_value() {
+	api GET "v1/edgehosts/tokens?limit=100" | UID="$1" python3 -c '
+import json, os, sys
+want = os.environ["UID"]
+for token in json.load(sys.stdin).get("items") or []:
+    if token["metadata"]["uid"] == want:
+        print((token.get("spec") or {}).get("token") or "")
+        break
+'
+}
+
+# token_create NAME DESCRIPTION PROJECT_UID DAYS: make a registration token
+# that registers hosts into one project. Prints the uid of the new token.
+token_create() {
+	local body
+	body="$(NAME="$1" DESC="$2" PROJECT="$3" DAYS="${4:-90}" python3 -c '
+import datetime, json, os
+expiry = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+    days=int(os.environ["DAYS"])
+)
+print(json.dumps({
+    "metadata": {
+        "name": os.environ["NAME"],
+        "annotations": {"description": os.environ["DESC"]},
+    },
+    "spec": {
+        "defaultProject": {"uid": os.environ["PROJECT"]},
+        # Palette wants an ISO 8601 time in UTC.
+        "expiry": expiry.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+    },
+}))
+')"
+	api POST "v1/edgehosts/tokens" -H "Content-Type: application/json" -d "$body" |
+		python3 -c 'import json,sys; print(json.load(sys.stdin).get("uid",""))'
 }
 
 # project_uid NAME

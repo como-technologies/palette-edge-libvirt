@@ -45,12 +45,32 @@ else
      Then deregister the hosts in Palette. Then run this recipe again."
 	fi
 
+	# Palette refuses to delete a project while a registration token names it
+	# as its default project. Find that token now, so the question can name
+	# everything that this recipe deletes.
+	token_uid="$(token_for_project "$uid" || true)"
+	token_label=""
+	if [ -n "$token_uid" ]; then
+		token_label="$(token_name "$token_uid" || true)"
+	fi
+
 	if [ "${FORCE:-0}" != "1" ]; then
 		printf 'This deletes the Palette project %s (%s) from your tenant.\n' "$name" "$uid"
+		if [ -n "$token_uid" ]; then
+			printf 'It also deletes the registration token %s, because Palette\n' \
+				"${token_label:-$token_uid}"
+			printf 'keeps the project while a token names it.\n'
+		fi
 		printf 'This action is not reversible.\n'
 		printf 'Type the project name to continue: '
 		read -r answer
 		[ "$answer" = "$name" ] || die "the answer did not match. Nothing changed."
+	fi
+
+	# The token goes first. The project delete fails while the token exists.
+	if [ -n "$token_uid" ]; then
+		api DELETE "v1/edgehosts/tokens/$token_uid" >/dev/null
+		info "deleted the registration token ${token_label:-$token_uid}"
 	fi
 
 	api DELETE "v1/projects/$uid" >/dev/null

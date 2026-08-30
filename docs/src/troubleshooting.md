@@ -190,6 +190,22 @@ If the message says that the image does not match the checksum, the recipe
 deletes the image and downloads it again. Canonical rebuilds the current image,
 so an old cached image can be correct but different.
 
+## `just remove-project` reports HTTP 500
+
+Palette refuses to delete a project while a registration token names it as its
+default project:
+
+```text
+Palette says: Unable to delete the resource as pe-thelio edgetoken(s) in-use
+Palette code: DeletionResourceInUseError
+```
+
+`just remove-project` deletes the token first, so this message means that the
+token is a different one. Perhaps you made it by hand, and it names this
+project. Palette lists the tokens at **Tenant Settings** >
+**Registration Tokens**. Change the default project of that token, or delete
+it. Then run the recipe again.
+
 ## The docs build fails on an include
 
 The path is wrong, or the anchor is absent. The paths in `docs/src/*.md` are
