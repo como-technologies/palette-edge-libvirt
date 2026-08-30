@@ -148,6 +148,40 @@ repo_root() {
 	cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd
 }
 
+# require_cluster_name: stop unless the name suits BOTH sides.
+#
+# The name reaches libvirt and Palette, and each one has a rule:
+#
+#   libvirt   the bridge is br-<name> and a Linux interface takes 15
+#             characters, so the name takes 12
+#   Palette   a cluster name matches [a-z][a-z0-9-]{1,31}[a-z0-9], so it takes
+#             at least 3 characters, starts with a letter, and ends with a
+#             letter or a number
+#
+# Palette applies its rule at the moment it makes the cluster, which is minutes
+# after `just infra-up` built the machines under the same name. The test
+# therefore runs at the start of both layers, and a name of two letters fails in
+# a second instead of after a build.
+require_cluster_name() {
+	local name="$1"
+
+	[ "${#name}" -le 12 ] ||
+		die "CLUSTER_NAME is '$name', and that is ${#name} characters.
+     The libvirt bridge is br-$name and a network device takes 15, so the
+     name takes 12."
+
+	[ "${#name}" -ge 3 ] ||
+		die "CLUSTER_NAME is '$name', and that is ${#name} character(s).
+     Palette refuses a cluster name of less than 3 characters, and the name
+     of the lab is the name of the cluster.
+     Give a longer one:  CLUSTER_NAME=<name> just <recipe>"
+
+	printf '%s' "$name" | grep -qE '^[a-z][a-z0-9-]*[a-z0-9]$' ||
+		die "CLUSTER_NAME is '$name', and Palette refuses it.
+     A name holds lower case letters, numbers, and the hyphen. It starts
+     with a letter and ends with a letter or a number."
+}
+
 # have_domain: return 0 if libvirt knows the given domain.
 have_domain() {
 	virsh dominfo "$1" >/dev/null 2>&1

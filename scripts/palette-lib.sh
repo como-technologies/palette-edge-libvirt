@@ -16,6 +16,21 @@ palette_endpoint() {
 # key comes from the file that `just api-key-set` writes. The key never lives
 # in a project environment file: it is a tenant credential, and a project
 # removal must not delete it.
+# have_api_key: return 0 when a key is available, from either source.
+#
+# A test for the key FILE alone is wrong. The environment is a documented way to
+# give the key for one command, and it is the only way that continuous
+# integration gives it, because a job must leave no credential on the
+# workstation. `infra-down.sh` tested the file, so every run with the key in the
+# environment skipped the Palette half of the layer without saying so, and left
+# a host record for each machine that it deleted.
+#
+# This makes no message and stops nothing. Use need_api_key where the key is
+# necessary.
+have_api_key() {
+	[ -n "${PALETTE_API_KEY:-}" ] || [ -s "$(api_key_file)" ]
+}
+
 need_api_key() {
 	if [ -z "${PALETTE_API_KEY:-}" ]; then
 		local file

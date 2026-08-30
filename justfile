@@ -80,7 +80,7 @@ kubectl_version := env_var_or_default("KUBECTL_VERSION", k8s_version)
 # subnet are fixed and OUTSIDE the range that new-project allocates
 # (192.168.140 to 192.168.199), so a CI lab and a lab of yours never collide,
 # and a teardown of one never frees the address of the other.
-ci_cluster := env_var_or_default("CI_CLUSTER_NAME", "ci")
+ci_cluster := env_var_or_default("CI_CLUSTER_NAME", "cilab")
 ci_subnet := env_var_or_default("CI_CLUSTER_SUBNET", "192.168.210")
 
 # The user that runs the GitHub Actions runner. It is not your account: it holds

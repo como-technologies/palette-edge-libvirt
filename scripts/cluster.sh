@@ -120,6 +120,10 @@ export TF_VAR_vip="${CLUSTER_VIP:-}"
 [ -z "${CSI_VERSION:-}" ] || export TF_VAR_csi_version="$CSI_VERSION"
 
 # --- the checks that only a build needs -------------------------------------
+#
+# require_cluster_name is in lib.sh, because both layers need the same name.
+# net-up.sh runs it for the layer below, so a name that Palette refuses stops
+# `just infra-up` instead of `just cluster-up` four minutes later.
 
 # require_vip: stop unless the seed ISO and the cluster agree about the virtual
 # address.
@@ -271,12 +275,14 @@ tofu -chdir="$module" init -input=false -reconfigure \
 
 case "$action" in
 plan)
+	require_cluster_name "$CLUSTER"
 	require_vip
 	require_pod_cidr
 	require_ready_hosts
 	tofu -chdir="$module" plan -input=false
 	;;
 apply)
+	require_cluster_name "$CLUSTER"
 	require_vip
 	require_pod_cidr
 	require_ready_hosts

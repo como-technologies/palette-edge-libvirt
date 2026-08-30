@@ -12,15 +12,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 : "${NETWORK:?}" "${CLUSTER:?}" "${SUBNET:?}" "${BUILD_DIR:?}"
 
-# The bridge name is a Linux interface name. The kernel takes 15 characters at
-# most. Test it here, because libvirt reports the fault as "Numerical result
-# out of range" only when the network starts.
+# The name reaches libvirt and Palette, and each one has a rule. Test both here,
+# at the first recipe that uses the name: libvirt reports its own fault as
+# "Numerical result out of range" only when the network starts, and Palette
+# reports its own minutes later, when `just cluster-up` makes the cluster.
+require_cluster_name "$CLUSTER"
 bridge="br-$CLUSTER"
-if [ "${#bridge}" -gt 15 ]; then
-	die "the bridge name $bridge has ${#bridge} characters, and Linux takes 15.
-     CLUSTER_NAME therefore takes 12 characters at most. Shorten CLUSTER_NAME in
-     $(short_path "$(envs_dir)")/<project>.env."
-fi
 root="$(repo_root)"
 
 need virsh

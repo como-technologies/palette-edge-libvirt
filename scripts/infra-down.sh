@@ -33,7 +33,7 @@ need virsh
 
 # The test needs the API. A workstation with no key still removes its own
 # machines, so a missing key gives a warning and not an error.
-if [ -n "${PALETTE_PROJECT:-}" ] && [ -s "$(api_key_file)" ] &&
+if [ -n "${PALETTE_PROJECT:-}" ] && have_api_key &&
 	command -v curl >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
 	uid="$(project_uid "$PALETTE_PROJECT" 2>/dev/null || true)"
 	if [ -n "$uid" ]; then
