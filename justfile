@@ -82,6 +82,7 @@ kubectl_version := env_var_or_default("KUBECTL_VERSION", k8s_version)
 # and a teardown of one never frees the address of the other.
 ci_cluster := env_var_or_default("CI_CLUSTER_NAME", "cilab")
 ci_subnet := env_var_or_default("CI_CLUSTER_SUBNET", "192.168.210")
+ci_vip := env_var_or_default("CI_CLUSTER_VIP", ci_subnet + ".10")
 
 # The user that runs the GitHub Actions runner. It is not your account: it holds
 # no sudo, and `just runner-setup` gives it the libvirt group and one pool
@@ -467,6 +468,18 @@ runner-down:
     @RUNNER_USER="{{ runner_user }}" RUNNER_HOME="{{ runner_home }}" \
         scripts/runner-down.sh
 # ANCHOR_END: runner
+
+# Print the CI lab settings as an environment file
+#
+# The workflow reads this into GITHUB_ENV, so the settings of the CI lab live
+# here and in no second place. A workflow that repeated them would drift away
+# from these, exactly as `just config` once reported a disk size that the
+# recipes did not use.
+ci-env:
+    @echo "CLUSTER_NAME={{ ci_cluster }}"
+    @echo "CLUSTER_SUBNET={{ ci_subnet }}"
+    @echo "CLUSTER_VIP={{ ci_vip }}"
+    @echo "POD_CIDR={{ pod_cidr }}"
 
 # Show the state of the runner service and its registration
 runner-status:
