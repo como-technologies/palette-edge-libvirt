@@ -162,12 +162,18 @@ fi
 
 # --- the service ------------------------------------------------------------
 
+# `svc.sh` reads the files beside it, so it needs the runner directory as the
+# working directory. The `cd` therefore happens INSIDE sudo: the home directory
+# of the runner does not admit the person who calls this recipe, and a `cd` that
+# runs as that person fails with "Permission denied" before sudo starts.
 info "install the systemd service"
-(cd "$dir" && sudo ./svc.sh install "$user") ||
-	die "could not install the service. Run: cd $dir && sudo ./svc.sh install $user"
+sudo bash -c 'cd "$1" && ./svc.sh install "$2"' _ "$dir" "$user" ||
+	die "could not install the service. Run:
+       sudo bash -c 'cd $dir && ./svc.sh install $user'"
 
-(cd "$dir" && sudo ./svc.sh start) ||
-	die "could not start the service. Run: cd $dir && sudo ./svc.sh start"
+sudo bash -c 'cd "$1" && ./svc.sh start' _ "$dir" ||
+	die "could not start the service. Run:
+       sudo bash -c 'cd $dir && ./svc.sh start'"
 
 printf '\n'
 info "the runner is up. To see it: just runner-status"

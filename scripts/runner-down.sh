@@ -47,11 +47,17 @@ fi
 
 if systemctl list-units --all --type=service --no-legend 2>/dev/null |
 	grep -q 'actions\.runner\.'; then
-	(cd "$dir" && sudo ./svc.sh stop >/dev/null 2>&1) || true
+	# The `cd` runs inside sudo. The home directory of the runner does not
+	# admit the person who calls this recipe, so a `cd` outside sudo fails
+	# with "Permission denied" before sudo starts.
+	sudo bash -c 'cd "$1" && ./svc.sh stop' _ "$dir" >/dev/null 2>&1 || true
 	info "stopped the runner service"
-	(cd "$dir" && sudo ./svc.sh uninstall >/dev/null 2>&1) ||
-		warn "could not remove the service. Run: cd $dir && sudo ./svc.sh uninstall"
-	info "removed the runner service"
+	if sudo bash -c 'cd "$1" && ./svc.sh uninstall' _ "$dir" >/dev/null 2>&1; then
+		info "removed the runner service"
+	else
+		warn "could not remove the service. Run:
+         sudo bash -c 'cd $dir && ./svc.sh uninstall'"
+	fi
 else
 	skip "no runner service is installed"
 fi
