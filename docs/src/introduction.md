@@ -38,6 +38,6 @@ one host, and the location of each part of the state.
 2. [Configure the tenant](./tenant.md) — `just api-key-set`.
 3. [Create a project](./project.md) — `just new-project <project>`.
 4. [Create the hosts](./hosts.md) — `just cluster-up`.
-5. [Make the cluster](./cluster.md) — in Palette.
+5. [Create the cluster](./cluster.md) — in Palette.
 
 Read the [project rules](./rules.md) before you change the repository.

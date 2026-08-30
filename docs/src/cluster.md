@@ -1,4 +1,4 @@
-# Make the cluster
+# Create the cluster
 
 Palette makes the cluster from the hosts that registered. The workstation runs
 the virtual machines. Palette holds the cluster profile and the cluster.
@@ -18,14 +18,14 @@ their recipes. The steps below are the console steps until then.
 No cluster of this lab is complete yet, so read the steps below as a summary of
 the Palette documentation, not as a tested procedure.
 
-## 1. Make the cluster profile
+## 1. Create the cluster profile
 
 The profile is the combination under test. The lab exists to give it hosts.
 
 Select **Palette eXtended Kubernetes - Edge (PXK-E)** for the Kubernetes layer.
 Add the CNI, the CSI, and the add-on packs to test.
 
-## 2. Make the cluster
+## 2. Create the cluster
 
 1. Make a cluster and select the profile.
 2. Assign the registered hosts. Give the control plane pool the `-cp-` hosts

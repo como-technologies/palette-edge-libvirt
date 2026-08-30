@@ -1,7 +1,7 @@
 # Create the hosts
 
 This page creates the virtual machines and registers them with your Palette
-project. It makes no cluster. [Make the cluster](./cluster.md) is the next step.
+project. It makes no cluster. [Create the cluster](./cluster.md) is the next step.
 
 Complete these three pages first:
 
@@ -69,7 +69,7 @@ just cluster-up
 
 ## Next
 
-Every host is registered and idle. [Make the cluster](./cluster.md).
+Every host is registered and idle. [Create the cluster](./cluster.md).
 
 ## More
 

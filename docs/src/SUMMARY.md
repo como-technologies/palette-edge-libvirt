@@ -8,7 +8,7 @@
 - [Configure the tenant](./tenant.md)
 - [Create a project](./project.md)
 - [Create the hosts](./hosts.md)
-- [Make the cluster](./cluster.md)
+- [Create the cluster](./cluster.md)
 - [Remove the lab](./teardown.md)
 
 # Reference

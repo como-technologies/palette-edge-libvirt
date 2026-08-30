@@ -69,7 +69,7 @@ running lab uses.
 The lab makes the hosts. A person makes the cluster profile and the cluster in
 Palette. This is the one gap against
 [project rule 1](./rules.md#1-every-action-is-a-recipe).
-[Make the cluster](./cluster.md) holds the console steps until a recipe
+[Create the cluster](./cluster.md) holds the console steps until a recipe
 replaces them.
 
 The Palette CLI cannot close it. `palette project` gives `list`, `switch`, and
