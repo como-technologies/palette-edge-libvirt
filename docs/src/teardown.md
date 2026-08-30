@@ -56,9 +56,15 @@ just palette-hosts       # the hosts that are still registered
 just cluster-deregister  # remove every record of this lab
 ```
 
-`cluster-deregister` reads the hosts of the project and removes the record of
-each name that starts with `$LAB_NAME-`. It is idempotent, and it leaves the
-virtual machines as they are. See
+`cluster-deregister` takes its scope from the environment file of the default
+project. It reads the hosts of `PALETTE_PROJECT` only, and it removes the record
+of each name that starts with `$LAB_NAME-`. It is idempotent, and it leaves the
+virtual machines as they are.
+
+A project holds one lab, so the prefix normally keeps every host. It keeps
+fewer after you change `LAB_NAME`, because a host that registered under the old
+name keeps the old name. The recipe names each host that it does not touch, and
+`just host-deregister <host>` removes one of those. See
 [Create the cluster](./cluster.md#remove-the-cluster).
 
 ## Remove the secrets

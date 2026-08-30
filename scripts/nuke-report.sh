@@ -42,7 +42,7 @@ if [ -z "$uid" ]; then
 	exit 0
 fi
 
-mapfile -t hosts < <(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid" 2>/dev/null |
+mapfile -t rows < <(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid" 2>/dev/null |
 	LAB="$LAB" python3 -c '
 import json, os, sys
 prefix = os.environ["LAB"] + "-"
@@ -52,18 +52,40 @@ except Exception:
     sys.exit(0)
 for host in items:
     name = host["metadata"]["name"]
-    if name.startswith(prefix):
-        print(name)
+    print("lab" if name.startswith(prefix) else "other", name)
 ' 2>/dev/null || true)
 
-if [ "${#hosts[@]}" -eq 0 ]; then
-	printf '    No %s-* host has a record in project %s.\n' "$LAB" "$PALETTE_PROJECT"
+hosts=()
+others=()
+for row in "${rows[@]}"; do
+	case "$row" in
+	"lab "*) hosts+=("${row#lab }") ;;
+	"other "*) others+=("${row#other }") ;;
+	esac
+done
+
+if [ "${#hosts[@]}" -eq 0 ] && [ "${#others[@]}" -eq 0 ]; then
+	printf '    No host has a record in project %s.\n' "$PALETTE_PROJECT"
 	exit 0
 fi
 
-printf '    %s host(s) stay registered in project %s:\n' "${#hosts[@]}" "$PALETTE_PROJECT"
-for host in "${hosts[@]}"; do
-	printf '      %s\n' "$host"
-done
-printf '    To remove those records:  just cluster-deregister\n'
+if [ "${#hosts[@]}" -gt 0 ]; then
+	printf '    %s host(s) stay registered in project %s:\n' "${#hosts[@]}" "$PALETTE_PROJECT"
+	for host in "${hosts[@]}"; do
+		printf '      %s\n' "$host"
+	done
+	printf '    To remove those records:  just cluster-deregister\n'
+fi
+
+# A host of an earlier LAB_NAME. cluster-deregister keeps the prefix, so name
+# these separately and give the recipe that removes one.
+if [ "${#others[@]}" -gt 0 ]; then
+	printf '    %s host(s) of project %s do not start with %s-:\n' \
+		"${#others[@]}" "$PALETTE_PROJECT" "$LAB"
+	for host in "${others[@]}"; do
+		printf '      %s\n' "$host"
+	done
+	printf '    cluster-deregister leaves those. To remove one: just host-deregister <host>\n'
+fi
+
 printf '    Delete the cluster and the profile in the console.\n'
