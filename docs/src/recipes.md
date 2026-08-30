@@ -99,6 +99,32 @@ completion and the parameters from `just`. A parameter with an unknown name
 stops the build, which is the moment to add the kind or to name the parameter
 as free text.
 
+## The cluster recipes
+
+```just
+{{#include ../../justfile:clusterup}}
+```
+
+`cluster-up` makes the whole lab. It runs `preflight`, `infra-up`, and
+`image-fetch` first, and each of those is idempotent, so a second run of
+`cluster-up` makes no new object.
+
+The recipe does five things:
+
+1. `preflight` tests the workstation and your values.
+2. `infra-up` makes the lab network and the storage pool. `LAB_NAME` gives both
+   names.
+3. `image-fetch` downloads the stock Ubuntu cloud image and tests its checksum.
+   The download runs one time.
+4. For each host, `seed` builds a CIDATA ISO with your token.
+5. For each host, `host-up` copies the cloud image, grows the copy, and starts
+   the virtual machine.
+
+`cluster-down` removes the virtual machines and keeps the network, the pool,
+and the image, so the next `cluster-up` is fast. `nuke` also removes the
+network, the pool, and the seeds. Neither recipe touches Palette. See
+[Remove the lab](./teardown.md).
+
 ## The layers
 
 The `justfile` holds the configuration and thin recipes. Each recipe with logic

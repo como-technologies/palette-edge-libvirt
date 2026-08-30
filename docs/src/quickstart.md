@@ -14,28 +14,11 @@ Complete these three pages first:
 just cluster-up
 ```
 
-This recipe and its partner recipes are:
-
-```just
-{{#include ../../justfile:clusterup}}
-```
-
-`cluster-up` runs `preflight`, `infra-up`, and `image-fetch` first. Each of
-those recipes is idempotent, so a second run of `cluster-up` changes nothing.
-
-The recipe does five things:
-
-1. `preflight` tests the workstation and your values.
-2. `infra-up` makes the lab network and the storage pool. `LAB_NAME` gives both
-   names.
-3. `image-fetch` downloads the stock Ubuntu cloud image and tests its checksum.
-   The download runs one time.
-4. For each host, `seed` builds a CIDATA ISO with your token.
-5. For each host, `host-up` copies the cloud image, grows the copy, and starts
-   the virtual machine.
-
 The hosts start in seconds. The agent installation then takes some minutes,
 because cloud-init installs the packages first.
+
+The recipe is idempotent, so a second run changes nothing. See
+[The cluster recipes](./recipes.md#the-cluster-recipes) for what it does.
 
 ## 2. Watch the progress
 
