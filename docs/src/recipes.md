@@ -122,7 +122,11 @@ The recipe does five things:
 
 `cluster-down` removes the virtual machines and keeps the network, the pool,
 and the image, so the next `cluster-up` is fast. `nuke` also removes the
-network, the pool, and the seeds. Neither recipe touches Palette. See
+network, the pool, and the seeds.
+
+Neither recipe touches Palette. The hosts stay registered, so `nuke` reports the
+records that stay and names `just cluster-deregister`, which removes them. That
+recipe is the only one that deletes a host record. See
 [Remove the lab](./teardown.md).
 
 ## The layers

@@ -112,10 +112,11 @@ keeps the original.
 | Ubuntu cloud image    | `~/.cache/palette-edge-libvirt`          | `just image-clean`    |
 | Your token            | `~/.config/palette-edge-libvirt/envs`    | `just remove-project` |
 | Your API key          | `~/.config/palette-edge-libvirt/api-key` | `just api-key-clear`  |
-| Registered hosts      | Palette SaaS                             | you, in Palette       |
+| Registered hosts      | Palette SaaS                             | `just cluster-deregister` |
 | Project and its token | Palette SaaS                             | `just remove-project` |
 | Profiles and clusters | Palette SaaS                             | you, in Palette       |
 
 `just nuke` removes every local lab object except the cloud image and the API
-key. It does not touch Palette. `just remove-project` removes the project and
-its token.
+key. It does not touch Palette, so it reports the host records that stay.
+`just cluster-deregister` removes those records, and `just remove-project`
+removes the project and its token.

@@ -270,8 +270,13 @@ cluster-up: preflight infra-up image-fetch
 cluster-down:
     @LAB="{{ lab }}" POOL="{{ pool }}" scripts/cluster-down.sh
 
+# Remove the Palette record of every host of this lab. The VMs stay.
+cluster-deregister:
+    @LAB="{{ lab }}" scripts/cluster-deregister.sh
+
 # Remove everything this repository creates, except the downloaded image
 nuke: cluster-down infra-down seed-clean
+    @LAB="{{ lab }}" scripts/nuke-report.sh
 # ANCHOR_END: clusterup
 
 # --- docs -------------------------------------------------------------------

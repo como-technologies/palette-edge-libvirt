@@ -23,6 +23,11 @@ just nuke
 cloud image, because that file takes a long time to download. To delete the
 image too, run `just image-clean`.
 
+**`nuke` changes no object in Palette.** Each of the three recipes operates on
+libvirt, so the hosts stay registered and the console still shows them. A recipe
+that removes a virtual machine must not delete a tenant record without a word.
+The recipe prints the hosts that stay, and names the recipe below.
+
 ## Remove the packages
 
 ```bash
@@ -37,16 +42,24 @@ removes your user from the `libvirt` group and the `kvm` group.
 The recipes control the workstation only. Palette keeps its own objects. Remove
 these in Palette:
 
-| Object | Location in Palette |
+| Object | How to remove it |
 | --- | --- |
-| Cluster | Clusters |
-| Registered hosts | `just host-deregister <host>` |
-| Cluster profile | Profiles |
-| Registration token | Tenant Settings > Registration Tokens |
+| Cluster | In Palette, at **Clusters**. |
+| Cluster profile | In Palette, at **Profiles**. |
+| Registered hosts | `just cluster-deregister`, or one at a time with `just host-deregister <host>`. |
+| Registration token | `just remove-project <project>` deletes it with the project. |
 
-Delete the cluster first. Then deregister each host. `just palette-hosts` lists
-the hosts that are still registered, and `just host-deregister <host>` removes
-one record. See [Create the cluster](./cluster.md#remove-the-cluster).
+Delete the cluster first, then the profile. Then remove the host records:
+
+```bash
+just palette-hosts       # the hosts that are still registered
+just cluster-deregister  # remove every record of this lab
+```
+
+`cluster-deregister` reads the hosts of the project and removes the record of
+each name that starts with `$LAB_NAME-`. It is idempotent, and it leaves the
+virtual machines as they are. See
+[Create the cluster](./cluster.md#remove-the-cluster).
 
 ## Remove the secrets
 

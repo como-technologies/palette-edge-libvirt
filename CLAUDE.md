@@ -35,6 +35,7 @@ just fmt                  # format the justfile
 
 just cluster-up           # full lab: preflight, infra, image, seeds, VMs
 just cluster-down         # remove the VMs, keep infra and image
+just cluster-deregister   # remove the Palette record of every host of the lab
 just nuke                 # cluster-down + infra-down + seed-clean
 
 just projects             # local project env files, * marks default
