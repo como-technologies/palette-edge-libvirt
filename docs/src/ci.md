@@ -27,7 +27,7 @@ Two labs share one workstation when the name and the subnet both differ.
 
 | Setting | Yours | CI |
 | --- | --- | --- |
-| `CLUSTER_NAME` | from `just new-project` | `ci` |
+| `CLUSTER_NAME` | from `just new-project` | `cilab` |
 | `CLUSTER_SUBNET` | 192.168.140 to 192.168.199 | 192.168.210 |
 
 The CI subnet sits **outside** the range that `just new-project` allocates. A
@@ -48,13 +48,28 @@ code to what a person approved.
    the workflow files of the pull request, not the ones on `main`, so a pull
    request can add a workflow of its own that names the runner. The approval
    setting is what stops it.
-3. **`main` is protected and a merge needs a review.** This is the gate that
-   matters: the runner executes only code that a person read.
-4. **The `lab` environment takes a reviewer** and holds the Palette key, so a
-   job that nobody approves receives no credentials.
+3. **`main` is protected and a merge needs a review.** A pull request needs one
+   approval and the `lint` check before it reaches `main`.
+4. **The `lab` environment admits protected branches only**, and it holds the
+   Palette key, so a job on a side branch receives no credentials.
 
-`just ci-setup` makes gates 1, 3, and 4. Gate 2 has no API, so the recipe prints
-the page to open.
+`just ci-setup` makes all four.
+
+Gate 3 has a limit worth naming: `enforce_admins` is false, so a person with
+administration rights pushes to `main` without a review, and the runner then
+executes that push. The repository is a laboratory and the setting is
+deliberate. Two ways to close it, and each one costs something:
+
+| Change | Closes | Costs |
+| --- | --- | --- |
+| `enforce_admins: true` | a direct push by an administrator | every change needs a pull request |
+| a required reviewer on `lab` | a run that nobody approved | every run waits for a click, including the nightly one |
+
+Gate 2 is the one that matters most on a public repository, because it is the
+only path that needs no write access at all. The default policy,
+`first_time_contributors`, means the first time **only**: a person whose pull
+request was merged once runs a workflow without approval ever after.
+`just ci-setup` sets `all_external_contributors` instead.
 
 ## No third-party actions
 
@@ -76,7 +91,7 @@ just runner-status    # the service here, and the record in GitHub
 ```
 
 `just runner-setup` needs root one time. It makes the user, puts it in the
-`libvirt` and `kvm` groups, and makes `/var/lib/libvirt/images/ci`.
+`libvirt` and `kvm` groups, and makes `/var/lib/libvirt/images/cilab`.
 
 It also gives the runner its own `just`. `cargo` installs it, exactly as the
 hosted workflow installs mdBook, because the `just` in your home directory

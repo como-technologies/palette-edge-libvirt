@@ -9,8 +9,13 @@
 #   2. A fork pull request needs approval from a maintainer before any workflow
 #      runs. Without it, a pull request can add a workflow of its own that names
 #      the self-hosted runner.
-#   3. The lab environment holds the Palette key and takes a reviewer. A job
-#      that does not pass it gets no credentials.
+#   3. The lab environment holds the Palette key and admits protected branches
+#      only, so a job on a side branch gets no credentials.
+#
+# A fourth gate is available and this script does not set it: a required
+# reviewer on the environment. It stops every run until a person approves, so it
+# also stops the nightly build. Add it at Settings > Environments if the
+# workstation needs a gate on the run as well as on the code.
 #
 # The e2e workflow names no `pull_request` trigger, so a fork cannot reach the
 # runner even before these gates. They are the second and third answers.
@@ -81,18 +86,21 @@ fi
 
 # --- 2. fork pull requests need approval ------------------------------------
 
-# The API name for this is the workflow permissions of the repository. The
-# setting itself lives in the Actions configuration.
-if gh api -X PUT "repos/$repo/actions/permissions/access" \
-	-f access_level=none >/dev/null 2>&1; then
-	skip "workflow access from other repositories is closed"
+# The default is `first_time_contributors`, and that word means the first time
+# only: a person whose pull request was merged once runs a workflow without
+# approval ever after. On a public repository with a self-hosted runner, that is
+# a path to the workstation for anyone who has contributed one time.
+#
+# `all_external_contributors` asks a maintainer every time. It costs nothing on
+# a push from the repository itself.
+if gh api -X PUT "repos/$repo/actions/permissions/fork-pr-contributor-approval" \
+	-f approval_policy=all_external_contributors >/dev/null 2>&1; then
+	info "a fork pull request needs approval from a maintainer, every time"
+else
+	warn "could not set the approval policy for fork pull requests.
+         Set it at https://github.com/$repo/settings/actions
+         -> Require approval for all outside collaborators"
 fi
-
-info "set fork pull requests to need approval"
-printf '    The API does not carry this one. Set it at:\n'
-printf '      https://github.com/%s/settings/actions\n' "$repo"
-printf '      Fork pull request workflows from outside collaborators\n'
-printf '      -> Require approval for all outside collaborators\n'
 
 # --- 3. the lab environment -------------------------------------------------
 
@@ -132,6 +140,4 @@ fi
 
 printf '\n'
 info "the GitHub side is ready"
-printf '    Add a required reviewer to the environment, so a person approves each run:\n'
-printf '      https://github.com/%s/settings/environments\n' "$repo"
-printf '    Then start the runner:  just runner-setup && just runner-up\n'
+printf '    Next, start the runner:  just runner-setup && just runner-up\n'
