@@ -36,7 +36,15 @@ need virsh
 if [ -n "${PALETTE_PROJECT:-}" ] && have_api_key &&
 	command -v curl >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
 	uid="$(project_uid "$PALETTE_PROJECT" 2>/dev/null || true)"
-	if [ -n "$uid" ]; then
+
+	if [ -z "$uid" ]; then
+		# A project that the tenant does not hold has no record to
+		# remove, and that is a state with nothing to do rather than a
+		# fault. hosts-deregister.sh stops with an error on it, and the
+		# machines below would then stay. This is the state of every
+		# first run of a build that removes its own project at the end.
+		skip "project $PALETTE_PROJECT is not in the tenant, so it holds no host record"
+	else
 		# The count holds the live clusters only. Palette keeps the record
 		# of a deleted one, and that record must not block this recipe.
 		clusters="$(cluster_count "$uid" 2>/dev/null || echo 0)"
@@ -46,13 +54,14 @@ if [ -n "${PALETTE_PROJECT:-}" ] && have_api_key &&
        just cluster-down
      A cluster whose machines are gone is impossible to repair."
 		fi
-	fi
 
-	# --- 2. the Palette half of this layer ------------------------------
-	#
-	# MACHINES_GO=1: the machines go in step 3, so host-deregister.sh must
-	# not print its advice to build the seed of each one again.
-	CLUSTER="$CLUSTER" MACHINES_GO=1 "$here/hosts-deregister.sh"
+		# --- 2. the Palette half of this layer ----------------------
+		#
+		# MACHINES_GO=1: the machines go in step 3, so
+		# host-deregister.sh must not print its advice to build the seed
+		# of each one again.
+		CLUSTER="$CLUSTER" MACHINES_GO=1 "$here/hosts-deregister.sh"
+	fi
 else
 	warn "no API key or no project, so the host records stay in Palette.
          To remove them later: just hosts-deregister"
