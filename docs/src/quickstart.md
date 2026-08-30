@@ -40,7 +40,8 @@ those recipes is idempotent, so a second run of `cluster-up` changes nothing.
 ## What happens
 
 1. `preflight` tests the workstation and your `.env` values.
-2. `infra-up` creates the `pe-net` network and the `pe-pool` storage pool.
+2. `infra-up` creates the lab network and the storage pool. `LAB_NAME` gives
+   both names.
 3. `image-fetch` downloads the stock Ubuntu cloud image and tests its checksum.
    The download runs one time.
 4. For each host, `seed` builds a CIDATA ISO with your token.
@@ -54,8 +55,8 @@ because cloud-init installs packages first.
 
 ```bash
 just ls                      # every host with its state and address
-just host-status pe-cp-1     # the progress of one host
-just console pe-cp-1         # the serial console, ctrl-] to exit
+just host-status <host>      # the progress of one host
+just console <host>          # the serial console, ctrl-] to exit
 ```
 
 The console shows the cloud-init output. To log in, use the user `ubuntu` and
@@ -68,7 +69,7 @@ just palette-hosts
 ```
 
 The recipe lists the hosts that registered with your project. Each host uses the
-same name as the libvirt domain, for example `pe-cp-1`.
+same name as the libvirt domain.
 
 If a host does not show after ten minutes, see
 [Troubleshooting](./troubleshooting.md).
@@ -78,7 +79,7 @@ If a host does not show after ten minutes, see
 After a host registers, remove the seed ISO from it:
 
 ```bash
-just host-eject pe-cp-1
+just host-eject <host>
 ```
 
 The seed ISO holds your registration token. An ejected host keeps no copy.

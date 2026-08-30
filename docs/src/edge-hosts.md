@@ -56,7 +56,7 @@ latest release.
 ## Build a seed
 
 ```bash
-just seed pe-cp-1   # one host
+just seed <host>    # one host
 just seed-all       # every host in the topology
 just seed-clean     # delete every seed ISO
 ```
@@ -69,7 +69,7 @@ Each ISO goes to `seeds/` with the file mode 0600. The directory has the mode
 Eject the seed ISO. The host then keeps no copy of the token:
 
 ```bash
-just host-eject pe-cp-1
+just host-eject <host>
 ```
 
 ## Test the registration
@@ -85,7 +85,7 @@ projects if the value is wrong.
 ## Remove a host
 
 ```bash
-just host-down pe-cp-1
+just host-down <host>
 ```
 
 This recipe removes the virtual machine and its disk. It does not remove the

@@ -31,12 +31,13 @@ The DHCP pool never gives out those addresses.
 ```bash
 just net-up      # create and start the network
 just net-down    # stop and remove the network
-just ip pe-cp-1  # show the address of one host
+just ip <host>   # show the address of one host
 just ls          # show the state and address of every host
 ```
 
-`just ip` reads the DHCP lease. The edge images do not run the QEMU guest agent,
-so `virsh domifaddr` returns nothing. The lease is the reliable source.
+`just ip` reads the DHCP lease. The stock cloud image does not run the QEMU
+guest agent, so `virsh domifaddr` returns nothing. The lease is the reliable
+source.
 
 ## A subnet conflict
 

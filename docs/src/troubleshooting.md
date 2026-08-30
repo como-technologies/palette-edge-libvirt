@@ -130,10 +130,10 @@ runs, and the host never shows. The name is case sensitive.
 If the project name is correct, test each item:
 
 1. **The agent is still installing.** cloud-init installs the packages first,
-   which takes some minutes. Run `just host-status pe-cp-1`.
-2. **The host has no address.** Run `just ip pe-cp-1`. If the command reports no
+   which takes some minutes. Run `just host-status <host>`.
+2. **The host has no address.** Run `just ip <host>`. If the command reports no
    lease, the network is down. Run `just net-up`.
-3. **cloud-init failed.** Open the console with `just console pe-cp-1`. Log in
+3. **cloud-init failed.** Open the console with `just console <host>`. Log in
    as `ubuntu` with the password from `HOST_PASSWORD`. Then run:
 
    ```bash
@@ -162,11 +162,11 @@ output for the error.
 A snapshot or a checkpoint holds the domain:
 
 ```bash
-virsh snapshot-list pe-cp-1
-virsh checkpoint-list pe-cp-1
+virsh snapshot-list <host>
+virsh checkpoint-list <host>
 ```
 
-Delete those, then run `just host-down pe-cp-1` again.
+Delete those, then run `just host-down <host>` again.
 
 ## `just net-down` reports that a VM uses the network
 

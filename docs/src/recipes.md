@@ -40,10 +40,10 @@ and has no partner stops `just lint`:
 ```bash
 just new-project iris "A description"
 just default-project iris
-just host-up pe-wk-3            # role defaults to worker
-just host-up pe-cp-2 control    # control plane size
-just seed pe-wk-3
-just console pe-cp-1
+just host-up <host>             # role defaults to worker
+just host-up <host> control     # control plane size
+just seed <host>
+just console <host>
 ```
 
 ## Bash completion
