@@ -32,9 +32,8 @@ cloud-init writes this file, and the agent reads it:
 ```
 
 `scripts/seed-iso.sh` replaces each placeholder with a value from the project
-file. The
-script passes the values in the environment, not in the program text, so a value
-with a quotation mark or a backslash is safe.
+file. The script passes the values in the environment, not in the program text,
+so a value with a quotation mark or a backslash is safe.
 
 The script tests the result. If a placeholder stays in the file, or the token is
 empty, or `stylus.vip.skip` is not a boolean, the script stops with an error.
@@ -52,8 +51,7 @@ The script comes from the agent-mode releases:
 ```
 
 Set `PALETTE_AGENT_VERSION` in the project file to pin a version. An empty
-value gives the
-latest release.
+value gives the latest release.
 
 ## Build a seed
 
@@ -63,8 +61,9 @@ just seed-all       # every host in the topology
 just seed-clean     # delete every seed ISO
 ```
 
-Each ISO goes to the seed directory with the file mode 0600. It has the mode
-0700. Git ignores the directory.
+Each ISO has the file mode 0600, and the seed directory has the mode 0700. The
+directory is outside the checkout. See
+[The lab directories](./directories.md).
 
 ## After the registration
 

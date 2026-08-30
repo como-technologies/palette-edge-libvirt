@@ -54,8 +54,7 @@ virsh net-dumpxml default
 ```
 
 Change `LAB_SUBNET` in the project file to a free subnet. Then run
-`just net-down` and
-`just net-up`.
+`just net-down` and `just net-up`.
 
 ## A second lab
 

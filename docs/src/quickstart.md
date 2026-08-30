@@ -83,3 +83,10 @@ just cluster-up
 ```
 
 [Settings](./settings.md#the-lab-size) describes those values.
+
+## More
+
+[Host registration](./edge-hosts.md) describes the seed ISO, the agent
+installation, and how to remove a host or rotate the token.
+[The lab network](./network.md) describes the network definition and the
+address plan.
