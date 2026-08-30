@@ -26,7 +26,7 @@ works.
 
 ## Next
 
-Make a project. See [Projects](./projects.md).
+See [Create a project](./project.md).
 
 The API key is the only value that you give by hand. `just new-project` writes
 every other value. [Settings](./settings.md) describes each one.

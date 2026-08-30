@@ -1,9 +1,9 @@
-# Projects
+# Create a project
 
 One lab serves one Palette project. Each project has its own environment file,
 and the recipes operate on one project at a time.
 
-## Make a project
+## Create the project
 
 ```bash
 just new-project <project>
@@ -41,6 +41,10 @@ Remove the lab first:
 just cluster-down
 just remove-project <project>
 ```
+
+## Next
+
+Create the hosts. See [Create the hosts](./hosts.md).
 
 ## More
 

@@ -5,8 +5,8 @@
 # Getting started
 
 - [Prepare the workstation](./host-setup.md)
-- [Configure the tenant](./configuration.md)
-- [Projects](./projects.md)
+- [Configure the tenant](./tenant.md)
+- [Create a project](./project.md)
 - [Create the hosts](./hosts.md)
 - [Make the cluster](./cluster.md)
 - [Remove the lab](./teardown.md)

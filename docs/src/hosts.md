@@ -6,8 +6,8 @@ project. It makes no cluster. [Make the cluster](./cluster.md) is the next step.
 Complete these three pages first:
 
 1. [Prepare the workstation](./host-setup.md)
-2. [Configure the tenant](./configuration.md)
-3. [Projects](./projects.md)
+2. [Configure the tenant](./tenant.md)
+3. [Create a project](./project.md)
 
 `just config` shows the project that the recipes operate on now.
 

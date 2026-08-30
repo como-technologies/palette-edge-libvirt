@@ -16,7 +16,7 @@ link that selects one file.
 Each file holds a registration token. The directory has the mode 0700 and each
 file has the mode 0600.
 
-For the commands, see [Projects](./projects.md).
+For the commands, see [Create a project](./project.md).
 
 ## What new-project does
 

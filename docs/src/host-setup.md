@@ -43,7 +43,7 @@ The recipe prints `ok` or `FAIL` for each item, and it names the fix for each
 failure. It makes no change.
 
 When every item is `ok`, continue to
-[Configure the tenant](./configuration.md).
+[Configure the tenant](./tenant.md).
 
 ## More
 

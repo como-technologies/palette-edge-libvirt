@@ -35,8 +35,8 @@ one host, and the location of each part of the state.
 ## Start here
 
 1. [Prepare the workstation](./host-setup.md) — `just host-setup`, then restart.
-2. [Configure the tenant](./configuration.md) — `just api-key-set`.
-3. [Projects](./projects.md) — `just new-project <project>`.
+2. [Configure the tenant](./tenant.md) — `just api-key-set`.
+3. [Create a project](./project.md) — `just new-project <project>`.
 4. [Create the hosts](./hosts.md) — `just cluster-up`.
 5. [Make the cluster](./cluster.md) — in Palette.
 
