@@ -22,8 +22,18 @@ seed_dir="${2:?seed dir required}"
 build_dir="${3:?build dir required}"
 root="$(repo_root)"
 
-: "${PALETTE_EDGE_TOKEN:?PALETTE_EDGE_TOKEN is empty. Run: just projects}"
+# need_project first: with no default project the token is empty for the same
+# reason, and the project message names the correction.
+#
+# Not `: "${VAR:?message}"`. bash prints that one with its own prefix, "script:
+# line N:", and the recipe then reports a line of a script to a person who is
+# using the tooling.
 need_project
+[ -n "${PALETTE_EDGE_TOKEN:-}" ] ||
+	die "PALETTE_EDGE_TOKEN is empty, so no host can register.
+     The environment file of project $PALETTE_PROJECT holds the token.
+     To see the file that the recipes read:  just config
+     To write a new project and its token:   just new-project <name>"
 
 # kube-vip claims the control plane endpoint of the cluster. Palette refuses a
 # cluster that gives no endpoint, so the default enables kube-vip: a host that
@@ -45,12 +55,17 @@ else
 fi
 # ANCHOR_END: agenturl
 
+# The rendered user-data holds the registration token, exactly as the ISO does.
+# The build directory therefore takes the mode of the seed directory. An earlier
+# version protected the ISO only, and left a readable copy of the token in
+# build/seed-<name>/user-data.
 mkdir -p "$seed_dir" "$build_dir"
-chmod 700 "$seed_dir"
+chmod 700 "$seed_dir" "$build_dir"
 
 work="$build_dir/seed-$name"
 rm -rf "$work"
 mkdir -p "$work"
+chmod 700 "$work"
 
 # The script passes the values in the environment. It does not put them in the
 # program text, so a value with a quotation mark or a backslash is safe.
@@ -119,6 +134,10 @@ for item in data.get("write_files", []):
 # cloud-init needs a meta-data file. The instance-id is the host name, so a
 # rebuild of the same host gives the same seed ISO.
 printf 'instance-id: %s\nlocal-hostname: %s\n' "$name" "$name" >"$work/meta-data"
+
+# The same mode as the ISO. The directory above already refuses the group and
+# the world; this makes a stray copy of the file safe as well.
+chmod 600 "$work/user-data" "$work/meta-data"
 
 # ANCHOR: mkiso
 # The volume label must be CIDATA. cloud-init looks for a volume with that

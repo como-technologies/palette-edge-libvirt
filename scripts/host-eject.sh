@@ -15,7 +15,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 name="${1:?name required}"
 need virsh
 
-have_domain "$name" || die "domain $name is absent"
+# A recipe that removes something reports a skip when the thing is already
+# gone, exactly as host-down.sh does. A domain that is absent holds no seed, so
+# this recipe has nothing left to do and the run succeeded.
+if ! have_domain "$name"; then
+	skip "domain $name is absent, so it holds no seed"
+	exit 0
+fi
 
 # Find each CD-ROM target that still holds a file.
 mapfile -t targets < <(

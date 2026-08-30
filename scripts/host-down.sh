@@ -40,8 +40,20 @@ virsh undefine "$name" --nvram >/dev/null 2>&1 ||
 
 # Delete only the files that live in the pool. A file somewhere else belongs to
 # you, and this recipe must not remove it.
+#
+# The `|| true` is load bearing. With `set -o pipefail` an absent pool makes
+# pool-dumpxml fail, that failure becomes the value of the whole pipeline, and
+# `set -e` then stops the script with no message at all -- after the undefine
+# above, so the disk file stayed on the workstation with nothing to name it.
 pool_dir="$(virsh pool-dumpxml "${POOL:-}" 2>/dev/null |
-	sed -n 's:.*<path>\(.*\)</path>.*:\1:p' | head -n1)"
+	sed -n 's:.*<path>\(.*\)</path>.*:\1:p' | head -n1 || true)"
+
+# An absent pool is not a reason to keep a disk. The domain named the file, and
+# `host-up.sh` is what put it there.
+if [ -z "$pool_dir" ] && [ "${#files[@]}" -gt 0 ]; then
+	warn "pool ${POOL:-(none)} is absent, so this deletes each file that the
+         definition of $name named."
+fi
 
 for file in "${files[@]}"; do
 	[ -f "$file" ] || continue

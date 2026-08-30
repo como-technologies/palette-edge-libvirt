@@ -30,7 +30,8 @@ need_api_key
 # require_project_uid: print the uid of PALETTE_PROJECT, or stop with a clear
 # message that names the projects that do exist.
 require_project_uid() {
-	api GET "v1/projects?limit=100" | PROJECT="$project" python3 -c '
+	body="$(api GET "v1/projects?limit=100")"
+	printf '%s' "$body" | PROJECT="$project" python3 -c '
 import json, os, sys
 want = os.environ["PROJECT"]
 items = json.load(sys.stdin).get("items") or []
@@ -51,7 +52,8 @@ sys.exit(
 case "$action" in
 projects)
 	info "projects in this tenant"
-	api GET "v1/projects?limit=100" | PROJECT="$project" python3 -c '
+	body="$(api GET "v1/projects?limit=100")"
+	printf '%s' "$body" | PROJECT="$project" python3 -c '
 import json, os, sys
 want = os.environ["PROJECT"]
 items = json.load(sys.stdin).get("items") or []
@@ -73,7 +75,8 @@ hosts)
 	need_project
 	uid="$(require_project_uid)"
 	info "registered hosts in project $project"
-	api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid" | python3 -c '
+	body="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid")"
+	printf '%s' "$body" | python3 -c '
 import json, sys
 items = json.load(sys.stdin).get("items") or []
 if not items:
@@ -108,7 +111,8 @@ clusters)
 	need_project
 	uid="$(require_project_uid)"
 	info "clusters in project $project"
-	api GET "v1/spectroclusters?limit=100" -H "ProjectUid: $uid" | python3 -c '
+	body="$(api GET "v1/spectroclusters?limit=100" -H "ProjectUid: $uid")"
+	printf '%s' "$body" | python3 -c '
 import json, sys
 # Palette keeps the record of a cluster that it deleted. That record is not a
 # cluster, so it does not belong in this list.
@@ -132,9 +136,9 @@ packs)
 	# The cluster layer pins each version in the justfile.
 	name="${2:?give a pack name, for example edge-k8s}"
 	info "versions of the Edge Native pack $name in the public registry"
-	api GET "v1/packs?limit=100" \
-		--data-urlencode "filters=spec.name=${name}ANDspec.cloudTypes=edge-native" -G |
-		python3 -c '
+	body="$(api GET "v1/packs?limit=100" \
+		--data-urlencode "filters=spec.name=${name}ANDspec.cloudTypes=edge-native" -G)"
+	printf '%s' "$body" | python3 -c '
 import json, re, sys
 
 def key(version):

@@ -28,8 +28,12 @@ fi
 printf '%-3s %-24s %-12s %s\n' "" PROJECT CLUSTER SUBNET
 for file in "${files[@]}"; do
 	project="$(basename "$file" .env)"
-	cluster="$(grep -sE '^CLUSTER_NAME=' "$file" | cut -d= -f2)"
-	subnet="$(grep -sE '^CLUSTER_SUBNET=' "$file" | cut -d= -f2)"
+	# `|| true` on each. grep reports "no match" as a failure, `set -o
+	# pipefail` makes that the value of the pipeline, and `set -e` then ends
+	# this script with no output at all. A file that holds neither name is
+	# exactly the file that this table needs to show, so it prints a dash.
+	cluster="$(grep -sE '^CLUSTER_NAME=' "$file" | cut -d= -f2 || true)"
+	subnet="$(grep -sE '^CLUSTER_SUBNET=' "$file" | cut -d= -f2 || true)"
 	mark=" "
 	[ "$project" = "$current" ] && mark="*"
 	printf ' %-2s %-24s %-12s %s.0/24\n' "$mark" "$project" "${cluster:--}" "${subnet:--}"

@@ -49,7 +49,10 @@ if [ -n "${PALETTE_PROJECT:-}" ] && [ -s "$(api_key_file)" ] &&
 	fi
 
 	# --- 2. the Palette half of this layer ------------------------------
-	CLUSTER="$CLUSTER" "$here/hosts-deregister.sh"
+	#
+	# MACHINES_GO=1: the machines go in step 3, so host-deregister.sh must
+	# not print its advice to build the seed of each one again.
+	CLUSTER="$CLUSTER" MACHINES_GO=1 "$here/hosts-deregister.sh"
 else
 	warn "no API key or no project, so the host records stay in Palette.
          To remove them later: just hosts-deregister"
@@ -68,7 +71,32 @@ else
 	done
 fi
 
-# --- 4. the pool and the network --------------------------------------------
+# --- 4. the files that no domain names any more ------------------------------
+
+# host-down.sh reads the file names from the definition of the domain, so a
+# domain that goes without it leaves its disk with nothing to name it. Then
+# host-down reports "absent", pool-down refuses to remove a directory that holds
+# a file, and a 100 GB disk stays on the workstation for ever with no recipe
+# that can reach it.
+#
+# The pool directory is /var/lib/libvirt/images/$CLUSTER, one for each cluster,
+# so every file in it belongs to this layer. The domains are gone by now, which
+# is what makes this safe.
+pool_dir="$(virsh pool-dumpxml "$POOL" 2>/dev/null |
+	sed -n 's:.*<path>\(.*\)</path>.*:\1:p' | head -n1 || true)"
+
+if [ -n "$pool_dir" ] && [ -d "$pool_dir" ]; then
+	mapfile -t orphans < <(find "$pool_dir" -maxdepth 1 -type f 2>/dev/null || true)
+	if [ "${#orphans[@]}" -gt 0 ]; then
+		info "remove ${#orphans[@]} file(s) that no domain names any more"
+		for file in "${orphans[@]}"; do
+			rm -f "$file" 2>/dev/null || sudo rm -f "$file"
+			info "deleted $file"
+		done
+	fi
+fi
+
+# --- 5. the pool and the network --------------------------------------------
 
 POOL="$POOL" "$here/pool-down.sh"
 NETWORK="$NETWORK" "$here/net-down.sh"

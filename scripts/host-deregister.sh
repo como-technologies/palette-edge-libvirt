@@ -13,6 +13,11 @@
 #
 # This script is idempotent. It reports a skip if the record is absent.
 #
+# MACHINES_GO=1 stops the advice about a machine that still runs. `infra-down`
+# sets it, because the machine goes a moment later.
+#
+# Env: MACHINES_GO
+#
 #   host-deregister.sh <name>
 
 set -euo pipefail
@@ -32,7 +37,8 @@ uid="$(project_uid "$PALETTE_PROJECT")"
 
 # Read the record by name. The uid of an edge host is its name today, and this
 # lookup does not depend on that.
-host_uid="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid" |
+body="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid")"
+host_uid="$(printf '%s' "$body" |
 	NAME="$name" python3 -c '
 import json, os, sys
 want = os.environ["NAME"]
@@ -52,7 +58,11 @@ info "removed the Palette record of $name"
 
 # The virtual machine keeps its agent and its marker file, so it does not
 # register again by itself. Rebuild the host to register it again.
-if have_domain "$name" 2>/dev/null; then
+#
+# `infra-down` removes the machine a moment later, and sets MACHINES_GO=1 to
+# say so. Without that, a teardown printed advice to rebuild a seed for each
+# machine that it was deleting.
+if [ "${MACHINES_GO:-0}" != "1" ] && have_domain "$name" 2>/dev/null; then
 	warn "the domain $name still runs. It does not register again by itself.
          To register it again: just host-down $name, just seed $name,
          then just host-up $name"

@@ -157,3 +157,42 @@ have_domain() {
 domain_state() {
 	virsh domstate "$1" 2>/dev/null || printf 'absent\n'
 }
+
+# domains_using_network: print the name of each domain attached to a network.
+#
+# libvirt removes a network that a running domain uses, and it reports no error
+# when it does. The domain keeps running with a bridge that is gone: it never
+# gets an address, so it never registers, and nothing says why. The recipes
+# therefore test this before they remove a network.
+#
+# Every domain, not the running ones alone. A domain that is off holds the same
+# reference, and it fails at the next start.
+domains_using_network() {
+	local network="$1" domain
+	while read -r domain; do
+		[ -n "$domain" ] || continue
+		if virsh domiflist "$domain" 2>/dev/null |
+			awk -v n="$network" '$2 == "network" && $3 == n { found = 1 }
+			     END { exit !found }'; then
+			printf '%s\n' "$domain"
+		fi
+	done < <(virsh list --all --name 2>/dev/null)
+}
+
+# domains_using_pool: print the name of each domain with a file in a directory.
+#
+# The same reason as domains_using_network. A pool that goes while a domain
+# holds a disk in it leaves the disk with no record of where it belongs, and
+# host-down.sh then cannot tell a pool file from one of yours.
+domains_using_pool() {
+	local target="$1" domain
+	[ -n "$target" ] || return 0
+	while read -r domain; do
+		[ -n "$domain" ] || continue
+		if virsh domblklist "$domain" --details 2>/dev/null |
+			awk -v p="$target/" '$1 == "file" && index($4, p) == 1 { found = 1 }
+			     END { exit !found }'; then
+			printf '%s\n' "$domain"
+		fi
+	done < <(virsh list --all --name 2>/dev/null)
+}

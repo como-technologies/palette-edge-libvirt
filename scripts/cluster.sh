@@ -211,7 +211,8 @@ require_ready_hosts() {
 	[ -n "$uid" ] || die "project $PALETTE_PROJECT does not exist in this tenant.
      To see the names: just palette-projects"
 
-	states="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid" | python3 -c '
+	body="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid")"
+	states="$(printf '%s' "$body" | python3 -c '
 import json, sys
 for host in json.load(sys.stdin).get("items") or []:
     print(host["metadata"]["name"], (host.get("status") or {}).get("state") or "unknown")
@@ -226,10 +227,32 @@ for host in json.load(sys.stdin).get("items") or []:
 		esac
 	done
 
-	[ "${#missing[@]}" -eq 0 ] || die "these host(s) are not ready in project $PALETTE_PROJECT:
-       ${missing[*]}
-     The cluster layer builds on the layer below it. Run: just infra-up
-     To watch one host:  just host-status <host>"
+	# A name with no record falls in one of two classes, and the correction is
+	# not the same for both. A machine that does not exist needs `infra-up`. A
+	# machine that runs and holds no record already had its chance: the agent
+	# installs one time, so it never registers again by itself, and `infra-up`
+	# would skip the domain and then wait for the whole timeout.
+	if [ "${#missing[@]}" -gt 0 ]; then
+		local absent=() stale=()
+		for name in "${missing[@]}"; do
+			if command -v virsh >/dev/null 2>&1 && have_domain "$name"; then
+				stale+=("$name")
+			else
+				absent+=("$name")
+			fi
+		done
+
+		[ "${#absent[@]}" -eq 0 ] || die "these host(s) have no machine in project $PALETTE_PROJECT:
+       ${absent[*]}
+     The cluster layer builds on the layer below it. Run: just infra-up"
+
+		die "these machine(s) run and hold no record in project $PALETTE_PROJECT:
+       ${stale[*]}
+     The agent installs one time, so a machine that lost its record does not
+     register again. Build those machines again:
+       just infra-down && just infra-up
+     To see what one of them did:  just host-status <host>"
+	fi
 
 	[ "${#taken[@]}" -eq 0 ] || die "these host(s) are in a cluster already, and this project has
      no cluster layer of its own:

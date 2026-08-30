@@ -47,8 +47,13 @@ image="$(find "$IMAGE_DIR" -maxdepth 1 -name '*-server-cloudimg-amd64.img' -prin
 	xargs -0 -r ls -t | head -n1 || true)"
 [ -n "$image" ] || die "no cloud image in $IMAGE_DIR. Run: just image-fetch"
 
-pool_dir="$(virsh pool-dumpxml "$POOL" | sed -n 's:.*<path>\(.*\)</path>.*:\1:p' | head -n1)"
-[ -n "$pool_dir" ] || die "cannot read the target path of pool $POOL. Run: just pool-up"
+# `|| true` so that the test below is what reports an absent pool. Without it,
+# `set -o pipefail` turns the failure of pool-dumpxml into the value of the
+# whole pipeline, and `set -e` stops the script before it reaches the die.
+pool_dir="$(virsh pool-dumpxml "$POOL" 2>/dev/null |
+	sed -n 's:.*<path>\(.*\)</path>.*:\1:p' | head -n1 || true)"
+[ -n "$pool_dir" ] || die "pool $POOL is absent, so there is nowhere to put the disk.
+     Run: just pool-up"
 [ -w "$pool_dir" ] || die "cannot write to $pool_dir. Run: just pool-up"
 
 disk="$pool_dir/$name.qcow2"

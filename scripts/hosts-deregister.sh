@@ -17,7 +17,10 @@
 #
 # This script is idempotent. A cluster with no record gives a skip.
 #
-# Env: CLUSTER
+# `infra-down` sets MACHINES_GO=1, because it removes the machines next. The
+# value passes to host-deregister.sh in the environment.
+#
+# Env: CLUSTER MACHINES_GO
 #
 #   hosts-deregister.sh
 

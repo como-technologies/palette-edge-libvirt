@@ -1,23 +1,30 @@
 #!/usr/bin/env bash
 # Show the configuration that the recipes use now.
 #
-# The justfile takes these values from the project file or from its own
-# defaults. This
-# script reads the environment, so it always shows the effective value.
+# The justfile takes each value from the environment file of the default project
+# or from its own default, and then passes every one of them to this script. So
+# this script holds no default of its own: it reports what it receives.
+#
+# An earlier version repeated each default here. One of them drifted, and
+# `just config` reported a 60 GB control plane disk while the recipes built a
+# 100 GB one. A value that has two sources has two answers.
+#
+# A value that arrives empty prints as "unset", which is what you see when you
+# call this script directly instead of through the recipe.
 
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-row() { printf '  %-22s %s\n' "$1" "$2"; }
+row() { printf '  %-22s %s\n' "$1" "${2:-unset}"; }
 
-cluster="${CLUSTER_NAME:-pe}"
+cluster="${CLUSTER_NAME:-unset}"
 
 info "cluster"
 row "CLUSTER_NAME" "$cluster"
-row "network" "${cluster}-net (${CLUSTER_SUBNET:-192.168.140}.0/24)"
+row "network" "${cluster}-net (${CLUSTER_SUBNET:-unset}.0/24)"
 row "pool" "${cluster}-pool"
-row "LIBVIRT_DEFAULT_URI" "${LIBVIRT_DEFAULT_URI:-qemu:///system}"
+row "LIBVIRT_DEFAULT_URI" "${LIBVIRT_DEFAULT_URI:-}"
 
 info "palette"
 row "PALETTE_ENDPOINT" "${PALETTE_ENDPOINT:-api.spectrocloud.com}"
@@ -31,22 +38,22 @@ fi
 row "PALETTE_VIP_SKIP" "${PALETTE_VIP_SKIP:-false}"
 
 info "host image"
-row "UBUNTU_RELEASE" "${UBUNTU_RELEASE:-noble}"
+row "UBUNTU_RELEASE" "${UBUNTU_RELEASE:-}"
 row "UBUNTU_IMAGE_URL" "${UBUNTU_IMAGE_URL:-(derived from the release)}"
 
 info "topology"
-row "control nodes" "${CONTROL_COUNT:-1} x ${CONTROL_VCPUS:-4} vcpu / ${CONTROL_MEMORY_MB:-8192} MB / ${CONTROL_DISK_GB:-60} GB"
-row "worker nodes" "${WORKER_COUNT:-2} x ${WORKER_VCPUS:-6} vcpu / ${WORKER_MEMORY_MB:-16384} MB / ${WORKER_DISK_GB:-100} GB"
+row "control nodes" "${CONTROL_COUNT:-?} x ${CONTROL_VCPUS:-?} vcpu / ${CONTROL_MEMORY_MB:-?} MB / ${CONTROL_DISK_GB:-?} GB"
+row "worker nodes" "${WORKER_COUNT:-?} x ${WORKER_VCPUS:-?} vcpu / ${WORKER_MEMORY_MB:-?} MB / ${WORKER_DISK_GB:-?} GB"
 
 info "cluster layer"
-row "CLUSTER_VIP" "${CLUSTER_VIP:-${CLUSTER_SUBNET:-192.168.140}.10}"
-row "POD_CIDR" "${POD_CIDR:-10.244.0.0/16}"
-row "OS_PACK_VERSION" "edge-native-byoi ${OS_PACK_VERSION:-2.1.0} (Agent Mode)"
-row "K8S_VERSION" "edge-k8s ${K8S_VERSION:-1.33.13} (PXK-E)"
-row "CNI_VERSION" "cni-calico ${CNI_VERSION:-3.32.1}"
-row "CSI_VERSION" "csi-local-path-provisioner ${CSI_VERSION:-0.0.37}"
+row "CLUSTER_VIP" "${CLUSTER_VIP:-}"
+row "POD_CIDR" "${POD_CIDR:-}"
+row "OS_PACK_VERSION" "edge-native-byoi ${OS_PACK_VERSION:-?} (Agent Mode)"
+row "K8S_VERSION" "edge-k8s ${K8S_VERSION:-?} (PXK-E)"
+row "CNI_VERSION" "cni-calico ${CNI_VERSION:-?}"
+row "CSI_VERSION" "csi-local-path-provisioner ${CSI_VERSION:-?}"
 if command -v tofu >/dev/null 2>&1; then
-	row "OpenTofu" "$(tofu version 2>/dev/null | head -n1) (pinned ${TOFU_VERSION:-1.12.6})"
+	row "OpenTofu" "$(tofu version 2>/dev/null | head -n1) (pinned ${TOFU_VERSION:-?})"
 else
 	row "OpenTofu" "MISSING. Run: just tofu-install"
 fi

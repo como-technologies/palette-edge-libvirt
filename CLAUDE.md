@@ -312,6 +312,57 @@ boot stages. The template uses cloud-init `power_state` with a condition on the
 marker file, so a correct install reboots once and a failed one stays up for
 diagnosis.
 
+**`set -o pipefail` turns a first-stage failure into a silent exit.** Every
+script sets `-euo pipefail`, so `x="$(virsh pool-dumpxml "$POOL" | sed ... )"`
+with an absent pool ends the script **with no message at all**, and it skips the
+`[ -n "$x" ] || die "..."` that was written for exactly that case.
+`host-down.sh` hit this: it destroyed and undefined the domain, then died
+silently before it deleted the disk, so a 100 GB file stayed with nothing to
+name it. Any command substitution whose first stage can fail needs `|| true`,
+and the test below it is what reports the condition. The same bug made
+`just projects` print nothing when an environment file held no `CLUSTER_NAME`,
+because `grep` calls "no match" a failure.
+
+**libvirt does NOT refuse to remove a network or a pool that is in use.**
+`net-destroy` on a network that a running domain uses returns 0. The domain
+keeps running with a bridge that is gone: no address, no registration, and no
+message anywhere. `net-down.sh` and `pool-down.sh` therefore test with
+`domains_using_network` and `domains_using_pool` in `lib.sh`, and take `FORCE=1`.
+An earlier `net-down.sh` tested the exit code of `net-destroy` for this, which is
+always 0, so that guard never fired.
+
+**`rmdir` needs write permission on the PARENT.** `/var/lib/libvirt/images` is
+`drwx--x--x root:root`, so `pool-down` cannot remove its own pool directory even
+though `pool-up` chowned that directory to you. The directory is traversable and
+not readable, so `[ -d ]` works and `ls` does not. Report the two reasons apart:
+"still holds a file" is worth saying, "the parent belongs to root" is not a
+fault.
+
+**Do the root work before the object exists.** `pool-up.sh` used to
+`pool-define-as` and then `sudo chown`. A workstation with no cached password
+then had a pool that was defined, inactive, and unusable, and the next run said
+"already defined" and failed in the same place. All of the sudo now happens
+first, and the script names the two commands to run by hand when there is no
+terminal and no cached password.
+
+**A recipe must not wait for something that cannot happen.** `hosts-wait` polled
+the API for the full `REGISTER_TIMEOUT`, 900s, when there were no virtual
+machines at all. It now asks libvirt first: a name with no domain and no record
+fails in a second. It also counts `in-use` as registered, exactly as
+`cluster.sh:require_ready_hosts` does, or a second run on a live cluster waits
+the whole timeout for hosts that registered days before.
+
+**The build directory holds the token too.** `seeds/` was 0700 with 0600 files,
+and `build/seed-<name>/user-data` — the same token, rendered — was left at the
+default mode in a world-readable directory. Both directories are 0700 now and
+both files are 0600. `remove-project` deletes the seeds of its own cluster as
+well, because only `nuke` used to remove them.
+
+**`just config` may hold no default of its own.** It repeated every default from
+the justfile, one drifted, and the recipe reported a 60 GB control plane disk
+while it built a 100 GB one. The recipe passes every computed value now, and the
+script prints what it receives.
+
 **`virsh` tables have a header row.** `domiflist` and `net-dhcp-leases` output
 parsed with plain awk field numbers matches the header: `host-ip.sh` reported
 the address as "Protocol" until it matched on the shape of a MAC instead.

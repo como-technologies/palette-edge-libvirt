@@ -201,13 +201,35 @@ virsh checkpoint-list <host>
 
 Delete those, then run `just host-down <host>` again.
 
-## `just net-down` reports that a VM uses the network
+## `just net-down` reports that a domain carries the network
 
 Remove the virtual machines first:
 
 ```bash
 just infra-down
-just net-down
+```
+
+`just pool-down` refuses for the same reason. libvirt itself refuses neither
+one: it removes a network that a running domain uses, reports success, and
+leaves that domain with a bridge that is gone. The machine then reaches nothing,
+never registers, and gives no sign of the cause. The recipes test for this
+before they remove either object.
+
+Give `FORCE=1` to pass the test, when you know that the machines go next:
+
+```bash
+FORCE=1 just net-down
+FORCE=1 just pool-down
+```
+
+## A machine runs, and `just cluster-up` says it holds no record
+
+The Palette agent installs one time and writes a marker file. A machine that
+lost its record therefore does not register again by itself, and `just infra-up`
+skips a domain that exists. Build those machines again:
+
+```bash
+just infra-down && just infra-up
 ```
 
 ## `just image-fetch` fails

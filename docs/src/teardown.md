@@ -27,10 +27,16 @@ just infra-down
 ```
 
 The recipe removes the Palette record of each host, then each
-`$CLUSTER_NAME-*` domain and its disk, then the storage pool and the network.
+`$CLUSTER_NAME-*` domain and its disk, then every file that no domain names any
+more, then the storage pool and the network.
 
 It **refuses** while the project still holds a cluster. Palette keeps a cluster
 whose machines are gone, and that cluster is then impossible to repair.
+
+The sweep of files matters because `host-down` reads the name of a disk from the
+definition of its domain. A domain that goes some other way takes that record
+with it, and the disk is then a file that no recipe can reach. `infra-down`
+removes it, because the pool directory holds this cluster and nothing else.
 
 `just hosts-deregister` removes only the host records, and
 `just host-deregister <host>` removes one. The machines stay in both cases.
@@ -67,6 +73,15 @@ removes your user from the `libvirt` group and the `kvm` group.
 ## What stays after pool-down
 
 `just pool-down` removes the storage pool definition. It keeps the disk image
-files in `/var/lib/libvirt/images/$CLUSTER_NAME`. Run `just infra-down` first to
-delete those files. `just pool-down` prints a warning if the directory still
-holds a volume.
+files in `/var/lib/libvirt/images/$CLUSTER_NAME`. Run `just infra-down` instead
+to delete the machines, their disks, and the pool together.
+
+The recipe **refuses** while a domain holds a disk in the pool. libvirt does not
+refuse: it removes the pool and reports success, and the pool is the record that
+tells `host-down` which files belong to the tooling. Give `FORCE=1` to remove it
+anyway.
+
+The recipe removes the pool directory as well, if the directory is empty. That
+one needs write permission on `/var/lib/libvirt/images`, which belongs to root,
+so on most workstations the empty directory stays. It costs nothing, and the
+next `just pool-up` uses it again and asks for no password.

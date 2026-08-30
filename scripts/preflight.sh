@@ -125,6 +125,20 @@ else
 fi
 
 info "palette"
+# The API key, and the length only. Never print the key.
+#
+# Every recipe that reaches the API needs it, and the token below is not a
+# substitute: the token registers a host, and the key is what reads the project,
+# the hosts, and the clusters. A preflight that passes without it sends you to
+# the first API call to find out.
+if [ -s "$(api_key_file)" ]; then
+	key="$(cat "$(api_key_file)")"
+	check "API key" yes "the key file holds ${#key} characters"
+elif [ -n "${PALETTE_API_KEY:-}" ]; then
+	check "API key" yes "the environment holds ${#PALETTE_API_KEY} characters"
+else
+	check "API key" no "" "run: just api-key-set"
+fi
 if [ -n "${PALETTE_EDGE_TOKEN:-}" ]; then
 	# Print the length only. Never print the token.
 	check "PALETTE_EDGE_TOKEN" yes "set (${#PALETTE_EDGE_TOKEN} characters)"

@@ -115,9 +115,26 @@ export PEL_BIN_DIR := bin_dir
 default:
     @just --list --unsorted
 
+# This recipe passes every value that it computed. config.sh therefore reports
+# what the recipes use, and holds no second copy of a default that can drift
+# away from the one above.
+#
+# The line below is the help text. `just --list` reads the LAST comment line
+# before a recipe, so an explanation goes above it and never after it.
+
 # Show the current configuration and its source
 config:
-    @scripts/config.sh
+    @CLUSTER_NAME="{{ cluster }}" CLUSTER_SUBNET="{{ subnet }}" \
+        UBUNTU_RELEASE="{{ ubuntu_release }}" UBUNTU_IMAGE_URL="{{ ubuntu_image_url }}" \
+        CONTROL_COUNT="{{ control_count }}" CONTROL_VCPUS="{{ control_vcpus }}" \
+        CONTROL_MEMORY_MB="{{ control_memory }}" CONTROL_DISK_GB="{{ control_disk }}" \
+        WORKER_COUNT="{{ worker_count }}" WORKER_VCPUS="{{ worker_vcpus }}" \
+        WORKER_MEMORY_MB="{{ worker_memory }}" WORKER_DISK_GB="{{ worker_disk }}" \
+        CLUSTER_VIP="{{ cluster_vip }}" POD_CIDR="{{ pod_cidr }}" \
+        OS_PACK_VERSION="{{ os_pack_version }}" K8S_VERSION="{{ k8s_version }}" \
+        CNI_VERSION="{{ cni_version }}" CSI_VERSION="{{ csi_version }}" \
+        TOFU_VERSION="{{ tofu_version }}" \
+        scripts/config.sh
 
 # Test that the host has the necessary tools, permissions, and capacity
 preflight:
@@ -210,7 +227,9 @@ image-fetch:
 
 # Delete the downloaded cloud image
 image-clean:
-    rm -rf "{{ image_dir }}"
+    @if [ -d "{{ image_dir }}" ]; then \
+        rm -rf "{{ image_dir }}"; echo "==> removed {{ image_dir }}"; \
+    else echo "    {{ image_dir }} is absent"; fi
 
 # --- seeds ------------------------------------------------------------------
 
@@ -225,7 +244,10 @@ seed-all:
 
 # Delete all seed ISO files and the build directory
 seed-clean:
-    rm -rf "{{ seed_dir }}" "{{ build_dir }}"
+    @for d in "{{ seed_dir }}" "{{ build_dir }}"; do \
+        if [ -d "$d" ]; then rm -rf "$d"; echo "==> removed $d"; \
+        else echo "    $d is absent"; fi; \
+    done
 
 # --- hosts ------------------------------------------------------------------
 
@@ -260,7 +282,7 @@ host-eject host:
 
 # Open the serial console of a host. Press ctrl-] to exit.
 console host:
-    virsh console "{{ host }}"
+    @scripts/host-console.sh "{{ host }}"
 
 # Show the DHCP address of a host
 ip host:
@@ -378,12 +400,27 @@ nuke: cluster-down infra-down
 
 # --- docs -------------------------------------------------------------------
 
+# Test that the generated theme files are present.
+#
+# `just docs-theme-clean` removes them, and mdbook then stops with "failed to
+# open `gruvbox/css/variables.css` for hashing", which names no correction. The
+# files are committed, so this fires only after that recipe.
+[private]
+_docs-theme-check:
+    @for f in docs/gruvbox/css/variables.css docs/mermaid.min.js docs/mermaid-init.js; do \
+        if [ ! -f "$f" ]; then \
+            echo "error: the docs theme file $f is absent." >&2; \
+            echo "     To write the theme files again:  just docs-theme" >&2; \
+            exit 1; \
+        fi; \
+    done
+
 # Build the mdBook site into docs/book
-docs:
+docs: _docs-theme-check
     mdbook build docs
 
 # Build the docs and serve them at http://localhost:3000 with live reload
-docs-serve:
+docs-serve: _docs-theme-check
     mdbook serve docs --open
 
 # Delete the built docs
@@ -397,7 +434,8 @@ docs-theme:
 
 # Delete the installed theme files. Run docs-theme to restore them.
 docs-theme-clean:
-    rm -rf docs/gruvbox docs/mermaid.min.js docs/mermaid-init.js
+    @rm -rf docs/gruvbox docs/mermaid.min.js docs/mermaid-init.js
+    @echo "==> removed the theme files. To write them again: just docs-theme"
 
 # --- shell ------------------------------------------------------------------
 
@@ -420,7 +458,7 @@ fmt:
     just --fmt
 
 # Test the format, the recipes, the shell scripts, and the docs build
-lint:
+lint: _docs-theme-check
     just --fmt --check
     @scripts/lint-pairs.sh
     @scripts/lint-params.sh

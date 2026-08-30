@@ -37,7 +37,8 @@ if [ -z "$uid" ]; then
 else
 	# Count what the project holds. A delete with content leaves orphans in
 	# Palette, and those are slow to find later.
-	hosts="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid" |
+	body="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid")"
+	hosts="$(printf '%s' "$body" |
 		python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("items") or []))')"
 	# The live clusters only. Palette keeps the record of a deleted one, and
 	# that record must not block this recipe.
@@ -45,11 +46,11 @@ else
 
 	if [ "$hosts" -gt 0 ] || [ "$clusters" -gt 0 ]; then
 		die "project $name still holds $clusters cluster(s) and $hosts host(s).
-     Remove the cluster layer, then the machines and their records:
-       just cluster-down
-       just palette-hosts                  # the names
-       just host-deregister <host>         # one for each name
-     Then run this recipe again."
+     Remove both layers of the project first:
+       just cluster-down          # the cluster and its profile
+       just infra-down            # the machines and every host record
+     Then run this recipe again. To do all of it in one command instead:
+       just nuke"
 	fi
 
 	# Palette refuses to delete a project while a registration token names it
@@ -82,6 +83,35 @@ else
 
 	api DELETE "v1/projects/$uid" >/dev/null
 	info "deleted the project $name from the tenant"
+fi
+
+# The seed ISO files of this project hold the token, exactly as the environment
+# file does, so they go with it. Read CLUSTER_NAME from the file before the
+# delete: it names every seed, and the file is the only record of it.
+#
+# `just nuke` removes the whole seeds directory, because it takes the default
+# project with it. This recipe takes a project by name, so it removes the seeds
+# of that project only and leaves another project's seeds alone.
+cluster_name=""
+if [ -f "$target" ]; then
+	cluster_name="$(sed -n 's/^[[:space:]]*CLUSTER_NAME=["'"'"']*\([^"'"'"']*\).*/\1/p' \
+		"$target" | tail -n1)"
+fi
+
+if [ -n "$cluster_name" ]; then
+	seeds=("$(data_dir)/seeds/$cluster_name"-*-seed.iso)
+	builds=("$(data_dir)/build/seed-$cluster_name"-*)
+	removed=0
+	for file in "${seeds[@]}" "${builds[@]}"; do
+		[ -e "$file" ] || continue
+		rm -rf "$file"
+		removed=$((removed + 1))
+	done
+	if [ "$removed" -gt 0 ]; then
+		info "removed $removed seed file(s) of cluster $cluster_name"
+	else
+		skip "cluster $cluster_name has no seed files"
+	fi
 fi
 
 # The environment file holds the token, so remove it with the project.
