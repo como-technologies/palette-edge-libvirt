@@ -61,9 +61,24 @@ id "$user" >/dev/null 2>&1 ||
 dir="$home/actions-runner"
 
 # --- is it there already ----------------------------------------------------
+#
+# Two states, and they are not the same. The service is the last step, so a run
+# that stopped part of the way leaves a runner that is registered and has no
+# service. `config.sh` then refuses to register a second time, and an earlier
+# version of this script died there on every retry.
 
-if systemctl list-units --all --type=service --no-legend 2>/dev/null |
-	grep -q 'actions\.runner\.'; then
+service_installed() {
+	systemctl list-units --all --type=service --no-legend 2>/dev/null |
+		grep -q 'actions\.runner\.'
+}
+
+# config.sh writes .runner when it registers. The file belongs to the runner
+# user, so the test needs sudo.
+registered_here() {
+	sudo test -f "$dir/.runner"
+}
+
+if service_installed; then
 	skip "a runner service is installed already"
 	systemctl list-units --all --type=service --no-legend |
 		grep 'actions\.runner\.' | awk '{ printf "    %s %s\n", $1, $4 }'
@@ -115,26 +130,35 @@ fi
 
 # --- register ---------------------------------------------------------------
 
-# The token lives for one hour and registers one runner. It goes to the command
-# line of a process that runs as the runner user, and to no file.
-info "read a registration token for $repo"
-token="$(gh api -X POST "repos/$repo/actions/runners/registration-token" -q .token 2>/dev/null || true)"
-[ -n "$token" ] ||
-	die "cannot read a registration token for $repo.
+if registered_here; then
+	skip "the runner is registered already, so this run installs the service only"
+	printf '    To register it again:  just runner-down && just runner-up\n'
+else
+	# The token lives for one hour and registers one runner. It goes to the
+	# command line of a process that runs as the runner user, and to no file.
+	info "read a registration token for $repo"
+	token="$(gh api -X POST "repos/$repo/actions/runners/registration-token" -q .token 2>/dev/null || true)"
+	[ -n "$token" ] ||
+		die "cannot read a registration token for $repo.
      The account needs administration rights on the repository.
      To test:  gh api repos/$repo/actions/runners --jq '.total_count'"
 
-info "register the runner $name with the labels $labels"
-sudo -u "$user" env RUNNER_ALLOW_RUNASROOT=0 \
-	"$dir/config.sh" \
-	--unattended \
-	--url "https://github.com/$repo" \
-	--token "$token" \
-	--name "$name" \
-	--labels "$labels" \
-	--work "_work" \
-	--replace ||
-	die "the runner did not register. To see the state: just runner-status"
+	# --replace takes the name of a runner that GitHub still holds, which is
+	# what an earlier run leaves when it loses its files.
+	info "register the runner $name with the labels $labels"
+	sudo -u "$user" env RUNNER_ALLOW_RUNASROOT=0 \
+		"$dir/config.sh" \
+		--unattended \
+		--url "https://github.com/$repo" \
+		--token "$token" \
+		--name "$name" \
+		--labels "$labels" \
+		--work "_work" \
+		--replace ||
+		die "the runner did not register.
+     To see the state:      just runner-status
+     To start from empty:   just runner-down && just runner-up"
+fi
 
 # --- the service ------------------------------------------------------------
 
