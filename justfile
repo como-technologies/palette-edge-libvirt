@@ -155,6 +155,10 @@ host-down host:
 host-status host:
     @scripts/host-status.sh "{{ host }}"
 
+# Remove the Palette record of a host. The VM stays.
+host-deregister host:
+    @scripts/host-deregister.sh "{{ host }}"
+
 # Remove the seed ISO from a host after the agent installs
 host-eject host:
     @scripts/host-eject.sh "{{ host }}"

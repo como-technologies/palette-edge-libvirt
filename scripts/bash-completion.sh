@@ -99,9 +99,11 @@ _pel_nodes() {
     [ -n "$lab" ] || return 0
     control="$(just --evaluate control_count 2>/dev/null)"
     worker="$(just --evaluate worker_count 2>/dev/null)"
-    for ((i = 1; i <= ${control:-0}; i++)); do printf '%s-cp-%s\n' "$lab" "$i"; done
-    for ((i = 1; i <= ${worker:-0}; i++)); do printf '%s-wk-%s\n' "$lab" "$i"; done
-    _pel_domains
+    {
+        for ((i = 1; i <= ${control:-0}; i++)); do printf '%s-cp-%s\n' "$lab" "$i"; done
+        for ((i = 1; i <= ${worker:-0}; i++)); do printf '%s-wk-%s\n' "$lab" "$i"; done
+        _pel_domains
+    } | sort -u
 }
 
 # _pel_projects: the projects that have an environment file.

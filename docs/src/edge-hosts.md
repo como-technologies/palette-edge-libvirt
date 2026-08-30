@@ -85,11 +85,19 @@ projects if the value is wrong.
 ## Remove a host
 
 ```bash
-just host-down <host>
+just host-down <host>        # the virtual machine and its disk
+just host-deregister <host>  # the record in Palette
 ```
 
-This recipe removes the virtual machine and its disk. It does not remove the
-host entry in Palette. Remove that entry in Palette.
+The two recipes are separate on purpose. `host-down` touches the workstation
+only, so it is safe to run at any time. `host-deregister` changes your tenant.
+
+Remove the record when you rebuild a host and want a true test. The uid of an
+edge host is its name, so a rebuilt host takes the old record again. The old
+record then looks like a new registration, and it is not.
+
+`just remove-project` refuses while a project holds a host, so the records go
+first.
 
 ## Rotate the token
 

@@ -40,12 +40,13 @@ these in Palette:
 | Object | Location in Palette |
 | --- | --- |
 | Cluster | Clusters |
-| Registered hosts | Clusters > Edge Hosts |
+| Registered hosts | `just host-deregister <host>` |
 | Cluster profile | Profiles |
 | Registration token | Tenant Settings > Registration Tokens |
 
-Delete the cluster first. Then deregister the hosts. `just palette-hosts` lists
-the hosts that are still registered.
+Delete the cluster first. Then deregister each host. `just palette-hosts` lists
+the hosts that are still registered, and `just host-deregister <host>` removes
+one record.
 
 ## Remove the secrets
 

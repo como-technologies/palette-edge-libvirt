@@ -45,8 +45,11 @@ else
 
 	if [ "$hosts" -gt 0 ] || [ "$clusters" -gt 0 ]; then
 		die "project $name still holds $clusters cluster(s) and $hosts host(s).
-     Delete the cluster in Palette. Then run: just cluster-down
-     Then deregister the hosts in Palette. Then run this recipe again."
+     Delete the cluster in Palette. Then remove the lab and its records:
+       just cluster-down
+       just palette-hosts                  # the names
+       just host-deregister <host>         # one for each name
+     Then run this recipe again."
 	fi
 
 	# Palette refuses to delete a project while a registration token names it
