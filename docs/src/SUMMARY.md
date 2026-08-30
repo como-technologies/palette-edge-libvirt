@@ -22,5 +22,6 @@
 - [Settings](./settings.md)
 - [The workstation](./workstation.md)
 - [The project layout](./project-layout.md)
+- [Design decisions](./decisions.md)
 - [Project rules](./rules.md)
 - [Troubleshooting](./troubleshooting.md)

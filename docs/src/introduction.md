@@ -25,8 +25,9 @@ Any Linux workstation with KVM and sufficient memory works.
 | `just` | Runs every action in this repository. |
 | mdBook | Builds this documentation. |
 
-The lab uses Palette **agent mode**. It needs no Docker and no custom operating
-system image. See [Why agent mode](./architecture.md#why-agent-mode).
+The lab uses Palette **agent mode**. Each host runs a stock Ubuntu cloud image,
+so the lab builds no operating system image. See
+[Design decisions](./decisions.md#agent-mode-not-edge-native).
 
 ## Start here
 

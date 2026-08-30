@@ -1,10 +1,11 @@
 # Architecture
 
-The lab uses Palette **agent mode**. Each host boots a stock Ubuntu cloud image.
-cloud-init then installs the Palette agent, and the agent registers the host.
+This page describes what the lab builds.
 
-The lab builds no operating system image. It needs no Docker and no CanvOS. See
-[Why agent mode](#why-agent-mode).
+The lab makes one virtual machine for each Kubernetes node. Each machine boots
+a stock Ubuntu cloud image. cloud-init then installs the Palette agent, and the
+agent registers the machine with your Palette tenant. Palette makes the cluster
+from the machines that registered.
 
 ## The parts
 
@@ -44,9 +45,9 @@ flowchart TB
     PROF --> CLU
 ```
 
-Every host gets its own copy of the cloud image and its own seed ISO. The image
-is downloaded one time. `qemu-img` then copies it into the storage pool for each
-host, which keeps the hosts independent.
+Every host gets its own copy of the cloud image and its own seed ISO. The lab
+downloads the image one time. `qemu-img` then copies it into the storage pool
+for each host, which keeps the hosts independent.
 
 The workstation owns the virtual machines. Palette owns the cluster profile and
 the cluster. The seed ISO is the only link between the two. It carries your
@@ -79,38 +80,16 @@ sequenceDiagram
     U->>P: make a cluster from the registered hosts
 ```
 
-## Why agent mode
-
-Palette gives two ways to make an edge host.
-
-| | Edge Native | Agent mode |
-| --- | --- | --- |
-| Operating system | A custom image that you build | The stock Ubuntu cloud image |
-| Build tool | CanvOS with Earthly | None |
-| Docker on the workstation | Necessary | Not necessary |
-| Build time for each change | 15 to 20 minutes | None |
-| First boot | Installs the operating system | Starts the operating system |
-| Kubernetes | PXK-E, k3s, RKE2, and more | PXK-E and k3s |
-
-Edge Native has no ready-made image. Spectro Cloud publishes no generic
-installer ISO, so that path always starts with a CanvOS build, and CanvOS needs
-Docker. The Spectro Cloud documentation for agent mode says the opposite for the
-host: "Avoid installing Docker on the host where you want to install the agent."
-
-Agent mode fits this lab better. The lab tests combinations of Kubernetes, CNI,
-CSI, and add-ons. Those live in the cluster profile in Palette, not in the
-operating system image. A new combination therefore needs no new image.
-
-## Two details that matter
+## The first boot
 
 **There is no installation phase.** The cloud image already holds a working
 Ubuntu. `virt-install --import` starts it. `qemu-img convert` copies the image
 for each host, and `qemu-img resize` grows the copy. cloud-init grows the file
-system at the first boot. A host is ready in seconds, not minutes.
+system at the first boot. A host is ready in seconds.
 
-**The agent installs at the first boot only.** cloud-init writes a marker file
-at `/var/lib/palette-agent-installed`. A second boot reads the marker and makes
-no change.
+**The agent installs one time.** cloud-init writes a marker file at
+`/var/lib/palette-agent-installed`. A second boot reads the marker and makes no
+change.
 
 ## Where the state lives
 
