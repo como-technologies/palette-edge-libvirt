@@ -42,7 +42,8 @@ The control plane pool takes the `-cp-` hosts and the worker pool takes the
 `-wk-` hosts. The libvirt domain name and the Palette host name are the same, so
 `just ls` and the Palette host list agree.
 
-Palette then installs the four packs on every node. That takes tens of minutes.
+Palette then installs the four packs on every node. That takes about 11 minutes
+for 1 control node and 2 workers.
 
 The recipe is idempotent, so a second run makes no new object. See
 [The cluster profile](./cluster-profile.md) for each pack and each setting.

@@ -11,7 +11,10 @@
 #
 #   api-key.sh set       read the key and write the file
 #   api-key.sh status    report the length only, never the value
-#   api-key.sh clear     delete the file
+#   api-key.sh clear     delete the file, after it asks
+#
+# `clear` asks before it deletes, because Palette shows a key one time and
+# this file is the only copy. Give FORCE=1 to answer in advance.
 #
 # To give the key for one command instead, set it in the environment:
 #
@@ -60,12 +63,33 @@ status)
 	fi
 	;;
 clear)
-	if [ -f "$file" ]; then
-		rm -f "$file"
-		info "removed $file"
-	else
+	if [ ! -f "$file" ]; then
 		skip "there is no key file at $file"
+		exit 0
 	fi
+
+	# Palette shows an API key one time, at the moment it makes the key. This
+	# file is therefore the only copy, and nothing in this repository can
+	# write it again. `remove-project` asks before it deletes one project;
+	# this deletes a credential for the whole tenant, so it asks as well.
+	#
+	# Give FORCE=1 to answer in advance.
+	if [ "${FORCE:-0}" != "1" ]; then
+		[ -t 0 ] || die "this deletes the only copy of your Palette API key, and
+     there is no terminal to ask. Palette does not show a key again.
+     To delete it anyway:  FORCE=1 just api-key-clear"
+
+		printf 'This deletes %s.\n' "$file"
+		printf 'Palette shows an API key one time, so this is the only copy and\n'
+		printf 'no recipe can write it again. You would make a new key at\n'
+		printf 'Palette > User Menu > My API Keys.\n'
+		printf 'Type yes to continue: '
+		read -r answer
+		[ "$answer" = "yes" ] || die "the answer was not yes. Nothing changed."
+	fi
+
+	rm -f "$file"
+	info "removed $file"
 	;;
 *)
 	die "unknown action '$action'. Use set, status, or clear."

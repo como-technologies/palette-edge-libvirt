@@ -281,7 +281,7 @@ apply)
 	require_pod_cidr
 	require_ready_hosts
 	info "build the cluster layer of project $PALETTE_PROJECT"
-	info "Palette installs four packs on ${#control[@]} control and ${#worker[@]} worker node(s). Give it tens of minutes."
+	info "Palette installs four packs on ${#control[@]} control and ${#worker[@]} worker node(s). That took about 11 minutes for 1 and 2."
 	tofu -chdir="$module" apply -input=false -auto-approve
 	info "the cluster is up. To see it: just cluster-show"
 	;;

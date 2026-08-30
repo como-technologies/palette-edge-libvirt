@@ -83,8 +83,29 @@ everything its `-up` made.** This is the rule that keeps teardown honest.
 
 **The seam is registration.** `infra-up` does not return until every host is
 `ready` in Palette (`hosts-wait.sh`, 900s default via `REGISTER_TIMEOUT`),
-because a VM that never registered is useless to the cluster layer. A full
-layer-1 build measured 2m43s for 1 control + 2 workers, and 2m34s on a rebuild.
+because a VM that never registered is useless to the cluster layer.
+
+**Measured baseline, three full round trips, 1 control + 2 workers on the
+Thelio.** Every step of both tables in `docs/src/introduction.md`, except
+`host-setup`, which needs a restart:
+
+| Step | run 1 | run 2 | run 3 | mean |
+| --- | --- | --- | --- | --- |
+| `tofu-install` | (present) | 2.1s | 1.9s | 2.0s |
+| `new-project` | 2.3s | 2.9s | 2.7s | 2.6s |
+| `infra-up` | 209s | 179s | 187s | **192s** |
+| `cluster-up` | 636s | 668s | 634s | **646s** |
+| `cluster-kubeconfig` | 0.4s | 2.7s | 0.4s | 1.2s |
+| `cluster-down` | 40s | 46s | 40s | **42s** |
+| `infra-down` | 9.6s | 7.0s | 8.9s | 8.5s |
+| `remove-project` | 4.1s | 3.5s | 3.3s | 3.6s |
+| forward total | | | | **843s (14m)** |
+| reverse total | | | | **54s** |
+
+`api-key-set`, `api-key-clear`, `image-clean`, and `tofu-uninstall` each measure
+under 0.1s. The cloud image download sits inside `infra-up` and costs less than
+the variance in registration: runs 2 and 3 downloaded it and still beat run 1,
+which had it cached. **Teardown is 16 times faster than build.**
 
 **Hosts are tied to clusters; VMs are never reused.** That decision is what makes
 `infra-down` safe to deregister host records — a record whose VM is gone is
@@ -422,7 +443,8 @@ ISO from the VM so the host holds no copy.
 
 - `infra-up` builds the machines and all three hosts register (170s measured).
 - `cluster-up` builds the profile and the cluster, and Palette reports `Running`
-  with every condition true. Wall clock ≈ 45 min for 3 nodes on the Thelio.
+  with every condition true. Wall clock 10m34s-11m08s for 1 control and 2
+  workers on the Thelio, measured over three builds.
 - `cluster-kubeconfig` yields a working kubeconfig. Its server is the VIP
   (`https://$CLUSTER_VIP:6443`), which the workstation reaches over the bridge.
   Three nodes Ready on PXK-E `v1.33.13`, `podCIDR` from `POD_CIDR`, Calico up,
