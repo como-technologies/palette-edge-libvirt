@@ -53,6 +53,17 @@ pool_dir="$(virsh pool-dumpxml "$POOL" | sed -n 's:.*<path>\(.*\)</path>.*:\1:p'
 
 disk="$pool_dir/$name.qcow2"
 
+# The seed ISO lives in seeds/, and that directory is mode 0700 because it
+# holds the registration token. The qemu user cannot enter it, so a domain that
+# reads the seed from there fails to start:
+#
+#   Could not open '.../seeds/NAME-seed.iso': Permission denied
+#
+# The answer is not to open seeds/ to every user. libvirt owns the pool
+# directory and gives the qemu user access to the files in it, so the seed goes
+# there as well. The copy keeps mode 0600, and `just host-down` deletes it.
+seed_in_pool="$pool_dir/$name-seed.iso"
+
 info "create $name: ${VCPUS} vcpu, ${MEMORY_MB} MB, ${DISK_GB} GB, network $NETWORK"
 info "image: $(basename "$image")"
 
@@ -60,6 +71,8 @@ info "image: $(basename "$image")"
 # are sparse, so the grown file uses only the space that the host writes.
 qemu-img convert -f qcow2 -O qcow2 "$image" "$disk"
 qemu-img resize -q "$disk" "${DISK_GB}G"
+
+install -m 0600 "$seed" "$seed_in_pool"
 
 # ANCHOR: virtinstall
 # --import boots the disk that already holds an operating system. There is no
@@ -72,7 +85,7 @@ virt-install \
 	--machine q35 \
 	--osinfo detect=on,require=off \
 	--disk "path=$disk,format=qcow2,bus=virtio" \
-	--disk "path=$seed,device=cdrom,readonly=on" \
+	--disk "path=$seed_in_pool,device=cdrom,readonly=on" \
 	--network "network=$NETWORK,model=virtio" \
 	--graphics none \
 	--console pty,target_type=serial \

@@ -12,13 +12,21 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 name="${1:?name required}"
 
-mac="$(virsh domiflist "$name" | awk 'NF >= 5 && $3 != "-" { print $5 }' | head -n1)"
+# Match the MAC by its shape. The table has a header row, and an earlier
+# version took "MAC" from that header as the address.
+mac="$(virsh domiflist "$name" |
+	awk '$5 ~ /^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/ { print $5 }' | head -n1)"
 [ -n "$mac" ] || die "no interface found on $name"
 
-net="$(virsh domiflist "$name" | awk 'NF >= 5 && $2 == "network" { print $3 }' | head -n1)"
+net="$(virsh domiflist "$name" |
+	awk '$2 == "network" && $5 ~ /^([0-9a-fA-F]{2}:){5}/ { print $3 }' | head -n1)"
 [ -n "$net" ] || die "$name is not attached to a libvirt network"
 
-lease="$(virsh net-dhcp-leases "$net" | awk -v m="$mac" '$3 == m { print $5 }' | cut -d/ -f1 | head -n1)"
+# The lease table also has a header. Take the address only from a row whose
+# MAC matches and whose address column looks like an address.
+lease="$(virsh net-dhcp-leases "$net" |
+	awk -v m="$mac" '$3 == m && $5 ~ /^[0-9]+\./ { print $5 }' |
+	cut -d/ -f1 | head -n1)"
 
 if [ -z "$lease" ]; then
 	die "no DHCP lease for $name ($mac) on $net yet -- it may still be installing"

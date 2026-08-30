@@ -65,27 +65,60 @@ write_files:
   # ANCHOR_END: siteconfig
 
 # ANCHOR: install
-# runcmd runs one time, after the packages install. The agent installer
-# downloads the palette-agent binary and registers the host.
+# cloud-init runs each runcmd entry with /bin/sh, and on Ubuntu that is dash.
+# A bash feature there stops the whole script. An earlier version used
+# "set -euxo pipefail" and dash answered:
 #
-# The script writes a marker file at the end. `just host-status NAME` reads it,
-# and a second boot does not install the agent again.
+#   /var/lib/cloud/instance/scripts/runcmd: 3: set: Illegal option -o pipefail
+#
+# cloud-init reported the failure only in its own status, so the host looked
+# correct and registered with nothing. The work now lives in a file with a bash
+# line at the top, and runcmd calls that file.
+  - path: /usr/local/bin/palette-agent-bootstrap
+    permissions: "0755"
+    owner: root:root
+    content: |
+      #!/bin/bash
+      # Install the Palette agent one time, and write a log for the console.
+      set -euo pipefail
+
+      marker=/var/lib/palette-agent-installed
+      log=/var/log/palette-agent-install.log
+      exec > >(tee -a "$log") 2>&1
+
+      if [ -f "$marker" ]; then
+        echo "the agent is already installed"
+        exit 0
+      fi
+
+      cd /root
+      curl --location --fail --retry 3 --show-error \
+        --output ./palette-agent-install.sh \
+        "@AGENT_SCRIPT_URL@"
+      chmod +x ./palette-agent-install.sh
+
+      USERDATA=/etc/palette/site-config.yaml ./palette-agent-install.sh
+
+      date --iso-8601=seconds > "$marker"
+      echo "the agent installed correctly"
+
 runcmd:
-  - [ systemctl, enable, --now, systemd-timesyncd ]
-  - |
-    set -euxo pipefail
-    if [ -f /var/lib/palette-agent-installed ]; then
-      echo "the agent is already installed"
-      exit 0
-    fi
-    cd /root
-    curl --location --fail --retry 3 \
-      --output ./palette-agent-install.sh \
-      "@AGENT_SCRIPT_URL@"
-    chmod +x ./palette-agent-install.sh
-    USERDATA=/etc/palette/site-config.yaml \
-      ./palette-agent-install.sh
-    touch /var/lib/palette-agent-installed
+  - [systemctl, enable, --now, systemd-timesyncd]
+  - [/usr/local/bin/palette-agent-bootstrap]
+
+# The installer enables the agent services but does not start them. They run at
+# boot stages, so the host registers only after a restart. Without this block a
+# host installs correctly, reports success, and never appears in Palette.
+#
+# cloud-init runs power_state one time for each instance, after every module,
+# so this gives one restart and no loop. The condition tests the marker file,
+# so a failed installation leaves the host up for you to read the log.
+power_state:
+  mode: reboot
+  condition: test -f /var/lib/palette-agent-installed
+  message: restarting one time to start the Palette agent
+  timeout: 60
+  delay: now
 # ANCHOR_END: install
 
 # Write the result of the installation to the console and to a file that

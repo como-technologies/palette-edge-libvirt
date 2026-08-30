@@ -120,6 +120,13 @@ printf 'instance-id: %s\nlocal-hostname: %s\n' "$name" "$name" >"$work/meta-data
 # The volume label must be CIDATA. cloud-init looks for a volume with that
 # label and reads user-data and meta-data from it.
 out="$seed_dir/$name-seed.iso"
+
+# Remove an old file first. libvirt takes ownership of any file that a domain
+# uses, and it does not always give it back when a domain fails to start. An
+# old seed can therefore belong to the qemu user, and the tool cannot write it.
+# seeds/ belongs to you, so the unlink succeeds and the build continues.
+rm -f "$out"
+
 if command -v genisoimage >/dev/null; then
 	genisoimage -quiet -output "$out" -volid CIDATA -joliet -rock \
 		"$work/user-data" "$work/meta-data"

@@ -159,6 +159,28 @@ returns HTTP 204/201 with **no binding applied** — silent, and an unbound toke
 registers hosts into no project. Never infer a Palette write shape from its
 read shape.
 
+**Never hand libvirt a file inside the repo.** libvirt chowns every file a
+domain uses to `libvirt-qemu` and does not restore it when a start fails, and
+`seeds/` is 0700 so the qemu user cannot enter it anyway. `host-up.sh` copies
+the seed into the storage pool and attaches that copy; `host-down.sh` and
+`host-eject.sh` delete pool files. `seed-iso.sh` unlinks its output first, so a
+seed that libvirt captured can still be rebuilt without sudo.
+
+**cloud-init runs `runcmd` with dash, not bash.** `set -o pipefail` there gives
+"Illegal option" and kills the whole script, and cloud-init reports it only in
+`cloud-init status --long` — the host boots fine and silently does nothing. Put
+real work in a `write_files` script with a `#!/bin/bash` line.
+
+**The agent needs one reboot.** `palette-agent install` enables the
+`spectro-palette-agent-*` services but leaves them `inactive dead`; they run at
+boot stages. The template uses cloud-init `power_state` with a condition on the
+marker file, so a correct install reboots once and a failed one stays up for
+diagnosis.
+
+**`virsh` tables have a header row.** `domiflist` and `net-dhcp-leases` output
+parsed with plain awk field numbers matches the header: `host-ip.sh` reported
+the address as "Protocol" until it matched on the shape of a MAC instead.
+
 **`LAB_NAME` takes 12 characters at most.** The libvirt bridge is `br-$LAB_NAME`
 and a Linux interface name takes 15. Over that, libvirt defines the network fine
 and fails at start with "Numerical result out of range". `net-up.sh` checks the

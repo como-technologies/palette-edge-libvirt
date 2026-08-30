@@ -89,6 +89,18 @@ system at the first boot. A host is ready in seconds.
 `/var/lib/palette-agent-installed`. A second boot reads the marker and makes no
 change.
 
+**The host restarts one time.** The installer enables the agent services but
+does not start them, because they run at boot stages. cloud-init therefore
+restarts the host after a correct installation. The host registers a minute or
+two later. A failed installation gives no restart, so the host stays up and you
+can read `/var/log/palette-agent-install.log`.
+
+**The seed ISO goes to the storage pool.** `seeds/` is mode 0700 because it
+holds the token, and the qemu user cannot enter it. libvirt also takes
+ownership of every file that a domain uses. `host-up` therefore copies the seed
+into the pool and gives that copy to the domain, and `seeds/` keeps the
+original.
+
 ## Where the state lives
 
 | State                 | Location                                 | Removed by            |

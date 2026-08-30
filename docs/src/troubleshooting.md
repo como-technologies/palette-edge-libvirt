@@ -150,6 +150,38 @@ If the project name is correct, test each item:
 6. **The seed ISO is old.** A change to `.env` does not change an existing seed.
    Run `just seed-clean`, then `just seed-all`, then rebuild the host.
 
+## The host installs the agent but never registers
+
+Read the log that the installation writes. Open the console, log in as `ubuntu`
+with the password from `HOST_PASSWORD`, then:
+
+```bash
+cloud-init status --long
+sudo tail -40 /var/log/palette-agent-install.log
+```
+
+`palette edge installation completed successfully` means the agent installed.
+The agent services run at boot stages, so the host registers only after a
+restart. cloud-init makes that restart, and the host appears one or two minutes
+later.
+
+To see whether the services ran:
+
+```bash
+systemctl list-units --all 'spectro*'
+```
+
+`inactive dead` for every service means that the restart did not happen.
+
+## cloud-init reports "Illegal option -o pipefail"
+
+cloud-init runs each `runcmd` entry with `/bin/sh`, and on Ubuntu that is dash.
+A bash feature stops the whole script, and cloud-init reports the failure only
+in `cloud-init status --long`. The host then looks correct and does nothing.
+
+Keep `runcmd` entries simple. Put a script in `write_files` with a bash line at
+the top, and call that script from `runcmd`.
+
 ## The agent installs again at each boot
 
 cloud-init writes a marker file at `/var/lib/palette-agent-installed` after a

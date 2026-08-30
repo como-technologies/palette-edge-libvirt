@@ -4,7 +4,7 @@
 # This script keeps the network, the storage pool, and the installer ISO.
 # It is idempotent.
 #
-# Env: LAB
+# Env: LAB POOL
 
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
@@ -23,5 +23,5 @@ fi
 
 info "remove ${#domains[@]} domain(s): ${domains[*]}"
 for domain in "${domains[@]}"; do
-	"$here/host-down.sh" "$domain"
+	POOL="${POOL:-}" "$here/host-down.sh" "$domain"
 done

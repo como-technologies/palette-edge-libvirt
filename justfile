@@ -149,7 +149,7 @@ host-up host role="worker":
 
 # Stop one host VM, remove it, and delete its disk
 host-down host:
-    @scripts/host-down.sh "{{ host }}"
+    @POOL="{{ pool }}" scripts/host-down.sh "{{ host }}"
 
 # Show the progress of the agent installation on one host
 host-status host:
@@ -247,7 +247,7 @@ cluster-up: preflight infra-up image-fetch
 
 # Remove all VMs in the lab. Keeps the network, the pool, and the image.
 cluster-down:
-    @LAB="{{ lab }}" scripts/cluster-down.sh
+    @LAB="{{ lab }}" POOL="{{ pool }}" scripts/cluster-down.sh
 
 # Remove everything this repository creates, except the downloaded image
 nuke: cluster-down infra-down seed-clean

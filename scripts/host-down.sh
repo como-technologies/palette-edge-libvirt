@@ -20,11 +20,12 @@ if ! have_domain "$name"; then
 	exit 0
 fi
 
-# Read the disk paths before the undefine. The definition is the only record of
-# these paths.
-mapfile -t disks < <(
+# Read the file paths before the undefine. The definition is the only record of
+# them. Take the CD-ROM as well as the disk, because host-up.sh puts a copy of
+# the seed ISO in the pool.
+mapfile -t files < <(
 	virsh domblklist "$name" --details |
-		awk '$1 == "file" && $2 == "disk" { print $4 }'
+		awk '$1 == "file" && ($2 == "disk" || $2 == "cdrom") { print $4 }'
 )
 
 if [ "$(domain_state "$name")" != "shut off" ]; then
@@ -37,10 +38,19 @@ fi
 virsh undefine "$name" --nvram >/dev/null 2>&1 ||
 	virsh undefine "$name" >/dev/null
 
-for disk in "${disks[@]}"; do
-	[ -f "$disk" ] || continue
-	rm -f "$disk" 2>/dev/null || sudo rm -f "$disk"
-	info "deleted $disk"
+# Delete only the files that live in the pool. A file somewhere else belongs to
+# you, and this recipe must not remove it.
+pool_dir="$(virsh pool-dumpxml "${POOL:-}" 2>/dev/null |
+	sed -n 's:.*<path>\(.*\)</path>.*:\1:p' | head -n1)"
+
+for file in "${files[@]}"; do
+	[ -f "$file" ] || continue
+	if [ -n "$pool_dir" ] && [ "${file#"$pool_dir"/}" = "$file" ]; then
+		skip "kept $file, because it is not in the pool"
+		continue
+	fi
+	rm -f "$file" 2>/dev/null || sudo rm -f "$file"
+	info "deleted $file"
 done
 
 info "removed $name"
