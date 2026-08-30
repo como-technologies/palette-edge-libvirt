@@ -48,7 +48,9 @@ A Palette API key carries every permission of the user that owns it. Palette
 gives a key no scope: the key object holds an expiry and a user, and nothing
 else. Only three tenant roles can manage registration tokens, and the Project
 Admin role is not one of them. A key is therefore a tenant credential, and it
-lives outside the checkout at `~/.config/palette-edge-libvirt/api-key`.
+lives outside the checkout at `~/.config/palette-edge-libvirt/api-key`. Every
+other lab file moved out of the checkout for the same reason. See
+[The lab directories](./directories.md).
 
 An earlier version wrote the key into each project file. One project removal
 then destroyed a tenant credential, and Palette does not show a key value again

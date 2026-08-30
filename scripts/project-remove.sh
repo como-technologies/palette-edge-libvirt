@@ -20,9 +20,8 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/palette-lib.sh"
 
 name="${1:?give a project name}"
-root="$(repo_root)"
-target="$root/envs/$name.env"
-link="$root/.env"
+target="$(envs_dir)/$name.env"
+link="$(env_link)"
 
 need curl
 need python3
@@ -87,13 +86,14 @@ fi
 # The environment file holds the token, so remove it with the project.
 if [ -f "$target" ]; then
 	rm -f "$target"
-	info "removed envs/$name.env"
+	info "removed $(short_path "$target")"
 else
-	skip "envs/$name.env is absent"
+	skip "$(short_path "$target") is absent"
 fi
 
 # A link to the removed file would break every recipe. Remove it and name the
-# next step.
+# next step. The .env pointer in the checkout stays. It names this link, and
+# the next `just default-project` makes the link again.
 if [ -L "$link" ] && [ "$(readlink "$link")" = "envs/$name.env" ]; then
 	rm -f "$link"
 	warn "$name was the default project. There is no default now."

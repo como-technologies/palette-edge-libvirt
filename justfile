@@ -12,7 +12,13 @@
 # Run `just` to see all recipes. Run `just config` to see the current settings.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set dotenv-load
+
+# .env in the checkout is a link to ~/.config/palette-edge-libvirt/env, and that
+# link points at the environment file of the default project. `set dotenv-path`
+# takes a constant, so it cannot name the home directory. The link supplies the
+# path. An absent or broken link loads nothing and reports no error, so the
+# recipes still run on their default values.
+set dotenv-path := ".env"
 
 # --- configuration ----------------------------------------------------------
 # Each variable has a default value. The repository operates before you make
@@ -32,15 +38,31 @@ worker_vcpus := env_var_or_default("WORKER_VCPUS", "6")
 worker_memory := env_var_or_default("WORKER_MEMORY_MB", "16384")
 worker_disk := env_var_or_default("WORKER_DISK_GB", "100")
 
+# ANCHOR: dirs
+# The lab directories. The checkout holds the source only. Delete the checkout
+# and your projects, your tokens, and the downloaded image stay.
+#
+# Set a PEL_ variable in your shell to move a directory. The scripts read the
+# same three variables, so a script that you call directly agrees with a recipe.
+config_dir := env_var_or_default("PEL_CONFIG_DIR", config_directory() / "palette-edge-libvirt")
+data_dir := env_var_or_default("PEL_DATA_DIR", data_directory() / "palette-edge-libvirt")
+cache_dir := env_var_or_default("PEL_CACHE_DIR", cache_directory() / "palette-edge-libvirt")
+
+envs_dir := config_dir / "envs"
+image_dir := cache_dir / "images"
+seed_dir := data_dir / "seeds"
+build_dir := data_dir / "build"
+# ANCHOR_END: dirs
+
 # Derived paths and names.
 root := justfile_directory()
-image_dir := root / "images"
-seed_dir := root / "seeds"
-build_dir := root / "build"
 pool := lab + "-pool"
 net := lab + "-net"
 
 export LIBVIRT_DEFAULT_URI := uri
+export PEL_CONFIG_DIR := config_dir
+export PEL_DATA_DIR := data_dir
+export PEL_CACHE_DIR := cache_dir
 
 # --- meta -------------------------------------------------------------------
 
@@ -189,13 +211,23 @@ api-key-status:
 api-key-clear:
     @scripts/api-key.sh clear
 
+# --- directories ------------------------------------------------------------
+
+# Move the lab files out of the checkout into ~/.config, ~/.local, and ~/.cache
+adopt-xdg:
+    @scripts/xdg-adopt.sh
+
+# Move the lab files back into the checkout. The twin of adopt-xdg.
+unadopt-xdg:
+    @scripts/xdg-unadopt.sh
+
 # --- projects ---------------------------------------------------------------
 
 # List the projects that have an environment file. The * marks the default.
 projects:
     @scripts/project-ls.sh
 
-# Create a Palette project, write envs/NAME.env, and make it the default
+# Create a Palette project, write its environment file, and make it the default
 new-project project description="":
     @scripts/project-new.sh "{{ project }}" "{{ description }}"
 
@@ -203,15 +235,15 @@ new-project project description="":
 remove-project project:
     @scripts/project-remove.sh "{{ project }}"
 
-# Point .env at the environment file of NAME
+# Select the project that every recipe operates on
 default-project project:
     @scripts/project-default.sh "{{ project }}"
 
-# Move an existing regular .env into envs/NAME.env and link .env to it
+# Move a regular .env from the checkout into the project layout
 adopt-project project:
     @scripts/project-adopt.sh "{{ project }}"
 
-# Make .env a regular file again. The twin of adopt-project.
+# Make .env a regular file in the checkout again. The twin of adopt-project.
 unadopt-project:
     @scripts/project-unadopt.sh
 

@@ -121,7 +121,7 @@ if [ -n "${PALETTE_EDGE_TOKEN:-}" ]; then
 	# Print the length only. Never print the token.
 	check "PALETTE_EDGE_TOKEN" yes "set (${#PALETTE_EDGE_TOKEN} characters)"
 else
-	check "PALETTE_EDGE_TOKEN" no "" "copy .env.example to .env and add the token"
+	check "PALETTE_EDGE_TOKEN" no "" "run: just new-project <name>"
 fi
 check "PALETTE_ENDPOINT" yes "${PALETTE_ENDPOINT:-api.spectrocloud.com}"
 if [ -n "${PALETTE_PROJECT:-}" ]; then
@@ -141,7 +141,7 @@ printf '  info  %-24s %s cpu, %s GB\n' "workstation has" "$cpus" "$mem_gb"
 
 # The host can oversubscribe the CPU safely. It cannot oversubscribe the memory.
 if [ "$want_mem" -ge "$mem_gb" ]; then
-	warn "the topology needs all of the memory. Lower WORKER_COUNT or WORKER_MEMORY_MB in .env."
+	warn "the topology needs all of the memory. Lower WORKER_COUNT or WORKER_MEMORY_MB."
 fi
 
 if [ "$fail" -eq 0 ]; then

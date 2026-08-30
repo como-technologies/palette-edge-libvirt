@@ -37,8 +37,9 @@ just cluster-up           # full lab: preflight, infra, image, seeds, VMs
 just cluster-down         # remove the VMs, keep infra and image
 just nuke                 # cluster-down + infra-down + seed-clean
 
+just adopt-xdg            # move an old in-repo layout to ~/.config etc.
 just projects             # local project env files, * marks default
-just new-project NAME [d] # create Palette project + envs/NAME.env + set default
+just new-project NAME [d] # create Palette project + its env file + set default
 just remove-project NAME  # twin: delete project, env file, and link
 just default-project NAME # re-point .env at another project
 just palette-projects     # list tenant projects, verify PALETTE_PROJECT
@@ -75,9 +76,9 @@ The workstation owns the virtual machines. Palette SaaS owns the cluster profile
 and the cluster. **The seed ISO is the only link between the two.**
 
 ```
-.env  ──►  scripts/seed-iso.sh  ──►  seeds/NAME-seed.iso (CIDATA)
+.env  ──►  scripts/seed-iso.sh  ──►  $PEL_DATA_DIR/seeds/NAME-seed.iso (CIDATA)
                                           │
-images/noble-server-cloudimg-amd64.img ───┼──►  virt-install --import  ──►  VM
+$PEL_CACHE_DIR/images/noble-...img  ──────┼──►  virt-install --import  ──►  VM
       (qemu-img copy + resize)                                              │
                                                     cloud-init installs     │
                                                     the agent, registers    │
@@ -93,7 +94,8 @@ host.
 
 ### The layers
 
-- `justfile` — the only interface. Holds configuration and thin recipes.
+- `justfile` — the only interface. Holds configuration and thin recipes. Also
+  computes every path and exports it, so the scripts never guess.
 - `scripts/*.sh` — all logic. Each script takes its input from the environment,
   so `shellcheck` can test it and you can run it alone.
 - `templates/` — `network.xml` and `user-data.tmpl.yaml`. Both use `@NAME@`
@@ -129,15 +131,38 @@ list line up. Two labs coexist if `LAB_NAME` and `LAB_SUBNET` both differ.
 
 ## Configuration
 
-All configuration lives in `.env`, loaded by `set dotenv-load`. Git ignores it.
+**The checkout holds source only.** Every file worth keeping lives in an XDG
+directory, so `rm -rf` on the checkout destroys nothing:
 
-`.env` is normally a **symlink** into `envs/<project>.env` — one file per
-Palette project, so several labs coexist. `just default-project NAME` re-points
-the symlink; `just new-project` creates the tenant project, writes the env file
-(auto-allocating a free `LAB_NAME` and `LAB_SUBNET`, scanning both `envs/*.env`
-and live libvirt networks), and sets it default. `envs/` is gitignored: those
-files hold tokens. A plain `.env` still works — `just adopt-project NAME`
-migrates one into the layout, `just unadopt-project` reverses it.
+```
+~/.config/palette-edge-libvirt/   api-key, envs/<project>.env, env -> envs/X.env
+~/.local/share/palette-edge-libvirt/   seeds/, build/  (terraform state goes here)
+~/.cache/palette-edge-libvirt/   images/
+```
+
+`PEL_CONFIG_DIR`, `PEL_DATA_DIR`, and `PEL_CACHE_DIR` override each one. The
+justfile computes them with `config_directory()` / `data_directory()` /
+`cache_directory()` and **exports** them; `lib.sh` has `config_dir`, `data_dir`,
+`cache_dir`, `envs_dir`, `env_link`, `env_pointer`, and `short_path`, each
+falling back to the XDG variable so a script still works when called directly.
+`api_key_file` deliberately ignores `PEL_CONFIG_DIR` — that variable can point
+at a checkout, and a tenant credential must never land in one.
+
+**`set dotenv-path` takes a const.** `just` rejects a function call there, and
+expands neither `~` nor `$HOME`, so the justfile cannot name the config
+directory. The repo therefore keeps exactly one lab file: `.env`, a symlink to
+`~/.config/palette-edge-libvirt/env`, which is itself a symlink to
+`envs/<project>.env`. The second link holds the project choice and lives outside
+the checkout. A missing or dangling `.env` loads nothing and raises **no error**
+— the recipes silently fall back to the justfile defaults, so `just config` and
+`just projects` both report it and name the fix. `just adopt-xdg` moves an old
+in-repo layout out; `just unadopt-xdg` reverses it (but never moves the API key).
+
+`just default-project NAME` re-points both links; `just new-project` creates the
+tenant project, writes the env file (auto-allocating a free `LAB_NAME` and
+`LAB_SUBNET`, scanning both the env files and live libvirt networks), and sets
+it default. A plain `.env` written by hand still works — `just adopt-project
+NAME` migrates one into the layout, `just unadopt-project` reverses it.
 
 Palette keeps a project description in `metadata.annotations.description`, not
 in a `description` field.
@@ -161,7 +186,7 @@ read shape.
 
 **Never hand libvirt a file inside the repo.** libvirt chowns every file a
 domain uses to `libvirt-qemu` and does not restore it when a start fails, and
-`seeds/` is 0700 so the qemu user cannot enter it anyway. `host-up.sh` copies
+the seed directory is 0700 so the qemu user cannot enter it anyway. `host-up.sh` copies
 the seed into the storage pool and attaches that copy; `host-down.sh` and
 `host-eject.sh` delete pool files. `seed-iso.sh` unlinks its output first, so a
 seed that libvirt captured can still be rebuilt without sudo.
@@ -208,7 +233,9 @@ recipes and a new recipe completes for free. Keep parameters named `host`,
 parameter name is unknown.
 `.env.example` is the documented template and carries the anchors that
 `docs/src/configuration.md` includes, so **edit `.env.example` when you add a
-variable**, or the docs go stale.
+variable**, or the docs go stale. The completion reads the project list from
+`just --evaluate envs_dir`, so it followed the files out of the checkout with no
+change of its own.
 
 Every `justfile` variable uses `env_var_or_default`, so the repo works with no
 `.env` at all. Any value can be overridden for one command:
@@ -216,9 +243,10 @@ Every `justfile` variable uses `env_var_or_default`, so the repo works with no
 
 ## Secrets
 
-`PALETTE_EDGE_TOKEN` is the sensitive value. It lives in `.env` and is written
-into every seed ISO. Both are gitignored. `seeds/` is mode 0700 and each ISO is
-mode 0600.
+`PALETTE_EDGE_TOKEN` is the sensitive value. It lives in the project env file
+and is written into every seed ISO. Both are outside the checkout now. The envs
+directory and the seeds directory are both mode 0700, and each env file and each
+ISO is mode 0600.
 
 Never print the token. `just config` and `just preflight` print only its length.
 Keep it that way. After a host installs, `just host-eject NAME` removes the seed

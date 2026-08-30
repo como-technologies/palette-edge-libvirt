@@ -48,7 +48,7 @@ verify() {
 # Always take a new checksum file. Canonical rebuilds the current image, so a
 # cached checksum can describe a different image.
 curl -fsSL --retry 3 -o "$sums" "$base/SHA256SUMS" ||
-	die "cannot read $base/SHA256SUMS. Check UBUNTU_RELEASE in .env."
+	die "cannot read $base/SHA256SUMS. Check UBUNTU_RELEASE."
 
 if verify; then
 	skip "the cache already holds a correct $file"
@@ -65,7 +65,7 @@ info "download $url"
 # The download writes to a .part file. A failed download leaves no file that
 # looks complete to the next run.
 if ! curl -fL --retry 3 -C - -o "${dest}.part" "$url"; then
-	die "the download failed. Check UBUNTU_RELEASE in .env, or set
+	die "the download failed. Check UBUNTU_RELEASE, or set
      UBUNTU_IMAGE_URL to a direct link."
 fi
 mv "${dest}.part" "$dest"

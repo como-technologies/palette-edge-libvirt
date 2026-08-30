@@ -21,6 +21,7 @@
 - [Recipes](./recipes.md)
 - [Settings](./settings.md)
 - [The workstation](./workstation.md)
+- [The lab directories](./directories.md)
 - [The project layout](./project-layout.md)
 - [Design decisions](./decisions.md)
 - [Project rules](./rules.md)

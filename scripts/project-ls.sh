@@ -8,9 +8,9 @@ set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-root="$(repo_root)"
-envs="$root/envs"
-link="$root/.env"
+envs="$(envs_dir)"
+link="$(env_link)"
+pointer="$(env_pointer)"
 
 current=""
 if [ -L "$link" ]; then
@@ -23,7 +23,7 @@ shopt -u nullglob
 
 if [ "${#files[@]}" -eq 0 ]; then
 	skip "there are no environment files. Make one with: just new-project <name>"
-	if [ -e "$link" ] && [ ! -L "$link" ]; then
+	if [ -e "$pointer" ] && [ ! -L "$pointer" ]; then
 		info ".env is a regular file, so the lab uses it directly."
 	fi
 	exit 0
@@ -40,8 +40,18 @@ for file in "${files[@]}"; do
 done
 
 echo
-if [ -n "$current" ]; then
-	info "* is the default project. .env -> envs/$current.env"
-else
+info "the files are in $(short_path "$envs")"
+
+if [ -z "$current" ]; then
 	warn "there is no default project. Choose one: just default-project <name>"
+	exit 0
+fi
+
+info "* is the default project"
+
+# The checkout needs the pointer, or the justfile reads no value at all. A
+# fresh clone has no pointer, and the recipes then run on their defaults.
+if [ ! -L "$pointer" ] || [ "$(readlink "$pointer")" != "$link" ]; then
+	warn "this checkout does not read that file yet. To correct it:
+         just default-project $current"
 fi

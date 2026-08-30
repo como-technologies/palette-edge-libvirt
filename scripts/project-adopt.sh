@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Move an existing regular .env file into envs/, then link .env to it.
+# Move a regular .env file from the checkout into the project layout.
 #
-# Use this one time, when you already have a .env file and you want the
-# project layout. `project-unadopt.sh` is the twin: it makes .env a regular
-# file again.
+# Use this one time, when you wrote a .env file by hand and you want the
+# project layout. The script gives the file a project name, moves it to
+# ~/.config/palette-edge-libvirt/envs/<name>.env, and makes that project the
+# default. `project-unadopt.sh` is the twin.
 #
 # This script is idempotent. A .env that is already a link gives a skip.
 #
@@ -14,23 +15,24 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 name="${1:?give a project name}"
-root="$(repo_root)"
-link="$root/.env"
-target="$root/envs/$name.env"
+here="$(dirname "${BASH_SOURCE[0]}")"
+pointer="$(env_pointer)"
+envs="$(envs_dir)"
+target="$envs/$name.env"
 
-if [ -L "$link" ]; then
-	skip ".env is already a link to $(readlink "$link")"
+if [ -L "$pointer" ]; then
+	skip ".env is already a link to $(short_path "$(readlink "$pointer")")"
 	exit 0
 fi
 
-[ -f "$link" ] || die ".env is absent. To make a project: just new-project $name"
-[ ! -e "$target" ] || die "envs/$name.env already exists. Choose another name."
+[ -f "$pointer" ] || die ".env is absent. To make a project: just new-project $name"
+[ ! -e "$target" ] || die "$(short_path "$target") already exists. Choose another name."
 
-mkdir -p "$root/envs"
-chmod 700 "$root/envs"
-mv "$link" "$target"
+mkdir -p "$envs"
+chmod 700 "$envs"
+mv "$pointer" "$target"
 chmod 600 "$target"
-ln -sfn "envs/$name.env" "$link"
 
-info "adopted the old .env as envs/$name.env"
-info ".env -> envs/$name.env"
+info "adopted the old .env as $(short_path "$target")"
+
+"$here/project-default.sh" "$name"

@@ -74,7 +74,7 @@ and give a VIP in Palette. Use a free address of the lab subnet. See
 The operating system image does not change between tests. Change the cluster
 profile in Palette and deploy again.
 
-To change the host size or the host count, edit `envs/<project>.env` and build
+To change the host size or the host count, edit the project file and build
 the lab again:
 
 ```bash

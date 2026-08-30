@@ -1,4 +1,6 @@
-# Local secrets / tenant configuration
+# The lab keeps every file that you want to keep outside the checkout. See
+# `just config` for the directories. The names below cover the link that the
+# justfile reads, and the old layout that `just adopt-xdg` moves out.
 .env
 .env.bak*
 envs/

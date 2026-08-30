@@ -31,7 +31,8 @@ cloud-init writes this file, and the agent reads it:
 {{#include ../../templates/user-data.tmpl.yaml:siteconfig}}
 ```
 
-`scripts/seed-iso.sh` replaces each placeholder with a value from `.env`. The
+`scripts/seed-iso.sh` replaces each placeholder with a value from the project
+file. The
 script passes the values in the environment, not in the program text, so a value
 with a quotation mark or a backslash is safe.
 
@@ -50,7 +51,8 @@ The script comes from the agent-mode releases:
 {{#include ../../scripts/seed-iso.sh:agenturl}}
 ```
 
-Set `PALETTE_AGENT_VERSION` in `.env` to pin a version. An empty value gives the
+Set `PALETTE_AGENT_VERSION` in the project file to pin a version. An empty
+value gives the
 latest release.
 
 ## Build a seed
@@ -61,7 +63,7 @@ just seed-all       # every host in the topology
 just seed-clean     # delete every seed ISO
 ```
 
-Each ISO goes to `seeds/` with the file mode 0600. The directory has the mode
+Each ISO goes to the seed directory with the file mode 0600. It has the mode
 0700. Git ignores the directory.
 
 ## After the registration
@@ -103,7 +105,7 @@ first.
 
 1. Make a new token in Palette at **Tenant Settings**, then
    **Registration Tokens**.
-2. Put the new token in `.env`.
+2. Put the new token in the project file.
 3. Run `just seed-clean`, then `just seed-all`.
 4. Rebuild the hosts with `just cluster-down` and `just cluster-up`.
 5. Delete the old token in Palette.

@@ -53,10 +53,11 @@ virsh net-list --all
 virsh net-dumpxml default
 ```
 
-Change `LAB_SUBNET` in `.env` to a free subnet. Then run `just net-down` and
+Change `LAB_SUBNET` in the project file to a free subnet. Then run
+`just net-down` and
 `just net-up`.
 
 ## A second lab
 
-Change `LAB_NAME` and `LAB_SUBNET` in a second `.env` file. Every object gets
+Change `LAB_NAME` and `LAB_SUBNET` in a second project file. Every object gets
 the new prefix, so the two labs do not conflict.

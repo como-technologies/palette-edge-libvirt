@@ -50,13 +50,12 @@ one record.
 
 ## Remove the secrets
 
-Delete `.env` to remove your token and your API key from the workstation:
+`just remove-project <project>` deletes the environment file that holds your
+registration token. `just seed-clean` deletes the seed ISO files, which also
+hold the token. `just api-key-clear` deletes the API key.
 
-```bash
-rm .env
-```
-
-`just seed-clean` deletes the seed ISO files, which also hold the token.
+The files are outside the checkout, so `rm -rf` on the checkout removes none of
+them. See [The lab directories](./directories.md).
 
 ## What stays
 

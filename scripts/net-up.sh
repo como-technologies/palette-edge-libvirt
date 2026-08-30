@@ -19,7 +19,7 @@ bridge="br-$LAB"
 if [ "${#bridge}" -gt 15 ]; then
 	die "the bridge name $bridge has ${#bridge} characters, and Linux takes 15.
      LAB_NAME therefore takes 12 characters at most. Shorten LAB_NAME in
-     envs/<project>.env."
+     $(short_path "$(envs_dir)")/<project>.env."
 fi
 root="$(repo_root)"
 

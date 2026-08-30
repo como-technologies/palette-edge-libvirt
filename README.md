@@ -20,7 +20,7 @@ system image, so it needs no Docker and no CanvOS.
 just host-setup          # install libvirt, KVM, and the helper tools
 # restart the workstation for the new group membership
 just api-key-set         # store your Palette API key, one time
-just new-project pe      # makes the project, its token, and envs/pe.env
+just new-project pe      # makes the project, its token, and its env file
 just preflight           # test the workstation
 just cluster-up          # create the network, pool, image, seeds, and hosts
 just palette-hosts       # confirm the hosts registered
@@ -82,14 +82,17 @@ diagrams and `mdbook-gruvbox` for the theme.
 Two credentials, kept apart on purpose:
 
 - The **registration token** is project scoped. `just new-project` makes one for
-  each project and writes it into `envs/<project>.env`. `just remove-project`
-  deletes it with the project.
+  each project and writes it into the environment file of that project.
+  `just remove-project` deletes it with the project.
 - The **API key** is a tenant credential: a key carries every permission of its
   owner, and Palette cannot scope one. It lives in
   `~/.config/palette-edge-libvirt/api-key`, outside the checkout, so no project
   recipe can delete it. Use `just api-key-set`.
 
-Git ignores `.env`, `envs/`, and `seeds/`. All hold your registration token.
+The checkout holds the source only. The projects, the seeds, and the cloud
+image live in `~/.config`, `~/.local/share`, and `~/.cache`, so `rm -rf` on the
+checkout destroys no project. Run `just config` to see the paths.
+
 Run `just host-eject NAME` after a host registers. That recipe removes the seed
 ISO from the virtual machine, so the host keeps no copy of the token.
 

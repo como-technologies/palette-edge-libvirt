@@ -11,7 +11,8 @@ just new-project <project> "A description"
 ```
 
 The recipe makes the project in your tenant, makes a registration token for it,
-writes `envs/<project>.env`, and makes the new project the default.
+writes the environment file of the project, and makes that project the
+default.
 
 There is nothing to fill in afterwards.
 

@@ -25,7 +25,7 @@ row "PALETTE_PROJECT" "${PALETTE_PROJECT:-MISSING. Run: just palette-projects}"
 if [ -n "${PALETTE_EDGE_TOKEN:-}" ]; then
 	row "PALETTE_EDGE_TOKEN" "set (${#PALETTE_EDGE_TOKEN} characters)"
 else
-	row "PALETTE_EDGE_TOKEN" "MISSING. Copy .env.example to .env."
+	row "PALETTE_EDGE_TOKEN" "MISSING. Run: just new-project <name>"
 fi
 row "PALETTE_VIP_SKIP" "${PALETTE_VIP_SKIP:-true}"
 
@@ -37,8 +37,26 @@ info "topology"
 row "control nodes" "${CONTROL_COUNT:-1} x ${CONTROL_VCPUS:-4} vcpu / ${CONTROL_MEMORY_MB:-8192} MB / ${CONTROL_DISK_GB:-60} GB"
 row "worker nodes" "${WORKER_COUNT:-2} x ${WORKER_VCPUS:-6} vcpu / ${WORKER_MEMORY_MB:-16384} MB / ${WORKER_DISK_GB:-100} GB"
 
-if [ -f "$(repo_root)/.env" ]; then
-	info "source: .env and the justfile defaults"
+info "directories"
+row "projects" "$(short_path "$(envs_dir)")"
+row "API key" "$(short_path "$(api_key_file)")"
+row "seeds" "$(short_path "$(data_dir)/seeds")"
+row "build" "$(short_path "$(data_dir)/build")"
+row "cloud image" "$(short_path "$(cache_dir)/images")"
+
+# The checkout holds one lab file: the .env link. Report what it reaches, and
+# name the correction when it reaches nothing.
+pointer="$(env_pointer)"
+if [ -L "$pointer" ]; then
+	if [ -f "$pointer" ]; then
+		info "source: $(short_path "$(readlink -f "$pointer")") and the justfile defaults"
+	else
+		info "source: the justfile defaults only"
+		warn ".env points at no file. Choose a project: just default-project <name>"
+	fi
+elif [ -f "$pointer" ]; then
+	info "source: the .env file in the checkout and the justfile defaults"
 else
-	info "source: the justfile defaults. There is no .env file."
+	info "source: the justfile defaults only"
+	warn "this checkout reads no project. To see the projects: just projects"
 fi

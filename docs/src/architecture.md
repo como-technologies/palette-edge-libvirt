@@ -19,8 +19,8 @@ flowchart TB
 
     subgraph WS["Workstation"]
         JUST["just recipes"]
-        IMG["images/<br/>one stock Ubuntu cloud image"]
-        SEED["seeds/<br/>one CIDATA ISO for each host"]
+        IMG["cache<br/>one stock Ubuntu cloud image"]
+        SEED["data<br/>one CIDATA ISO for each host"]
         subgraph LV["libvirt / KVM"]
             NET["NAT network<br/>one subnet for the lab"]
             POOL["storage pool<br/>one qcow2 disk for each host"]
@@ -95,11 +95,11 @@ restarts the host after a correct installation. The host registers a minute or
 two later. A failed installation gives no restart, so the host stays up and you
 can read `/var/log/palette-agent-install.log`.
 
-**The seed ISO goes to the storage pool.** `seeds/` is mode 0700 because it
-holds the token, and the qemu user cannot enter it. libvirt also takes
-ownership of every file that a domain uses. `host-up` therefore copies the seed
-into the pool and gives that copy to the domain, and `seeds/` keeps the
-original.
+**The seed ISO goes to the storage pool.** The seed directory is mode 0700
+because it holds the token, and the qemu user cannot enter it. libvirt also
+takes ownership of every file that a domain uses. `host-up` therefore copies the
+seed into the pool and gives that copy to the domain, and the seed directory
+keeps the original.
 
 ## Where the state lives
 
@@ -108,9 +108,9 @@ original.
 | Virtual machines      | libvirt, `qemu:///system`                | `just cluster-down`   |
 | Disk images           | `/var/lib/libvirt/images/$LAB_NAME`      | `just cluster-down`   |
 | Network and pool      | libvirt                                  | `just infra-down`     |
-| Seed ISO files        | `seeds/` (git ignores)                   | `just seed-clean`     |
-| Ubuntu cloud image    | `images/` (git ignores)                  | `just image-clean`    |
-| Your token            | `envs/<project>.env` (git ignores)       | `just remove-project` |
+| Seed ISO files        | `~/.local/share/palette-edge-libvirt`    | `just seed-clean`     |
+| Ubuntu cloud image    | `~/.cache/palette-edge-libvirt`          | `just image-clean`    |
+| Your token            | `~/.config/palette-edge-libvirt/envs`    | `just remove-project` |
 | Your API key          | `~/.config/palette-edge-libvirt/api-key` | `just api-key-clear`  |
 | Registered hosts      | Palette SaaS                             | you, in Palette       |
 | Project and its token | Palette SaaS                             | `just remove-project` |

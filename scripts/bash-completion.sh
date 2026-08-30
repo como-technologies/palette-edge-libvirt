@@ -59,9 +59,6 @@ _PEL_KINDS_FREE="description"
 # _pel_lab: the LAB_NAME of the current checkout.
 _pel_lab() { just --evaluate lab 2>/dev/null; }
 
-# _pel_root: the directory of the current justfile.
-_pel_root() { just --evaluate root 2>/dev/null; }
-
 # _pel_param RECIPE INDEX: print the name of one parameter of a recipe.
 # `just` is the source of this, so the completion never holds a recipe name.
 _pel_param() {
@@ -107,11 +104,14 @@ _pel_nodes() {
 }
 
 # _pel_projects: the projects that have an environment file.
+#
+# The justfile owns the path, so this reads the path from the justfile. The
+# files moved out of the checkout, and this function needed no other change.
 _pel_projects() {
-    local root file
-    root="$(_pel_root)" || return 0
-    [ -d "$root/envs" ] || return 0
-    for file in "$root"/envs/*.env; do
+    local envs file
+    envs="$(just --evaluate envs_dir 2>/dev/null)" || return 0
+    [ -n "$envs" ] && [ -d "$envs" ] || return 0
+    for file in "$envs"/*.env; do
         [ -e "$file" ] || continue
         basename "$file" .env
     done

@@ -1,20 +1,22 @@
 # The project layout
 
-One lab serves one Palette project. The repository keeps one environment file
-for each project, and `.env` is a symbolic link to the file of the default
-project.
+One lab serves one Palette project. The lab keeps one environment file for each
+project, and a link selects the default one:
 
 ```text
-envs/pe-thelio.env      the environment file of one project
-envs/iris.env           the environment file of another project
-.env -> envs/pe-thelio.env
+~/.config/palette-edge-libvirt/envs/pe-thelio.env
+~/.config/palette-edge-libvirt/envs/iris.env
+~/.config/palette-edge-libvirt/env -> envs/pe-thelio.env
 ```
 
-`set dotenv-load` in the justfile reads `.env`. The link therefore selects the
-project that every recipe operates on. Git ignores `.env` and `envs/`, because
-each file holds a registration token.
+The files are outside the checkout, so `rm -rf` on the checkout destroys no
+project. [The lab directories](./directories.md) describes the layout and the
+`.env` link that reaches it.
 
-For the three commands, see [Projects](./projects.md).
+Each file holds a registration token. The directory has the mode 0700 and each
+file has the mode 0600.
+
+For the commands, see [Projects](./projects.md).
 
 ## What new-project does
 
@@ -22,8 +24,9 @@ The recipe does four things:
 
 1. It makes the project in your Palette tenant, with the description.
 2. It makes a registration token that belongs to that project.
-3. It writes `envs/<project>.env` with good values and that token.
-4. It points `.env` at the new file, so the new project becomes the default.
+3. It writes the environment file of the project with good values and that
+   token.
+4. It makes the new project the default.
 
 Step 2 removes the last manual step. Nobody copies a token from the console.
 `PALETTE_TOKEN_DAYS` sets the lifetime, and the default is 90 days.
@@ -56,8 +59,8 @@ value again after it makes one.
 ## What remove-project does
 
 The recipe reverses all four steps: it deletes the registration token, it
-deletes the project from the tenant, it deletes `envs/<project>.env`, and it
-removes the `.env` link if that link pointed at the removed file.
+deletes the project from the tenant, it deletes the environment file, and it
+removes the default link if that link pointed at the removed file.
 
 **The token goes first.** Palette refuses to delete a project while a token
 names it as the default project, and the API reports that as an HTTP 500:
@@ -82,10 +85,10 @@ FORCE=1 just remove-project <project>
 The recipe removes **no** lab object on the workstation. Run `just cluster-down`
 first, or the virtual machines stay and their project is gone.
 
-## Adopt an existing .env
+## Adopt a .env that you wrote
 
-A checkout from before this layout has a regular `.env` file. Move it into the
-layout one time:
+A `.env` file that you wrote by hand works where it is. To give it a project
+name and move it into the layout:
 
 ```bash
 just adopt-project <project>

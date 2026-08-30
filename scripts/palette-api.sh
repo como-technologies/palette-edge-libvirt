@@ -41,7 +41,7 @@ have = ", ".join(repr(n) for n in names)
 sys.exit(
     "error: PALETTE_PROJECT=" + repr(want) + " does not exist in this tenant.\n"
     "       The tenant has: " + have + "\n"
-    "       The name is case sensitive. Correct it in .env."
+    "       The name is case sensitive. Correct PALETTE_PROJECT."
 )
 '
 }
@@ -63,7 +63,7 @@ if not want:
 elif want not in [p["metadata"]["name"] for p in items]:
     sys.exit(
         "\nerror: PALETTE_PROJECT=" + repr(want)
-        + " is not in this list. Correct it in .env."
+        + " is not in this list. Correct PALETTE_PROJECT."
     )
 '
 	;;

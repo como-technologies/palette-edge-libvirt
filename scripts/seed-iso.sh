@@ -22,7 +22,7 @@ seed_dir="${2:?seed dir required}"
 build_dir="${3:?build dir required}"
 root="$(repo_root)"
 
-: "${PALETTE_EDGE_TOKEN:?PALETTE_EDGE_TOKEN is empty. See .env.example.}"
+: "${PALETTE_EDGE_TOKEN:?PALETTE_EDGE_TOKEN is empty. Run: just projects}"
 need_project
 
 vip_skip="${PALETTE_VIP_SKIP:-true}"

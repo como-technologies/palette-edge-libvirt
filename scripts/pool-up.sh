@@ -19,7 +19,13 @@ if virsh pool-info "$POOL" >/dev/null 2>&1; then
 else
 	# libvirt runs as root for the qemu:///system connection, so the parent
 	# directory needs root to create it.
-	sudo mkdir -p "$target"
+	#
+	# Test first. `just nuke` removes the pool and keeps the directory, and a
+	# rebuild then asked for the sudo password with no work to do. A recipe
+	# that asks for a password also fails where there is no terminal.
+	if [ ! -d "$target" ]; then
+		sudo mkdir -p "$target"
+	fi
 	virsh pool-define-as "$POOL" dir --target "$target" >/dev/null
 	info "defined pool $POOL at $target"
 fi

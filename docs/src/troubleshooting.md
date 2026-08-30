@@ -10,7 +10,7 @@ Read the detail column. It names the fix. The usual causes are:
 | `libvirt group` | Your session is older than `just host-setup`. | Log out and log in again. |
 | `daemon` | The libvirt socket is not active. | Run `sudo systemctl enable --now libvirtd.socket`. |
 | `virsh`, `virt-install` | The packages are absent. | Run `just host-setup`. |
-| `PALETTE_EDGE_TOKEN` | There is no `.env` file. | Run `cp .env.example .env` and edit it. |
+| `PALETTE_EDGE_TOKEN` | This checkout reads no project. | Run `just projects`, then `just default-project <project>`. |
 
 ## The screen is blank after the restart
 
@@ -147,7 +147,8 @@ If the project name is correct, test each item:
 5. **The token is wrong.** Open Palette at **Tenant Settings**, then
    **Registration Tokens**. Confirm that the token is active and not expired.
    Then follow [Rotate the token](./edge-hosts.md#rotate-the-token).
-6. **The seed ISO is old.** A change to `.env` does not change an existing seed.
+6. **The seed ISO is old.** A change to the project file does not change an
+   existing seed.
    Run `just seed-clean`, then `just seed-all`, then rebuild the host.
 
 ## The host installs the agent but never registers
@@ -274,7 +275,8 @@ The GitHub Actions workflow always installs it, so the check runs there.
 ## The workstation runs out of memory
 
 `just preflight` prints the requested memory and the physical memory. Lower
-`WORKER_COUNT` or `WORKER_MEMORY_MB` in `.env`. Then run `just cluster-down` and
+`WORKER_COUNT` or `WORKER_MEMORY_MB` in the project file. Then run
+`just cluster-down` and
 `just cluster-up`.
 
 ## `just host-up` cannot write to the pool directory

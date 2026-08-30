@@ -23,6 +23,7 @@ PAIRS=(
 	"cluster-up          cluster-down"
 	"new-project         remove-project"
 	"adopt-project       unadopt-project"
+	"adopt-xdg           unadopt-xdg"
 	"docs                docs-clean"
 	"docs-theme          docs-theme-clean"
 	"bash-completion-install bash-completion-uninstall"

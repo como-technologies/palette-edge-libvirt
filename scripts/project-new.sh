@@ -4,8 +4,11 @@
 # The script does three things:
 #   1. It creates the project in your Palette tenant.
 #   2. It creates a registration token that belongs to that project.
-#   3. It writes envs/<name>.env with good defaults and that token.
-#   4. It points the .env symbolic link at the new file.
+#   3. It writes the environment file of the project with that token.
+#   4. It makes that project the default.
+#
+# The environment file goes to ~/.config/palette-edge-libvirt/envs/<name>.env.
+# It is outside the checkout, so `rm -rf` on the checkout keeps it.
 #
 # The lab keeps one environment file for each project. A different LAB_NAME and
 # a different LAB_SUBNET for each project let two labs run at the same time.
@@ -22,7 +25,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/palette-lib.sh"
 name="${1:?give a project name}"
 description="${2:-}"
 root="$(repo_root)"
-envs="$root/envs"
+envs="$(envs_dir)"
 target="$envs/$name.env"
 
 need curl
@@ -93,7 +96,7 @@ token="$(token_value "$token_uid")"
 # --- 3. the environment file ------------------------------------------------
 
 if [ -f "$target" ]; then
-	skip "envs/$name.env already exists"
+	skip "$(short_path "$target") already exists"
 else
 	# lab_name: a short prefix for the libvirt objects. It must be unique, so
 	# every object of two labs stays separate.
@@ -131,7 +134,7 @@ else
 	done
 	[ -n "$lab_subnet" ] || die "no free subnet between 192.168.140 and 192.168.199"
 
-	info "write envs/$name.env (lab $lab_name, subnet $lab_subnet.0/24)"
+	info "write $(short_path "$target") (lab $lab_name, subnet $lab_subnet.0/24)"
 
 	NAME="$name" LAB="$lab_name" SUBNET="$lab_subnet" \
 		SRC="$root/.env.example" DST="$target" \
@@ -163,6 +166,6 @@ fi
 "$(dirname "${BASH_SOURCE[0]}")/project-default.sh" "$name"
 
 if ! grep -qE '^PALETTE_EDGE_TOKEN=.+$' "$target"; then
-	warn "PALETTE_EDGE_TOKEN is empty in envs/$name.env. Add it before you run
+	warn "PALETTE_EDGE_TOKEN is empty in $(short_path "$target"). Add it before you run
          just cluster-up."
 fi

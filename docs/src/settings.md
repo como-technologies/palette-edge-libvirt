@@ -1,6 +1,7 @@
 # Settings
 
-This page describes each value in `envs/<project>.env`.
+This page describes each value in the environment file of a project.
+[The lab directories](./directories.md) gives the path of that file.
 [The project layout](./project-layout.md) describes the files themselves and
 which values `just new-project` chooses.
 
