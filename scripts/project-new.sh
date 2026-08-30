@@ -97,7 +97,10 @@ if [ -f "$target" ]; then
 else
 	# lab_name: a short prefix for the libvirt objects. It must be unique, so
 	# every object of two labs stays separate.
-	lab_name="$(printf '%s' "$name" | tr -cd 'a-z0-9' | cut -c1-8)"
+	#
+	# The limit of 12 characters comes from the bridge name. A Linux interface
+	# name takes 15 characters, and the bridge is "br-" and the lab name.
+	lab_name="$(printf '%s' "$name" | tr -cd 'a-z0-9' | cut -c1-12)"
 	[ -n "$lab_name" ] || lab_name="lab"
 	suffix=""
 	while grep -qsE "^LAB_NAME=${lab_name}${suffix}$" "$envs"/*.env 2>/dev/null; do

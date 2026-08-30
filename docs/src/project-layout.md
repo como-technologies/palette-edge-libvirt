@@ -33,7 +33,7 @@ Step 3 chooses values that do not collide with an existing lab:
 | Value | How the recipe chooses it |
 | --- | --- |
 | `PALETTE_PROJECT` | The project name. |
-| `LAB_NAME` | The first 8 characters of the name, with a number if that prefix is in use. |
+| `LAB_NAME` | The first 12 characters of the name, with a number if that prefix is in use. |
 | `LAB_SUBNET` | The first free subnet from 192.168.140 to 192.168.199. |
 | `PALETTE_EDGE_TOKEN` | The token from step 2. |
 

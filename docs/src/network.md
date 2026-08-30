@@ -12,7 +12,11 @@ the network.
 {{#include ../../templates/network.xml:network}}
 ```
 
-`@NAME@` becomes `$LAB_NAME-net`. `@SUBNET@` becomes `$LAB_SUBNET`.
+`@NAME@` becomes `$LAB_NAME-net`, `@BRIDGE@` becomes `br-$LAB_NAME`, and
+`@SUBNET@` becomes `$LAB_SUBNET`.
+
+The bridge name is a Linux interface name, so `LAB_NAME` takes 12 characters at
+most. See [Settings](./settings.md#the-lab-size).
 
 ## Address plan
 

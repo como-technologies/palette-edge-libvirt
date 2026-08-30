@@ -93,7 +93,7 @@ infra-down: pool-down net-down
 
 # Create and start the isolated NAT network for the lab
 net-up:
-    @NETWORK="{{ net }}" SUBNET="{{ subnet }}" BUILD_DIR="{{ build_dir }}" scripts/net-up.sh
+    @NETWORK="{{ net }}" LAB="{{ lab }}" SUBNET="{{ subnet }}" BUILD_DIR="{{ build_dir }}" scripts/net-up.sh
 
 # Stop and remove the lab network
 net-down:

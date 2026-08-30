@@ -159,6 +159,12 @@ returns HTTP 204/201 with **no binding applied** — silent, and an unbound toke
 registers hosts into no project. Never infer a Palette write shape from its
 read shape.
 
+**`LAB_NAME` takes 12 characters at most.** The libvirt bridge is `br-$LAB_NAME`
+and a Linux interface name takes 15. Over that, libvirt defines the network fine
+and fails at start with "Numerical result out of range". `net-up.sh` checks the
+length up front, and also refuses any `@PLACEHOLDER@` that survives the sed —
+libvirt accepts a literal `@BRIDGE@` as a name and then builds no device.
+
 **`UID` is readonly in bash.** `UID=x python3 ...` fails with "readonly
 variable"; the helpers use `PEL_UID`. shellcheck does not catch this.
 

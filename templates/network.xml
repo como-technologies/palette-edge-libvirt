@@ -1,8 +1,13 @@
 <!--
   The isolated NAT network of the lab.
 
-  scripts/net-up.sh replaces @NAME@ with LAB_NAME-net and @SUBNET@ with
-  LAB_SUBNET. Then it defines the network.
+  scripts/net-up.sh replaces @NAME@ with LAB_NAME-net, @BRIDGE@ with
+  br-LAB_NAME, and @SUBNET@ with LAB_SUBNET. Then it defines the network.
+
+  The bridge name is a Linux interface name, so it takes 15 characters at most.
+  "br-" leaves 12 characters for LAB_NAME, and project-new.sh keeps to that.
+  A longer name gives "error creating bridge interface ...: Numerical result
+  out of range" when the network starts.
 
   The DHCP range starts at .50. The addresses .10 to .49 stay free. Use them for
   a fixed address, for example a registry mirror or a control plane VIP.
@@ -15,7 +20,7 @@
       <port start='1024' end='65535'/>
     </nat>
   </forward>
-  <bridge name='virbr-@NAME@' stp='on' delay='0'/>
+  <bridge name='@BRIDGE@' stp='on' delay='0'/>
   <domain name='@NAME@.lab' localOnly='yes'/>
   <ip address='@SUBNET@.1' netmask='255.255.255.0'>
     <dhcp>

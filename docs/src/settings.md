@@ -43,8 +43,13 @@ The Palette agent needs 2 CPU, 8 GB of memory, and 100 GB of storage for each
 host. These values give that minimum or more.
 
 `LAB_NAME` is the prefix of every libvirt object. A lab named `pethelio` gives
-the network `pethelio-net`, the pool `pethelio-pool`, and the domains
-`pethelio-cp-1`, `pethelio-wk-1`, and `pethelio-wk-2`.
+the network `pethelio-net`, the pool `pethelio-pool`, the bridge `br-pethelio`,
+and the domains `pethelio-cp-1`, `pethelio-wk-1`, and `pethelio-wk-2`.
+
+`LAB_NAME` takes **12 characters at most**. The bridge is a Linux interface
+name, and the kernel takes 15 characters for one of those. `br-` leaves 12.
+`just new-project` keeps to that limit, and `just net-up` stops with a message
+if a longer name reaches it.
 
 Two labs run at the same time if `LAB_NAME` and `LAB_SUBNET` both differ.
 
