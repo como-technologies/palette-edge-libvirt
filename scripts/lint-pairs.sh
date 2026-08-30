@@ -27,6 +27,10 @@ PAIRS=(
 	"docs-theme          docs-theme-clean"
 	"bash-completion-install bash-completion-uninstall"
 	"api-key-set         api-key-clear"
+	"kubectl-install     kubectl-uninstall"
+	"runner-setup        runner-setup-undo"
+	"runner-up           runner-down"
+	"ci-setup            ci-setup-undo"
 )
 # ANCHOR_END: pairs
 

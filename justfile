@@ -72,6 +72,34 @@ os_pack_version := env_var_or_default("OS_PACK_VERSION", "2.1.0")
 k8s_version := env_var_or_default("K8S_VERSION", "1.33.13")
 cni_version := env_var_or_default("CNI_VERSION", "3.32.1")
 csi_version := env_var_or_default("CSI_VERSION", "0.0.37")
+# `just cluster-verify` reads the cluster with kubectl. kubectl supports one
+# minor version each side of the server, so this follows the pack by default.
+kubectl_version := env_var_or_default("KUBECTL_VERSION", k8s_version)
+
+# Continuous integration builds a lab of its own on the runner. The name and the
+# subnet are fixed and OUTSIDE the range that new-project allocates
+# (192.168.140 to 192.168.199), so a CI lab and a lab of yours never collide,
+# and a teardown of one never frees the address of the other.
+ci_cluster := env_var_or_default("CI_CLUSTER_NAME", "ci")
+ci_subnet := env_var_or_default("CI_CLUSTER_SUBNET", "192.168.210")
+
+# The user that runs the GitHub Actions runner. It is not your account: it holds
+# no sudo, and `just runner-setup` gives it the libvirt group and one pool
+# directory.
+runner_user := env_var_or_default("RUNNER_USER", "ghrunner")
+runner_version := env_var_or_default("RUNNER_VERSION", "2.337.0")
+
+# The checksum of the runner archive, pinned beside the version. A pinned
+# checksum is what makes the download safe to run on your workstation.
+# `just runner-pin` prints the pair for the current release.
+runner_sha256 := env_var_or_default("RUNNER_SHA256", "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613")
+runner_home := env_var_or_default("RUNNER_HOME", "/home" / runner_user)
+
+# The runner needs a `just` of its own. The one in your home directory belongs
+# to you, and the Ubuntu package does not know `dotenv-command`. cargo installs
+# it, exactly as the hosted workflow installs mdbook.
+just_version := env_var_or_default("JUST_VERSION", "1.58.0")
+runner_labels := env_var_or_default("RUNNER_LABELS", "self-hosted,linux,x64,kvm")
 
 # ANCHOR: dirs
 # The tooling directories. The checkout holds the source only. Delete the checkout
@@ -362,6 +390,16 @@ cluster-plan: (_tofu "plan")
 
 # ANCHOR_END: clusterup
 
+# Test that the cluster works: the nodes, the pod range, the packs, and DNS
+cluster-verify:
+    @CLUSTER="{{ cluster }}" CONTROL_COUNT="{{ control_count }}" \
+        WORKER_COUNT="{{ worker_count }}" K8S_VERSION="{{ k8s_version }}" \
+        POD_CIDR="{{ pod_cidr }}" CLUSTER_SUBNET="{{ subnet }}" \
+        CLUSTER_VIP="{{ cluster_vip }}" TOFU_VERSION="{{ tofu_version }}" \
+        CNI_VERSION="{{ cni_version }}" CSI_VERSION="{{ csi_version }}" \
+        OS_PACK_VERSION="{{ os_pack_version }}" \
+        scripts/cluster-verify.sh
+
 # Show the cluster profile, the cluster, and the link to the Palette console
 cluster-show: (_tofu "output")
 
@@ -389,6 +427,62 @@ tofu-install:
 # Remove the OpenTofu that tofu-install put in ~/.local/bin
 tofu-uninstall:
     @BIN_DIR="{{ bin_dir }}" CACHE_DIR="{{ cache_dir }}/tofu" scripts/tofu-uninstall.sh
+
+# --- kubectl ----------------------------------------------------------------
+
+# Install kubectl for the pinned Kubernetes version into ~/.local/bin. No root.
+kubectl-install:
+    @KUBECTL_VERSION="{{ kubectl_version }}" BIN_DIR="{{ bin_dir }}" \
+        CACHE_DIR="{{ cache_dir }}/kubectl" scripts/kubectl-install.sh
+
+# Remove the kubectl that kubectl-install put in ~/.local/bin
+kubectl-uninstall:
+    @BIN_DIR="{{ bin_dir }}" CACHE_DIR="{{ cache_dir }}/kubectl" scripts/kubectl-uninstall.sh
+
+# --- continuous integration -------------------------------------------------
+# The runner is a process on this workstation, not a virtual machine, so the
+# cluster nodes it builds run on bare metal. See docs/src/ci.md.
+
+# ANCHOR: runner
+# Make the runner user, its groups, and its pool directory. Needs root one time.
+runner-setup:
+    @RUNNER_USER="{{ runner_user }}" RUNNER_HOME="{{ runner_home }}" \
+        CI_CLUSTER="{{ ci_cluster }}" JUST_VERSION="{{ just_version }}" \
+        scripts/runner-setup.sh
+
+# Remove the runner user and its pool directory. Asks before it deletes.
+runner-setup-undo:
+    @RUNNER_USER="{{ runner_user }}" RUNNER_HOME="{{ runner_home }}" \
+        CI_CLUSTER="{{ ci_cluster }}" scripts/runner-setup-undo.sh
+
+# Install and start the GitHub Actions runner as a systemd service
+runner-up:
+    @RUNNER_USER="{{ runner_user }}" RUNNER_HOME="{{ runner_home }}" \
+        RUNNER_VERSION="{{ runner_version }}" RUNNER_SHA256="{{ runner_sha256 }}" \
+        RUNNER_LABELS="{{ runner_labels }}" CACHE_DIR="{{ cache_dir }}/runner" \
+        scripts/runner-up.sh
+
+# Stop the runner, remove its service, and take it out of the repository
+runner-down:
+    @RUNNER_USER="{{ runner_user }}" RUNNER_HOME="{{ runner_home }}" \
+        scripts/runner-down.sh
+# ANCHOR_END: runner
+
+# Show the state of the runner service and its registration
+runner-status:
+    @scripts/runner-status.sh
+
+# Print the version and the checksum of the current runner release
+runner-pin:
+    @scripts/runner-pin.sh
+
+# Protect main, make the lab environment, and store the Palette key in it
+ci-setup:
+    @scripts/ci-setup.sh
+
+# Remove the lab environment and the protection of main. Asks first.
+ci-setup-undo:
+    @scripts/ci-setup-undo.sh
 
 # --- everything -------------------------------------------------------------
 

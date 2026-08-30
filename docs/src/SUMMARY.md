@@ -21,6 +21,7 @@
 - [The cluster profile](./cluster-profile.md)
 - [The workstation](./workstation.md)
 - [Benchmark](./benchmark.md)
+- [Continuous integration](./ci.md)
 - [The tooling directories](./directories.md)
 - [The project layout](./project-layout.md)
 - [Design decisions](./decisions.md)

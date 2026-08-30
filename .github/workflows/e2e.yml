@@ -1,0 +1,113 @@
+# Build a real cluster on the self-hosted runner, test it, and remove it.
+#
+# The repository is public, so this workflow must never run code that no person
+# reviewed. Three properties give that, and each one is load bearing:
+#
+#   1. There is NO `pull_request` trigger. A fork cannot fire push, schedule, or
+#      workflow_dispatch, so a fork has no path to the workstation.
+#   2. main is protected and a merge needs a review, so the code that this
+#      workflow runs is code that a person approved. See scripts/ci-setup.sh.
+#   3. The job takes no third-party action. Every tool it needs is already on
+#      the runner, or a recipe of this repository installs it. A third-party
+#      action on a mutable tag would run on the workstation with no review at
+#      all.
+#
+# The lab of this workflow is separate from any lab of the person who owns the
+# workstation: CLUSTER_NAME and CLUSTER_SUBNET both differ, and the subnet sits
+# outside the range that `just new-project` allocates.
+name: e2e
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One lab, one job. A second job would take the same network, the same pool, and
+# the same host names.
+concurrency:
+  group: self-hosted-lab
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    # Insurance. The triggers above carry no pull_request, and this holds even
+    # if one is added later.
+    if: github.event_name != 'pull_request'
+
+    runs-on: [self-hosted, linux, x64, kvm]
+
+    # The environment holds PALETTE_API_KEY and takes a reviewer, so a job that
+    # nobody approves receives no credentials.
+    environment: lab
+
+    # A hung registration waits 900s and OpenTofu waits 90 minutes. Neither one
+    # may hold the workstation for an afternoon.
+    timeout-minutes: 60
+
+    env:
+      # The CI lab. Both values sit outside the range that new-project
+      # allocates, so this never takes the address of a lab of yours.
+      CLUSTER_NAME: ci
+      CLUSTER_SUBNET: 192.168.210
+      CLUSTER_VIP: 192.168.210.10
+      POD_CIDR: 10.244.0.0/16
+      # The key never reaches a file on the workstation. Every recipe reads it
+      # from the environment, so the job leaves no credential behind.
+      PALETTE_API_KEY: ${{ secrets.PALETTE_API_KEY }}
+      PALETTE_PROJECT: ci-${{ github.run_id }}
+
+    steps:
+      # No actions/checkout, so the job runs no third-party code. git is on the
+      # runner already.
+      - name: Take the code
+        run: |
+          git init --quiet .
+          git remote remove origin 2>/dev/null || true
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --depth 1 origin "${GITHUB_SHA}"
+          git checkout --force --quiet FETCH_HEAD
+          git clean -ffdx --exclude=.git
+
+      # The runner shell is not a login shell, so it reads no profile. cargo
+      # puts just in ~/.cargo/bin, and tofu and kubectl go in ~/.local/bin.
+      # Neither is on the default PATH.
+      - name: Put the user bin directories on PATH
+        run: |
+          echo "${HOME}/.cargo/bin" >> "${GITHUB_PATH}"
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+
+      - name: Report the settings
+        run: just config
+
+      - name: Remove anything that an earlier run left
+        run: FORCE=1 just nuke || true
+
+      - name: Install OpenTofu and kubectl
+        run: |
+          just tofu-install
+          just kubectl-install
+
+      - name: Make the project
+        run: just new-project "${PALETTE_PROJECT}" "CI run ${{ github.run_id }}"
+
+      - name: Make the machines
+        run: just infra-up
+
+      - name: Make the cluster
+        run: just cluster-up
+
+      - name: Test the cluster
+        run: just cluster-verify
+
+      - name: Remove everything
+        if: always()
+        run: FORCE=1 just nuke
+
+      - name: Report what is left
+        if: always()
+        run: just ls
