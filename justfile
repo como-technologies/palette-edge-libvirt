@@ -13,6 +13,19 @@
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
+# Every script of this repository prints its own error, and every message names
+# the recipe that corrects the condition. `just` adds a line of its own after
+# that message:
+#
+#   error: recipe `palette-hosts` failed on line 300 with exit code 1
+#
+# The line names a line of this file. It helps a person who edits the justfile,
+# and it says nothing to a person who is using the tooling. It also comes last,
+# so it is the line that stays on the screen while the correction scrolls away.
+#
+# The exit code stays, so a script that calls a recipe still sees the failure.
+set no-exit-message
+
 # The settings come from the environment file of the default project, and that
 # file is in your home directory. A `set` takes a constant, so it can name no
 # path there. It can name a command, and the command computes the path. The

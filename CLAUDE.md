@@ -43,6 +43,15 @@ just docs-serve           # book at http://localhost:3000 with live reload
 source <(just bash-completion)   # recipe + argument completion for this shell
 ```
 
+**A failing recipe prints its own message and nothing else.** `set
+no-exit-message` in the justfile drops just's trailing `error: recipe `x` failed
+on line N with exit code M`, which named a line of the justfile and buried the
+correction that `die()` had just printed. The exit code is unchanged, and just's
+*argument* errors (wrong number of positional arguments) still print. So every
+`die()` message must name the fix — it is now the only thing the user sees.
+Boolean settings take the bare form: `set no-exit-message`, not `:= true`, or
+`just --fmt --check` fails.
+
 There is no test suite. `just lint` is the check that must pass: `just --fmt
 --check`, `lint-pairs.sh` (rule 2), `lint-params.sh`, `lint-includes.sh`
 (rule 5), `shellcheck`, and `mdbook build docs`.
