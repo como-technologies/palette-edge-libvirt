@@ -46,6 +46,37 @@ just seed pe-wk-3
 just console pe-cp-1
 ```
 
+## Bash completion
+
+The completion completes the recipe names, and it completes the arguments: the
+host names, the roles `control` and `worker`, and the project names.
+
+For the current shell:
+
+```bash
+source <(just bash-completion)
+```
+
+For every shell, choose one:
+
+```bash
+just bash-completion-install          # writes a file for your user
+just bash-completion >> ~/.bashrc     # writes the script into your .bashrc
+```
+
+`bash-completion-install` prints the path of the file, so this also works:
+
+```bash
+source "$(just bash-completion-install)"
+```
+
+`just bash-completion-uninstall` removes the installed file.
+
+The completion binds to the `just` command, so bash uses it for every project.
+This is safe. It completes the recipe names of any justfile, and it completes
+the arguments only in this checkout. In another project the argument completion
+gives nothing.
+
 ## The layers
 
 The `justfile` holds the configuration and thin recipes. Each recipe with logic

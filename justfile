@@ -255,6 +255,20 @@ docs-theme:
 docs-theme-clean:
     rm -rf docs/gruvbox docs/mermaid.min.js docs/mermaid-init.js
 
+# --- shell ------------------------------------------------------------------
+
+# Print the bash completion. Use: source <(just bash-completion)
+bash-completion:
+    @scripts/bash-completion.sh print
+
+# Install the bash completion for your user and print its path
+bash-completion-install:
+    @scripts/bash-completion.sh install
+
+# Remove the installed bash completion
+bash-completion-uninstall:
+    @scripts/bash-completion.sh uninstall
+
 # --- quality ----------------------------------------------------------------
 
 # Format the justfile

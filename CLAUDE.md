@@ -50,6 +50,7 @@ just console NAME         # serial console, ctrl-] to exit
 just ls                   # every lab VM with state and address
 
 just docs-serve           # book at http://localhost:3000 with live reload
+source <(just bash-completion)   # recipe + argument completion for this shell
 ```
 
 There is no test suite. `just lint` is the check that must pass. It runs three

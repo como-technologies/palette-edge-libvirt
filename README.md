@@ -45,6 +45,16 @@ just nuke
 
 Run `just` to see every recipe. Run `just config` to see the current settings.
 
+## Bash completion
+
+```bash
+source <(just bash-completion)     # this shell
+just bash-completion-install       # every shell
+```
+
+The completion adds the host names, the roles, and the project names. It is
+safe for every project: in another checkout it completes recipe names only.
+
 ## Documentation
 
 ```bash
