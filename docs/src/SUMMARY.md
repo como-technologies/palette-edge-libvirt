@@ -19,5 +19,6 @@
 # Reference
 
 - [Recipes](./recipes.md)
+- [Settings](./settings.md)
 - [Project rules](./rules.md)
 - [Troubleshooting](./troubleshooting.md)
