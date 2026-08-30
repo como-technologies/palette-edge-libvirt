@@ -1,17 +1,17 @@
 # palette-edge-libvirt
 
-A local Kubernetes test lab that runs on one workstation.
+A local Kubernetes test cluster that runs on one workstation.
 
-The lab uses Spectro Cloud Palette (Profiles, Packs, and Edge) to create and
-remove test Kubernetes clusters on libvirt/KVM virtual machines. You validate a
+It uses Spectro Cloud Palette (Profiles, Packs, and Edge) to create and remove
+test Kubernetes clusters on libvirt/KVM virtual machines. You validate a
 combination of an operating system, a CNI, a CSI, and add-on packs on virtual
 machines first. You commit the combination to real hardware only after the test
 passes.
 
 The reference workstation is a System76 Thelio with 32 cores and 128 GB of RAM.
 
-The lab uses Palette **agent mode**. Each host boots the stock Ubuntu cloud
-image, and cloud-init installs the Palette agent. The lab builds no operating
+The tooling uses Palette **agent mode**. Each host boots the stock Ubuntu cloud
+image, and cloud-init installs the Palette agent. The tooling builds no operating
 system image, so it needs no Docker and no CanvOS.
 
 ## Quick start
@@ -22,12 +22,13 @@ just host-setup          # install libvirt, KVM, and the helper tools
 just api-key-set         # store your Palette API key, one time
 just new-project pe      # makes the project, its token, and its env file
 just preflight           # test the workstation
-just cluster-up          # create the network, pool, image, seeds, and hosts
-just palette-hosts       # confirm the hosts registered
+just infra-up            # network, pool, image, seeds, machines, registration
 ```
 
-Then you make a cluster profile and a cluster from those hosts in Palette. Use
-**Palette eXtended Kubernetes - Edge (PXK-E)** for the Kubernetes layer.
+`infra-up` returns when every host is registered, so the next layer is ready.
+That layer makes the cluster profile and the cluster in Palette, with
+**Palette eXtended Kubernetes - Edge (PXK-E)** for the Kubernetes layer. It has
+no recipe yet; Terraform is the plan.
 
 To remove everything on the workstation:
 

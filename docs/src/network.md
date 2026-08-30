@@ -1,6 +1,6 @@
-# The lab network
+# The cluster network
 
-The lab uses a private NAT network. The virtual machines reach the internet, and
+The cluster uses a private NAT network. The virtual machines reach the internet, and
 they reach each other. Nothing on your local network reaches them.
 
 ## The definition
@@ -12,11 +12,11 @@ the network.
 {{#include ../../templates/network.xml:network}}
 ```
 
-`@NAME@` becomes `$LAB_NAME-net`, `@BRIDGE@` becomes `br-$LAB_NAME`, and
-`@SUBNET@` becomes `$LAB_SUBNET`.
+`@NAME@` becomes `$CLUSTER_NAME-net`, `@BRIDGE@` becomes `br-$CLUSTER_NAME`, and
+`@SUBNET@` becomes `$CLUSTER_SUBNET`.
 
-The bridge name is a Linux interface name, so `LAB_NAME` takes 12 characters at
-most. See [Settings](./settings.md#the-lab-size).
+The bridge name is a Linux interface name, so `CLUSTER_NAME` takes 12 characters at
+most. See [Settings](./settings.md#the-cluster-size).
 
 ## Address plan
 
@@ -45,7 +45,7 @@ source.
 
 ## A subnet conflict
 
-`just net-up` fails if `$LAB_SUBNET` conflicts with another network. To see the
+`just net-up` fails if `$CLUSTER_SUBNET` conflicts with another network. To see the
 networks on your workstation:
 
 ```bash
@@ -53,10 +53,10 @@ virsh net-list --all
 virsh net-dumpxml default
 ```
 
-Change `LAB_SUBNET` in the project file to a free subnet. Then run
+Change `CLUSTER_SUBNET` in the project file to a free subnet. Then run
 `just net-down` and `just net-up`.
 
-## A second lab
+## A second cluster
 
-Change `LAB_NAME` and `LAB_SUBNET` in a second project file. Every object gets
-the new prefix, so the two labs do not conflict.
+Change `CLUSTER_NAME` and `CLUSTER_SUBNET` in a second project file. Every object gets
+the new prefix, so the two clusters do not conflict.

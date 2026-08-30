@@ -3,16 +3,16 @@
 #
 # This script is idempotent. It defines the pool only if the pool is absent.
 #
-# Env: POOL LAB
+# Env: POOL CLUSTER
 
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-: "${POOL:?}" "${LAB:?}"
+: "${POOL:?}" "${CLUSTER:?}"
 need virsh
 
-target="/var/lib/libvirt/images/$LAB"
+target="/var/lib/libvirt/images/$CLUSTER"
 
 if virsh pool-info "$POOL" >/dev/null 2>&1; then
 	skip "pool $POOL is already defined"

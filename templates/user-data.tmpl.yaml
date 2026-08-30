@@ -1,12 +1,12 @@
 #cloud-config
-# The cloud-init user-data for one lab host.
+# The cloud-init user-data for one cluster host.
 #
 # scripts/seed-iso.sh replaces each placeholder and writes the result into a
 # CIDATA ISO. The VM gets that ISO as a CD-ROM. A placeholder is a name between
 # two at signs.
 #
 # The host boots a stock Ubuntu cloud image. cloud-init then installs the
-# Palette agent. The lab builds no custom operating system image.
+# Palette agent. The tooling builds no custom operating system image.
 #
 # Do not put your token in this file. The token comes from the project
 # environment file at build time.

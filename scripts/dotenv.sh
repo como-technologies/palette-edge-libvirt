@@ -7,7 +7,7 @@
 #
 # `just` gives a setting no function and no tilde, so the justfile cannot name
 # a directory in your home directory. It can name a command, and a command
-# computes the path. This is the reason that the lab keeps no file in the
+# computes the path. This is the reason that the tooling keeps no file in the
 # checkout.
 #
 # `just` runs this script for every recipe, so the script does one test and one

@@ -8,7 +8,7 @@
 # in advance.
 #
 # The script refuses while the project holds a host or a cluster. Remove the
-# lab first with `just cluster-down`, then deregister the hosts in Palette.
+# cluster first with `just cluster-down`, then deregister the hosts in Palette.
 #
 # This script is idempotent. An absent project or an absent file gives a skip.
 #
@@ -44,7 +44,7 @@ else
 
 	if [ "$hosts" -gt 0 ] || [ "$clusters" -gt 0 ]; then
 		die "project $name still holds $clusters cluster(s) and $hosts host(s).
-     Delete the cluster in Palette. Then remove the lab and its records:
+     Remove the cluster layer, then the machines and their records:
        just cluster-down
        just palette-hosts                  # the names
        just host-deregister <host>         # one for each name

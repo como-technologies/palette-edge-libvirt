@@ -1,6 +1,6 @@
 # The project layout
 
-One lab serves one Palette project. The lab keeps one environment file for each
+One cluster serves one Palette project. The cluster keeps one environment file for each
 project, and a link selects the default one:
 
 ```text
@@ -10,7 +10,7 @@ project, and a link selects the default one:
 ```
 
 The files are outside the checkout, so `rm -rf` on the checkout destroys no
-project. [The lab directories](./directories.md) describes the layout and the
+project. [The tooling directories](./directories.md) describes the layout and the
 link that selects one file.
 
 Each file holds a registration token. The directory has the mode 0700 and each
@@ -31,17 +31,17 @@ The recipe does four things:
 Step 2 removes the last manual step. Nobody copies a token from the console.
 `PALETTE_TOKEN_DAYS` sets the lifetime, and the default is 90 days.
 
-Step 3 chooses values that do not collide with an existing lab:
+Step 3 chooses values that do not collide with an existing cluster:
 
 | Value | How the recipe chooses it |
 | --- | --- |
 | `PALETTE_PROJECT` | The project name. |
-| `LAB_NAME` | The first 12 characters of the name, with a number if that prefix is in use. |
-| `LAB_SUBNET` | The first free subnet from 192.168.140 to 192.168.199. |
+| `CLUSTER_NAME` | The first 12 characters of the name, with a number if that prefix is in use. |
+| `CLUSTER_SUBNET` | The first free subnet from 192.168.140 to 192.168.199. |
 | `PALETTE_EDGE_TOKEN` | The token from step 2. |
 
 The recipe reads the subnets of the other environment files **and** of the
-libvirt networks, so a new project never takes the subnet of a running lab.
+libvirt networks, so a new project never takes the subnet of a running cluster.
 
 Every other value comes from `templates/project.env`. See
 [Settings](./settings.md).
@@ -73,7 +73,7 @@ Unable to delete the resource as <name> edgetoken(s) in-use
 The recipe protects you two times:
 
 - It refuses while the project holds a cluster or a host. Delete the cluster in
-  Palette, run `just cluster-down`, then deregister the hosts.
+  Palette, run `just infra-down`, then deregister the hosts.
 - It asks you to type the project name, and it names the token that it deletes
   with the project.
 
@@ -83,18 +83,18 @@ The recipe protects you two times:
 FORCE=1 just remove-project <project>
 ```
 
-The recipe removes **no** lab object on the workstation. Run `just cluster-down`
+The recipe removes **no** cluster object on the workstation. Run `just infra-down`
 first, or the virtual machines stay and their project is gone.
 
 
-## Two labs at the same time
+## Two clusters at the same time
 
-Two projects with a different `LAB_NAME` and a different `LAB_SUBNET` run at the
+Two projects with a different `CLUSTER_NAME` and a different `CLUSTER_SUBNET` run at the
 same time. `new-project` gives both values, so this needs no edit.
 
 The recipes operate on the default project only. Change the default first:
 
 ```bash
 just default-project iris
-just cluster-up
+just infra-up
 ```

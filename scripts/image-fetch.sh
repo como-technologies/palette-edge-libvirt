@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Download the stock Ubuntu cloud image and test its checksum.
 #
-# The lab uses the unmodified image from Canonical. It builds no custom
+# The tooling uses the unmodified image from Canonical. It builds no custom
 # operating system image. The Palette agent installs at the first boot. See
 # docs/src/architecture.md.
 #

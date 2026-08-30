@@ -1,11 +1,11 @@
 # Design decisions
 
-This page records the decisions that shape the lab, and the evidence for each
+This page records the decisions that shape the cluster, and the evidence for each
 one. Read it before you change a decision.
 
 ## Agent mode, not Edge Native
 
-Palette gives two ways to make an edge host. The lab uses agent mode.
+Palette gives two ways to make an edge host. The cluster uses agent mode.
 
 | | Edge Native | Agent mode |
 | --- | --- | --- |
@@ -29,13 +29,13 @@ mounts the Docker socket, and it stops with a message when Docker is absent.
 **The agent mode documentation asks for no Docker on the host.** It says:
 "Avoid installing Docker on the host where you want to install the agent."
 
-Agent mode also fits the purpose of the lab. The lab tests combinations of
+Agent mode also fits the purpose of the cluster. The cluster tests combinations of
 Kubernetes, CNI, CSI, and add-ons. Those live in the cluster profile in
 Palette, not in the operating system image, so a new combination needs no new
 image and no new build.
 
 The cost of the decision is the Kubernetes list. Agent mode gives PXK-E and
-k3s. Edge Native gives more. PXK-E is the distribution that this lab tests, so
+k3s. Edge Native gives more. PXK-E is the distribution that this cluster tests, so
 the cost is zero today.
 
 ## The token belongs to the project, the API key does not
@@ -49,24 +49,24 @@ gives a key no scope: the key object holds an expiry and a user, and nothing
 else. Only three tenant roles can manage registration tokens, and the Project
 Admin role is not one of them. A key is therefore a tenant credential, and it
 lives outside the checkout at `~/.config/palette-edge-libvirt/api-key`. Every
-other lab file moved out of the checkout for the same reason. See
-[The lab directories](./directories.md).
+other cluster file moved out of the checkout for the same reason. See
+[The tooling directories](./directories.md).
 
 An earlier version wrote the key into each project file. One project removal
 then destroyed a tenant credential, and Palette does not show a key value again
 after it makes one.
 
-## The lab uses one subnet for each project
+## The cluster uses one subnet for each project
 
-`just new-project` gives each project a different `LAB_NAME` and a different
-`LAB_SUBNET`. Two labs then run at the same time, and no object of one lab
+`just new-project` gives each project a different `CLUSTER_NAME` and a different
+`CLUSTER_SUBNET`. Two clusters then run at the same time, and no object of one cluster
 touches the other. The recipe reads the subnets of the other environment files
 and of the libvirt networks, so a new project never takes a subnet that a
-running lab uses.
+running cluster uses.
 
 ## The cluster profile has no recipe yet
 
-The lab makes the hosts. A person makes the cluster profile and the cluster in
+The cluster makes the hosts. A person makes the cluster profile and the cluster in
 Palette. This is the one gap against
 [project rule 1](./rules.md#1-every-action-is-a-recipe).
 [Create the cluster](./cluster.md) holds the console steps until a recipe

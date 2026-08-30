@@ -1,4 +1,4 @@
-# The lab directories
+# The tooling directories
 
 The checkout holds the source only. Every file that you want to keep lives in
 one of three directories in your home directory. Delete the checkout and your
@@ -12,7 +12,7 @@ To see the effective paths, run `just config`.
 {{#include ../../scripts/lib.sh:dirs}}
 ```
 
-The lab follows the XDG Base Directory specification, so `XDG_CONFIG_HOME`,
+The tooling follows the XDG Base Directory specification, so `XDG_CONFIG_HOME`,
 `XDG_DATA_HOME`, and `XDG_CACHE_HOME` move all three.
 
 | Directory | Default | Holds |

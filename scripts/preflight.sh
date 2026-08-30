@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test that the workstation can run the lab.
+# Test that the workstation can run the cluster.
 #
 # The script makes no change. It prints ok or FAIL for each item. It stops with
 # a failure code if one item fails. `just cluster-up` runs this script first.
@@ -47,7 +47,7 @@ else
 	check "iso tool" no "" "install genisoimage or xorriso"
 fi
 
-# The hosts boot a stock cloud image with the standard firmware. The lab needs
+# The hosts boot a stock cloud image with the standard firmware. The cluster needs
 # no UEFI firmware package.
 
 info "libvirt"

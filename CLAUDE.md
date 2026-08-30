@@ -13,30 +13,11 @@ These are hard rules. They override convenience.
    `x-down`. When you add `x-fetch`, add `x-clean`. Everything is reversible.
 3. **Every recipe is idempotent when possible.** Test the state, then act. If
    the object exists, call `skip` from `scripts/lib.sh` and return 0. A second
-   `just cluster-up` must create nothing.
-4. **Every recipe has a documentation comment.** `just` renders it as help text.
-5. **The docs include the source. They never copy it.** Add `# ANCHOR: name` and
-   `# ANCHOR_END: name` to the source file, then reference it from
-   `docs/src/*.md` as `{{#include ../../path:name}}`. `just lint` builds the
-   book, so a broken path or missing anchor fails the build.
-6. **All prose is ASD-STE100** (Simplified Technical English). This covers the
-   docs, the README, this file, and code comments. Short sentences (20 words max
-   in procedures). Active voice. Present tense. One instruction per sentence.
-   Keep articles. One word, one meaning. No idioms and no figures of speech.
-
-## Commands
-
-```bash
-just                      # list every recipe with its help text
-just config               # show effective config and where it came from
-just preflight            # test tools, permissions, capacity (makes no change)
-just lint                 # justfile format + shellcheck + mdbook build
-just fmt                  # format the justfile
-
-just cluster-up           # full lab: preflight, infra, image, seeds, VMs
-just cluster-down         # remove the VMs, keep infra and image
-just cluster-deregister   # remove the Palette record of every host of the lab
-just nuke                 # cluster-down + infra-down + seed-clean
+   `just infra-up             # layer 1: net, pool, image, seeds, VMs, WAIT for registration
+just infra-down           # layer 1 down: host records, VMs, pool, net
+just hosts-wait           # block until every host registers (the layer seam)
+just hosts-deregister     # remove the Palette record of every host
+just nuke                 # both layers + seeds + token + Palette project + env file
 
 just projects             # local project env files, * marks default
 just new-project NAME [d] # create Palette project + its env file + set default
@@ -48,15 +29,22 @@ just seed NAME            # build one CIDATA seed ISO
 just host-up NAME [role]  # role is control or worker (default worker)
 just host-status NAME     # agent install progress
 just console NAME         # serial console, ctrl-] to exit
-just ls                   # every lab VM with state and address
+just ls                   # every cluster VM with state and address
 
 just docs-serve           # book at http://localhost:3000 with live reload
 source <(just bash-completion)   # recipe + argument completion for this shell
 ```
 
-There is no test suite. `just lint` is the check that must pass. It runs three
-things: `just --fmt --check`, `shellcheck` on `scripts/*.sh`, and `mdbook build
-docs`. The book build is also the test for every doc include.
+There is no test suite. `just lint` is the check that must pass: `just --fmt
+--check`, `lint-pairs.sh` (rule 2), `lint-params.sh`, `lint-includes.sh`
+(rule 5), `shellcheck`, and `mdbook build docs`.
+
+**mdBook does NOT fail on a missing anchor.** It fails on a missing *file*, but a
+`{{#include file:anchor}}` whose anchor was renamed renders as a silent empty
+code block. That is exactly the doc-rot rule 5 exists to prevent, and it bit us
+during the layer rename. `scripts/lint-includes.sh` now checks both halves of
+every include; it skips the escaped `\{{#include ...}}` example in rules.md and
+accepts an anchor comment with a trailing marker (`<!-- ANCHOR: network -->`).
 
 To test one script directly, call it with its environment set. The recipes pass
 values in the environment, never as global state:
@@ -68,7 +56,31 @@ NETWORK=pe-net SUBNET=192.168.140 BUILD_DIR=./build scripts/net-up.sh
 
 ## Architecture
 
-The lab uses Palette **agent mode**, not Edge Native. Each host boots the stock
+**Two layers. Each owns objects on BOTH sides, and each `-down` removes
+everything its `-up` made.** This is the rule that keeps teardown honest.
+
+| Layer | Workstation | Palette | Recipes |
+| --- | --- | --- | --- |
+| infrastructure | network, pool, disks, VMs | **host records** | `infra-up` / `infra-down` |
+| cluster | — | profile, cluster | `cluster-up` / `cluster-down` (Terraform, not built) |
+
+**The seam is registration.** `infra-up` does not return until every host is
+`ready` in Palette (`hosts-wait.sh`, 900s default via `REGISTER_TIMEOUT`),
+because a VM that never registered is useless to the cluster layer and Terraform
+needs the host UIDs. A full layer-1 build measured 2m43s for 1 control + 2
+workers.
+
+**Hosts are tied to clusters; VMs are never reused.** That decision is what makes
+`infra-down` safe to deregister host records — a record whose VM is gone is
+garbage. Rebuild rather than repair.
+
+`infra-down` refuses while the project holds a Palette cluster: a cluster whose
+machines vanished cannot be repaired. `nuke` = `infra-down` + seeds + token +
+project + env file; the cloud image and API key survive because neither belongs
+to one project.
+
+
+The tooling uses Palette **agent mode**, not Edge Native. Each host boots the stock
 Ubuntu cloud image and cloud-init installs the Palette agent. The repo builds no
 OS image, so it needs no Docker and no CanvOS.
 
@@ -124,10 +136,10 @@ anything else about registration.
 
 ### Naming
 
-`LAB_NAME` (default `pe`) prefixes every libvirt object: network `pe-net`, pool
+`CLUSTER_NAME` (default `pe`) prefixes every libvirt object: network `pe-net`, pool
 `pe-pool`, domains `pe-cp-N` and `pe-wk-N`. The libvirt domain name and the
 Palette Edge Host name are always the same, so `just ls` and the Palette host
-list line up. Two labs coexist if `LAB_NAME` and `LAB_SUBNET` both differ.
+list line up. Two labs coexist if `CLUSTER_NAME` and `CLUSTER_SUBNET` both differ.
 
 ## Configuration
 
@@ -159,7 +171,7 @@ set dotenv-command := 'scripts/dotenv.sh'
 
 `just` runs that from the justfile directory (verified, even when invoked from a
 subdirectory), reads stdout as an env file, and lets the **process environment
-win**, so `WORKER_COUNT=3 just cluster-up` still overrides. `dotenv.sh` follows
+win**, so `WORKER_COUNT=3 just infra-up` still overrides. `dotenv.sh` follows
 `~/.config/palette-edge-libvirt/env -> envs/<project>.env` and cats it. That
 link is the only record of the choice, so every checkout agrees. With no link
 the script prints nothing and raises **no error** — the recipes silently fall
@@ -168,8 +180,8 @@ it and name the fix. Setting `dotenv-command` also makes `just` ignore any
 stray `.env` in the checkout entirely (verified).
 
 `just default-project NAME` makes the link; `just new-project` creates the
-tenant project, writes the env file (auto-allocating a free `LAB_NAME` and
-`LAB_SUBNET`, scanning both the env files and live libvirt networks), and sets
+tenant project, writes the env file (auto-allocating a free `CLUSTER_NAME` and
+`CLUSTER_SUBNET`, scanning both the env files and live libvirt networks), and sets
 it default.
 
 Palette keeps a project description in `metadata.annotations.description`, not
@@ -214,7 +226,7 @@ diagnosis.
 parsed with plain awk field numbers matches the header: `host-ip.sh` reported
 the address as "Protocol" until it matched on the shape of a MAC instead.
 
-**`LAB_NAME` takes 12 characters at most.** The libvirt bridge is `br-$LAB_NAME`
+**`CLUSTER_NAME` takes 12 characters at most.** The libvirt bridge is `br-$CLUSTER_NAME`
 and a Linux interface name takes 15. Over that, libvirt defines the network fine
 and fails at start with "Numerical result out of range". `net-up.sh` checks the
 length up front, and also refuses any `@PLACEHOLDER@` that survives the sed —
@@ -248,7 +260,7 @@ the checkout with no change of its own.
 
 Every `justfile` variable uses `env_var_or_default`, so the repo works with no
 project at all. Any value can be overridden for one command:
-`WORKER_COUNT=3 just cluster-up`.
+`WORKER_COUNT=3 just infra-up`.
 
 ## Secrets
 
@@ -273,7 +285,8 @@ Not yet verified end to end: no host has completed a boot and registered. The
 host name identical — but that field is not in the documented example, so if
 registration misbehaves, suspect it first.
 
-Cluster profile and cluster creation happen in Palette and have no recipe yet.
-That is the one remaining gap against rule 1. `scripts/palette-api.sh` already
+The cluster layer has no recipe yet: the profile and the cluster are made by
+hand in Palette. That is the one remaining gap against rule 1, and `cluster-up`
+/ `cluster-down` are reserved for the Terraform that closes it. `scripts/palette-api.sh` already
 has a working authenticated `api()` helper to build on; add both a create and a
 remove recipe.

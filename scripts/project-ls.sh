@@ -25,14 +25,14 @@ if [ "${#files[@]}" -eq 0 ]; then
 	exit 0
 fi
 
-printf '%-3s %-24s %-12s %s\n' "" PROJECT LAB SUBNET
+printf '%-3s %-24s %-12s %s\n' "" PROJECT CLUSTER SUBNET
 for file in "${files[@]}"; do
 	project="$(basename "$file" .env)"
-	lab="$(grep -sE '^LAB_NAME=' "$file" | cut -d= -f2)"
-	subnet="$(grep -sE '^LAB_SUBNET=' "$file" | cut -d= -f2)"
+	cluster="$(grep -sE '^CLUSTER_NAME=' "$file" | cut -d= -f2)"
+	subnet="$(grep -sE '^CLUSTER_SUBNET=' "$file" | cut -d= -f2)"
 	mark=" "
 	[ "$project" = "$current" ] && mark="*"
-	printf ' %-2s %-24s %-12s %s.0/24\n' "$mark" "$project" "${lab:--}" "${subnet:--}"
+	printf ' %-2s %-24s %-12s %s.0/24\n' "$mark" "$project" "${cluster:--}" "${subnet:--}"
 done
 
 echo

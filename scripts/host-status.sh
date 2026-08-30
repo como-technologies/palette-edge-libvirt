@@ -33,7 +33,7 @@ if [ -z "$address" ]; then
 fi
 
 # The console log holds the cloud-init output. Read the domain log instead of a
-# login, because the lab uses no SSH key.
+# login, because the tooling installs no SSH key.
 printf '%-14s %s\n' "console" "just console $name"
 printf '%-14s %s\n' "palette" "just palette-hosts"
 

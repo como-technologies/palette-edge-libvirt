@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Shared functions for the lab scripts. Source this file. Do not execute it.
+# Shared functions for the scripts of this repository. Source this file.
+# Do not execute it.
 
 set -euo pipefail
 
@@ -21,7 +22,7 @@ warn() {
 
 # ANCHOR: skip
 # skip: print a message when a recipe finds no work to do.
-# The lab recipes are idempotent. A second run reports a skip and returns 0.
+# The recipes are idempotent. A second run reports a skip and returns 0.
 skip() {
 	printf '    %s\n' "$*"
 }
@@ -48,7 +49,7 @@ need_project() {
 }
 
 # ANCHOR: dirs
-# The lab directories.
+# The tooling directories.
 #
 # The checkout holds the source only. Every file that you want to keep lives in
 # one of three directories outside it, so `rm -rf` on the checkout destroys no

@@ -20,7 +20,6 @@ PAIRS=(
 	"image-fetch         image-clean"
 	"seed                seed-clean"
 	"host-up             host-down"
-	"cluster-up          cluster-down"
 	"new-project         remove-project"
 	"docs                docs-clean"
 	"docs-theme          docs-theme-clean"

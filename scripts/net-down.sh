@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stop and remove the lab network.
+# Stop and remove the cluster network.
 #
 # This script is idempotent. It reports a skip if the network is absent.
 #

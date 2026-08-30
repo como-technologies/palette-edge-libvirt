@@ -11,12 +11,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 row() { printf '  %-22s %s\n' "$1" "$2"; }
 
-lab="${LAB_NAME:-pe}"
+cluster="${CLUSTER_NAME:-pe}"
 
-info "lab"
-row "LAB_NAME" "$lab"
-row "network" "${lab}-net (${LAB_SUBNET:-192.168.140}.0/24)"
-row "pool" "${lab}-pool"
+info "cluster"
+row "CLUSTER_NAME" "$cluster"
+row "network" "${cluster}-net (${CLUSTER_SUBNET:-192.168.140}.0/24)"
+row "pool" "${cluster}-pool"
 row "LIBVIRT_DEFAULT_URI" "${LIBVIRT_DEFAULT_URI:-qemu:///system}"
 
 info "palette"

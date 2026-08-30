@@ -99,35 +99,58 @@ completion and the parameters from `just`. A parameter with an unknown name
 stops the build, which is the moment to add the kind or to name the parameter
 as free text.
 
-## The cluster recipes
+## The two layers
+
+The tooling builds a cluster in two layers. Each layer owns objects on the
+workstation **and** in Palette, and each layer removes everything that it made.
+
+| Layer | On the workstation | In Palette |
+| --- | --- | --- |
+| Infrastructure | network, storage pool, disks, virtual machines | the host record of each machine |
+| Cluster | nothing | the cluster profile and the cluster |
+
+### The infrastructure layer
 
 ```just
-{{#include ../../justfile:clusterup}}
+{{#include ../../justfile:infraup}}
 ```
 
-`cluster-up` makes the whole lab. It runs `preflight`, `infra-up`, and
-`image-fetch` first, and each of those is idempotent, so a second run of
-`cluster-up` makes no new object.
-
-The recipe does five things:
+`infra-up` is idempotent, and each recipe that it depends on is idempotent, so a
+second run makes no new object. It does five things:
 
 1. `preflight` tests the workstation and your values.
-2. `infra-up` makes the lab network and the storage pool. `LAB_NAME` gives both
-   names.
+2. `net-up` and `pool-up` make the network and the storage pool. `CLUSTER_NAME`
+   gives both names.
 3. `image-fetch` downloads the stock Ubuntu cloud image and tests its checksum.
    The download runs one time.
-4. For each host, `seed` builds a CIDATA ISO with your token.
-5. For each host, `host-up` copies the cloud image, grows the copy, and starts
-   the virtual machine.
+4. For each host, `seed` builds a CIDATA ISO with your token, and `host-up`
+   copies the cloud image, grows the copy, and starts the virtual machine.
+5. `hosts-wait` waits until every host registers with Palette.
 
-`cluster-down` removes the virtual machines and keeps the network, the pool,
-and the image, so the next `cluster-up` is fast. `nuke` also removes the
-network, the pool, and the seeds.
+Step 5 is the seam. A virtual machine that did not register is of no use to the
+cluster layer, so the layer is not complete until the record exists. The wait
+takes some minutes, and `REGISTER_TIMEOUT` gives up after 900 seconds.
 
-Neither recipe touches Palette. The hosts stay registered, so `nuke` reports the
-records that stay and names `just cluster-deregister`, which removes them. That
-recipe is the only one that deletes a host record. See
-[Remove the lab](./teardown.md).
+`infra-down` reverses all of it, including the host records. It refuses while
+the cluster layer exists, because Palette keeps a cluster whose machines are
+gone and that cluster is then impossible to repair.
+
+### The cluster layer
+
+Terraform builds this layer. It has no recipe yet, and that is the one gap
+against [project rule 1](./rules.md#1-every-action-is-a-recipe). See
+[Create the cluster](./cluster.md).
+
+### Everything
+
+```just
+{{#include ../../justfile:nuke}}
+```
+
+`nuke` removes every object of the project: both layers, the seeds, the
+registration token, the Palette project, and the environment file. The cloud
+image and the API key stay, because neither belongs to one project. See
+[Remove everything](./teardown.md).
 
 ## The layers
 

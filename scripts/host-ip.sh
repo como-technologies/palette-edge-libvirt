@@ -2,7 +2,7 @@
 # Print the lease address for a host.
 #
 # The edge images do not run qemu-guest-agent, so `virsh domifaddr` comes back
-# empty; the DHCP lease on the lab network is the reliable source.
+# empty; the DHCP lease on the cluster network is the reliable source.
 #
 #   host-ip.sh <name>
 

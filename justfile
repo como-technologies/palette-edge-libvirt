@@ -27,9 +27,9 @@ set dotenv-command := 'scripts/dotenv.sh'
 # a project. The environment file of the default project replaces these
 # defaults. See templates/project.env for every value.
 
-lab := env_var_or_default("LAB_NAME", "pe")
+cluster := env_var_or_default("CLUSTER_NAME", "pe")
 uri := env_var_or_default("LIBVIRT_DEFAULT_URI", "qemu:///system")
-subnet := env_var_or_default("LAB_SUBNET", "192.168.140")
+subnet := env_var_or_default("CLUSTER_SUBNET", "192.168.140")
 ubuntu_release := env_var_or_default("UBUNTU_RELEASE", "noble")
 ubuntu_image_url := env_var_or_default("UBUNTU_IMAGE_URL", "")
 control_count := env_var_or_default("CONTROL_COUNT", "1")
@@ -42,7 +42,7 @@ worker_memory := env_var_or_default("WORKER_MEMORY_MB", "16384")
 worker_disk := env_var_or_default("WORKER_DISK_GB", "100")
 
 # ANCHOR: dirs
-# The lab directories. The checkout holds the source only. Delete the checkout
+# The tooling directories. The checkout holds the source only. Delete the checkout
 # and your projects, your tokens, and the downloaded image stay.
 #
 # Set a PEL_ variable in your shell to move a directory. The scripts read the
@@ -59,8 +59,8 @@ build_dir := data_dir / "build"
 
 # Derived paths and names.
 root := justfile_directory()
-pool := lab + "-pool"
-net := lab + "-net"
+pool := cluster + "-pool"
+net := cluster + "-net"
 
 export LIBVIRT_DEFAULT_URI := uri
 export PEL_CONFIG_DIR := config_dir
@@ -108,25 +108,53 @@ host-setup-undo:
     -sudo gpasswd -d "$USER" libvirt
     -sudo gpasswd -d "$USER" kvm
 
-# --- libvirt infrastructure -------------------------------------------------
+# --- infrastructure layer ---------------------------------------------------
+# Layer 1. The network, the storage pool, the virtual machines, and the Palette
+# record of each host. The layer is complete when every host registers, because
+# that record is the only thing that the cluster layer can use.
 
-# Create the lab network and the lab storage pool
-infra-up: net-up pool-up
+# ANCHOR: infraup
+# Create the machines and wait until every host registers with Palette
+infra-up: preflight net-up pool-up image-fetch
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for i in $(seq 1 {{ control_count }}); do
+        just seed "{{ cluster }}-cp-$i"
+        just host-up "{{ cluster }}-cp-$i" control
+    done
+    for i in $(seq 1 {{ worker_count }}); do
+        just seed "{{ cluster }}-wk-$i"
+        just host-up "{{ cluster }}-wk-$i" worker
+    done
+    echo
+    just hosts-wait
 
-# Remove the lab network and the lab storage pool. Removes no VMs.
-infra-down: pool-down net-down
+# Remove the host records, the machines, the pool, and the network
+infra-down:
+    @CLUSTER="{{ cluster }}" POOL="{{ pool }}" NETWORK="{{ net }}" scripts/infra-down.sh
+# ANCHOR_END: infraup
 
-# Create and start the isolated NAT network for the lab
+# Wait until every host of this cluster registers with Palette
+hosts-wait:
+    @CLUSTER="{{ cluster }}" scripts/hosts-wait.sh
+
+# Remove the Palette record of every host of this cluster. The machines stay.
+hosts-deregister:
+    @CLUSTER="{{ cluster }}" scripts/hosts-deregister.sh
+
+# --- infrastructure parts ---------------------------------------------------
+
+# Create and start the isolated NAT network for the cluster
 net-up:
-    @NETWORK="{{ net }}" LAB="{{ lab }}" SUBNET="{{ subnet }}" BUILD_DIR="{{ build_dir }}" scripts/net-up.sh
+    @NETWORK="{{ net }}" CLUSTER="{{ cluster }}" SUBNET="{{ subnet }}" BUILD_DIR="{{ build_dir }}" scripts/net-up.sh
 
-# Stop and remove the lab network
+# Stop and remove the cluster network
 net-down:
     @NETWORK="{{ net }}" scripts/net-down.sh
 
 # Create and start the storage pool for the VM disks
 pool-up:
-    @POOL="{{ pool }}" LAB="{{ lab }}" scripts/pool-up.sh
+    @POOL="{{ pool }}" CLUSTER="{{ cluster }}" scripts/pool-up.sh
 
 # Stop and remove the storage pool. Keeps the disk images.
 pool-down:
@@ -150,7 +178,7 @@ seed host:
 
 # Build a seed ISO for each node in the topology
 seed-all:
-    @CONTROL_COUNT="{{ control_count }}" WORKER_COUNT="{{ worker_count }}" LAB="{{ lab }}" \
+    @CONTROL_COUNT="{{ control_count }}" WORKER_COUNT="{{ worker_count }}" CLUSTER="{{ cluster }}" \
         scripts/for-each-node.sh just seed
 
 # Delete all seed ISO files and the build directory
@@ -196,9 +224,9 @@ console host:
 ip host:
     @scripts/host-ip.sh "{{ host }}"
 
-# List all VMs in this lab and their state
+# List all VMs in this cluster and their state
 ls:
-    @scripts/lab-ls.sh "{{ lab }}"
+    @scripts/cluster-ls.sh "{{ cluster }}"
 
 # --- credentials ------------------------------------------------------------
 
@@ -246,38 +274,18 @@ palette-hosts:
 palette-tokens:
     @scripts/palette-api.sh tokens
 
-# --- cluster ----------------------------------------------------------------
+# --- cluster layer ----------------------------------------------------------
+# Layer 2. The cluster profile and the cluster, both in Palette. Terraform
+# builds this layer. It has no recipe yet, and that is the one gap against
+# project rule 1. See docs/src/cluster.md.
 
-# ANCHOR: clusterup
-# Create the full lab: infrastructure, image, seeds, and all hosts
-cluster-up: preflight infra-up image-fetch
-    #!/usr/bin/env bash
-    set -euo pipefail
-    for i in $(seq 1 {{ control_count }}); do
-        just seed "{{ lab }}-cp-$i"
-        just host-up "{{ lab }}-cp-$i" control
-    done
-    for i in $(seq 1 {{ worker_count }}); do
-        just seed "{{ lab }}-wk-$i"
-        just host-up "{{ lab }}-wk-$i" worker
-    done
-    echo
-    echo "The hosts boot now. cloud-init installs the agent, which takes minutes."
-    echo "To watch one host:   just console {{ lab }}-cp-1"
-    echo "To test registration: just palette-hosts"
+# --- everything -------------------------------------------------------------
 
-# Remove all VMs in the lab. Keeps the network, the pool, and the image.
-cluster-down:
-    @LAB="{{ lab }}" POOL="{{ pool }}" scripts/cluster-down.sh
-
-# Remove the Palette record of every host of this lab. The VMs stay.
-cluster-deregister:
-    @LAB="{{ lab }}" scripts/cluster-deregister.sh
-
-# Remove everything this repository creates, except the downloaded image
-nuke: cluster-down infra-down seed-clean
-    @LAB="{{ lab }}" scripts/nuke-report.sh
-# ANCHOR_END: clusterup
+# ANCHOR: nuke
+# Remove every object of this project: both layers, the token, and the project
+nuke: infra-down
+    @scripts/nuke.sh
+# ANCHOR_END: nuke
 
 # --- docs -------------------------------------------------------------------
 
@@ -327,5 +335,6 @@ lint:
     just --fmt --check
     @scripts/lint-pairs.sh
     @scripts/lint-params.sh
+    @scripts/lint-includes.sh
     @scripts/lint-shell.sh
     mdbook build docs

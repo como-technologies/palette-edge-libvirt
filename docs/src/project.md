@@ -1,6 +1,6 @@
 # Create a project
 
-One lab serves one Palette project. Each project has its own environment file,
+One cluster serves one Palette project. Each project has its own environment file,
 and the recipes operate on one project at a time.
 
 ## Create the project
@@ -35,18 +35,18 @@ just remove-project <project>
 The recipe deletes the token, the project, and the file. It asks you to type
 the project name first, because a delete is not reversible.
 
-Remove the lab first:
+Remove the cluster first:
 
 ```bash
-just cluster-down
+just infra-down
 just remove-project <project>
 ```
 
 ## Next
 
-Create the hosts. See [Create the hosts](./hosts.md).
+Create the hosts. See [Create the machines](./machines.md).
 
 ## More
 
 [The project layout](./project-layout.md) describes the files, the order that
-`remove-project` uses, and how to run two labs at the same time.
+`remove-project` uses, and how to run two clusters at the same time.

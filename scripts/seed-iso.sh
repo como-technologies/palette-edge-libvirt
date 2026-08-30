@@ -53,7 +53,7 @@ mkdir -p "$work"
 #
 # There are two classes of value. A YAML scalar gets json.dumps, which writes a
 # double-quoted scalar with the correct escapes. YAML 1.2 accepts JSON, so a
-# project name such as O'Brien's Lab stays valid. A raw value goes in without
+# project name such as O'Brien's Cluster stays valid. A raw value goes in without
 # quotation marks: the boolean must stay a boolean, and the URL already sits
 # inside quotation marks in the template.
 SEED_TEMPLATE="$root/templates/user-data.tmpl.yaml" \

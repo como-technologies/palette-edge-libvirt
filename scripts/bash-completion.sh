@@ -46,7 +46,7 @@ emit() {
 # takes its name from the kind of value it holds, not from its position, so
 # this list does not grow when a recipe is added.
 #
-#   host          a libvirt domain of this lab, or a node of the topology
+#   host          a libvirt domain of this cluster, or a node of the topology
 #   project       a project that has an environment file
 #   role          control or worker
 #
@@ -56,8 +56,8 @@ _PEL_KINDS="host project role"
 _PEL_KINDS_FREE="description"
 # ANCHOR_END: kinds
 
-# _pel_lab: the LAB_NAME of the current checkout.
-_pel_lab() { just --evaluate lab 2>/dev/null; }
+# _pel_cluster: the CLUSTER_NAME of the current checkout.
+_pel_cluster() { just --evaluate cluster 2>/dev/null; }
 
 # _pel_param RECIPE INDEX: print the name of one parameter of a recipe.
 # `just` is the source of this, so the completion never holds a recipe name.
@@ -79,26 +79,26 @@ if 0 <= index < len(params):
 ' 2>/dev/null
 }
 
-# _pel_domains: the libvirt domains of this lab.
+# _pel_domains: the libvirt domains of this cluster.
 _pel_domains() {
-    local lab
-    lab="$(_pel_lab)" || return 0
-    [ -n "$lab" ] || return 0
-    virsh list --all --name 2>/dev/null | grep "^${lab}-" || true
+    local name
+    name="$(_pel_cluster)" || return 0
+    [ -n "$name" ] || return 0
+    virsh list --all --name 2>/dev/null | grep "^${name}-" || true
 }
 
 # _pel_nodes: the node names of the topology, and the domains that exist.
 # `just seed` and `just host-up` accept a name that has no domain yet, so both
 # sets are useful.
 _pel_nodes() {
-    local lab control worker i
-    lab="$(_pel_lab)" || return 0
-    [ -n "$lab" ] || return 0
+    local name control worker i
+    name="$(_pel_cluster)" || return 0
+    [ -n "$name" ] || return 0
     control="$(just --evaluate control_count 2>/dev/null)"
     worker="$(just --evaluate worker_count 2>/dev/null)"
     {
-        for ((i = 1; i <= ${control:-0}; i++)); do printf '%s-cp-%s\n' "$lab" "$i"; done
-        for ((i = 1; i <= ${worker:-0}; i++)); do printf '%s-wk-%s\n' "$lab" "$i"; done
+        for ((i = 1; i <= ${control:-0}; i++)); do printf '%s-cp-%s\n' "$name" "$i"; done
+        for ((i = 1; i <= ${worker:-0}; i++)); do printf '%s-wk-%s\n' "$name" "$i"; done
         _pel_domains
     } | sort -u
 }

@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# List the VMs of one lab with their state and address.
+# List the VMs of one cluster with their state and address.
 #
-#   lab-ls.sh <lab-prefix>
+#   cluster-ls.sh <cluster-prefix>
 
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-lab="${1:?lab prefix required}"
+cluster="${1:?cluster prefix required}"
 need virsh
 
-mapfile -t domains < <(virsh list --all --name | grep "^${lab}-" || true)
+mapfile -t domains < <(virsh list --all --name | grep "^${cluster}-" || true)
 
 if [ "${#domains[@]}" -eq 0 ]; then
-	skip "there are no ${lab}-* domains"
+	skip "there are no ${cluster}-* domains"
 	exit 0
 fi
 

@@ -39,7 +39,7 @@ each recipe with the shape of a create recipe must appear in that list, so a new
 ## 3. Every recipe is safe to run two or more times
 
 A recipe tests the state before it makes a change. If the object exists, the
-recipe reports a skip and returns success. A second run of `just cluster-up`
+recipe reports a skip and returns success. A second run of `just infra-up`
 makes no new virtual machines.
 
 The scripts use the `skip` function from `scripts/lib.sh`:

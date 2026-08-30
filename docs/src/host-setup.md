@@ -48,4 +48,4 @@ When every item is `ok`, continue to
 ## More
 
 [The workstation](./workstation.md) describes the packages, the reason for the
-restart, each test, and the capacity that a lab needs.
+restart, each test, and the capacity that a cluster needs.

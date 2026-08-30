@@ -10,8 +10,8 @@
 # The environment file goes to ~/.config/palette-edge-libvirt/envs/<name>.env.
 # It is outside the checkout, so `rm -rf` on the checkout keeps it.
 #
-# The lab keeps one environment file for each project. A different LAB_NAME and
-# a different LAB_SUBNET for each project let two labs run at the same time.
+# The cluster keeps one environment file for each project. A different CLUSTER_NAME and
+# a different CLUSTER_SUBNET for each project let two clusters run at the same time.
 #
 # This script is idempotent. An existing project or an existing file stays as
 # it is, and the script only points the link.
@@ -44,7 +44,7 @@ if ! printf '%s' "$name" | grep -qE '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$'; then
 fi
 
 [ -n "$description" ] ||
-	description="Palette Edge lab on $(hostname --short). Managed by palette-edge-libvirt."
+	description="Palette Edge cluster on $(hostname --short). Managed by palette-edge-libvirt."
 
 mkdir -p "$envs"
 chmod 700 "$envs"
@@ -98,25 +98,25 @@ token="$(token_value "$token_uid")"
 if [ -f "$target" ]; then
 	skip "$(short_path "$target") already exists"
 else
-	# lab_name: a short prefix for the libvirt objects. It must be unique, so
-	# every object of two labs stays separate.
+	# cluster_name: a short prefix for the libvirt objects. It must be unique, so
+	# every object of two clusters stays separate.
 	#
 	# The limit of 12 characters comes from the bridge name. A Linux interface
-	# name takes 15 characters, and the bridge is "br-" and the lab name.
-	lab_name="$(printf '%s' "$name" | tr -cd 'a-z0-9' | cut -c1-12)"
-	[ -n "$lab_name" ] || lab_name="lab"
+	# name takes 15 characters, and the bridge is "br-" and the cluster name.
+	cluster_name="$(printf '%s' "$name" | tr -cd 'a-z0-9' | cut -c1-12)"
+	[ -n "$cluster_name" ] || cluster_name="cluster"
 	suffix=""
-	while grep -qsE "^LAB_NAME=${lab_name}${suffix}$" "$envs"/*.env 2>/dev/null; do
+	while grep -qsE "^CLUSTER_NAME=${cluster_name}${suffix}$" "$envs"/*.env 2>/dev/null; do
 		suffix=$((${suffix:-1} + 1))
 	done
-	lab_name="${lab_name}${suffix}"
+	cluster_name="${cluster_name}${suffix}"
 
-	# lab_subnet: the first free 192.168.N.0/24. The script reads the subnets
+	# cluster_subnet: the first free 192.168.N.0/24. The script reads the subnets
 	# of the other environment files and of the libvirt networks, so a new
-	# project never collides with a running lab.
+	# project never collides with a running cluster.
 	used="$(
 		{
-			grep -hsE '^LAB_SUBNET=' "$envs"/*.env 2>/dev/null | cut -d= -f2
+			grep -hsE '^CLUSTER_SUBNET=' "$envs"/*.env 2>/dev/null | cut -d= -f2
 			if command -v virsh >/dev/null 2>&1; then
 				for net in $(virsh net-list --all --name 2>/dev/null); do
 					virsh net-dumpxml "$net" 2>/dev/null |
@@ -125,18 +125,18 @@ else
 			fi
 		} | sort -u
 	)"
-	lab_subnet=""
+	cluster_subnet=""
 	for n in $(seq 140 199); do
 		if ! printf '%s\n' "$used" | grep -qx "192.168.$n"; then
-			lab_subnet="192.168.$n"
+			cluster_subnet="192.168.$n"
 			break
 		fi
 	done
-	[ -n "$lab_subnet" ] || die "no free subnet between 192.168.140 and 192.168.199"
+	[ -n "$cluster_subnet" ] || die "no free subnet between 192.168.140 and 192.168.199"
 
-	info "write $(short_path "$target") (lab $lab_name, subnet $lab_subnet.0/24)"
+	info "write $(short_path "$target") (cluster $cluster_name, subnet $cluster_subnet.0/24)"
 
-	NAME="$name" LAB="$lab_name" SUBNET="$lab_subnet" \
+	NAME="$name" CLUSTER="$cluster_name" SUBNET="$cluster_subnet" \
 		SRC="$root/templates/project.env" DST="$target" \
 		ENDPOINT="$(palette_endpoint)" NEW_TOKEN="$token" \
 		python3 -c '
@@ -146,8 +146,8 @@ subs = {
     "PALETTE_ENDPOINT": os.environ["ENDPOINT"],
     "PALETTE_PROJECT": os.environ["NAME"],
     "PALETTE_EDGE_TOKEN": os.environ.get("NEW_TOKEN", ""),
-    "LAB_NAME": os.environ["LAB"],
-    "LAB_SUBNET": os.environ["SUBNET"],
+    "CLUSTER_NAME": os.environ["CLUSTER"],
+    "CLUSTER_SUBNET": os.environ["SUBNET"],
 }
 out = []
 for line in open(os.environ["SRC"]):

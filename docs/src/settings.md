@@ -1,12 +1,12 @@
 # Settings
 
 This page describes each value in the environment file of a project.
-[The lab directories](./directories.md) gives the path of that file.
+[The tooling directories](./directories.md) gives the path of that file.
 [The project layout](./project-layout.md) describes the files themselves and
 which values `just new-project` chooses.
 
 `just new-project` writes a good value for every setting, so you change a value
-only when you want a different lab. To see the values that the recipes use now,
+only when you want a different cluster. To see the values that the recipes use now,
 run `just config`.
 
 ## The two credentials
@@ -34,7 +34,7 @@ Every recipe that needs the name therefore stops without it.
 `just palette-projects` is the one exception, because that recipe finds the
 name.
 
-## The lab size
+## The cluster size
 
 ```bash
 {{#include ../../templates/project.env:topology}}
@@ -43,20 +43,20 @@ name.
 The Palette agent needs 2 CPU, 8 GB of memory, and 100 GB of storage for each
 host. These values give that minimum or more.
 
-`LAB_NAME` is the prefix of every libvirt object. A lab named `pethelio` gives
+`CLUSTER_NAME` is the prefix of every libvirt object. A cluster named `pethelio` gives
 the network `pethelio-net`, the pool `pethelio-pool`, the bridge `br-pethelio`,
 and the domains `pethelio-cp-1`, `pethelio-wk-1`, and `pethelio-wk-2`.
 
-`LAB_NAME` takes **12 characters at most**. The bridge is a Linux interface
+`CLUSTER_NAME` takes **12 characters at most**. The bridge is a Linux interface
 name, and the kernel takes 15 characters for one of those. `br-` leaves 12.
 `just new-project` keeps to that limit, and `just net-up` stops with a message
 if a longer name reaches it.
 
-Two labs run at the same time if `LAB_NAME` and `LAB_SUBNET` both differ.
+Two clusters run at the same time if `CLUSTER_NAME` and `CLUSTER_SUBNET` both differ.
 
 ## The host image
 
-The lab uses the stock Ubuntu cloud image. It builds no image.
+The cluster uses the stock Ubuntu cloud image. It builds no image.
 
 ```bash
 {{#include ../../templates/project.env:image}}
@@ -80,11 +80,11 @@ different.
 {{#include ../../templates/project.env:agent}}
 ```
 
-`PALETTE_VIP_SKIP` controls kube-vip. A lab with one control plane node does not
+`PALETTE_VIP_SKIP` controls kube-vip. A cluster with one control plane node does not
 need a virtual address. Set the value to `false` for more than one control plane
 node, then give the VIP in Palette. Use an address from the free range of the
-lab subnet, for example `192.168.140.10`. See
-[The lab network](./network.md#address-plan).
+cluster subnet, for example `192.168.140.10`. See
+[The cluster network](./network.md#address-plan).
 
 ## The network
 
@@ -109,11 +109,11 @@ Each value is also a normal environment variable. To change one value for one
 command, set the value on the command line:
 
 ```bash
-WORKER_COUNT=3 just cluster-up
-LAB_NAME=pe just infra-down
+WORKER_COUNT=3 just infra-up
+CLUSTER_NAME=pe just infra-down
 ```
 
-The second example operates on a lab whose environment file is gone.
+The second example operates on a cluster whose environment file is gone.
 
 ## Every value
 

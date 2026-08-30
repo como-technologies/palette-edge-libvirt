@@ -1,11 +1,11 @@
 <!--
-  The isolated NAT network of the lab.
+  The isolated NAT network of the cluster.
 
-  scripts/net-up.sh replaces @NAME@ with LAB_NAME-net, @BRIDGE@ with
-  br-LAB_NAME, and @SUBNET@ with LAB_SUBNET. Then it defines the network.
+  scripts/net-up.sh replaces @NAME@ with CLUSTER_NAME-net, @BRIDGE@ with
+  br-CLUSTER_NAME, and @SUBNET@ with CLUSTER_SUBNET. Then it defines the network.
 
   The bridge name is a Linux interface name, so it takes 15 characters at most.
-  "br-" leaves 12 characters for LAB_NAME, and project-new.sh keeps to that.
+  "br-" leaves 12 characters for CLUSTER_NAME, and project-new.sh keeps to that.
   A longer name gives "error creating bridge interface ...: Numerical result
   out of range" when the network starts.
 
@@ -21,7 +21,7 @@
     </nat>
   </forward>
   <bridge name='@BRIDGE@' stp='on' delay='0'/>
-  <domain name='@NAME@.lab' localOnly='yes'/>
+  <domain name='@NAME@.cluster' localOnly='yes'/>
   <ip address='@SUBNET@.1' netmask='255.255.255.0'>
     <dhcp>
       <range start='@SUBNET@.50' end='@SUBNET@.199'/>

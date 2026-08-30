@@ -47,7 +47,7 @@ sudo update-grub
 ```
 
 The workstation then shows the boot messages instead of a splash image. This
-change is a workstation setting. It is not part of the lab, so it has no recipe.
+change is a workstation setting. It is not part of the cluster, so it has no recipe.
 
 ## The libvirt connection fails after host-setup
 
@@ -206,7 +206,7 @@ Delete those, then run `just host-down <host>` again.
 Remove the virtual machines first:
 
 ```bash
-just cluster-down
+just infra-down
 just net-down
 ```
 
@@ -276,8 +276,8 @@ The GitHub Actions workflow always installs it, so the check runs there.
 
 `just preflight` prints the requested memory and the physical memory. Lower
 `WORKER_COUNT` or `WORKER_MEMORY_MB` in the project file. Then run
-`just cluster-down` and
-`just cluster-up`.
+`just infra-down` and
+`just infra-up`.
 
 ## `just host-up` cannot write to the pool directory
 

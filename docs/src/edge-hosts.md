@@ -63,7 +63,7 @@ just seed-clean     # delete every seed ISO
 
 Each ISO has the file mode 0600, and the seed directory has the mode 0700. The
 directory is outside the checkout. See
-[The lab directories](./directories.md).
+[The tooling directories](./directories.md).
 
 ## After the registration
 
@@ -106,5 +106,5 @@ first.
    **Registration Tokens**.
 2. Put the new token in the project file.
 3. Run `just seed-clean`, then `just seed-all`.
-4. Rebuild the hosts with `just cluster-down` and `just cluster-up`.
+4. Rebuild the hosts with `just infra-down` and `just infra-up`.
 5. Delete the old token in Palette.

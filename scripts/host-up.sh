@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create and start one lab host VM.
+# Create and start one cluster host VM.
 #
 # The host boots a copy of the stock Ubuntu cloud image. There is no operating
 # system installation and no installer media. cloud-init reads the seed ISO at
@@ -94,7 +94,7 @@ virt-install \
 	--noautoconsole
 # ANCHOR_END: virtinstall
 
-# The lab is a test tool. A host must not start with the workstation.
+# This is a test tool. A host must not start with the workstation.
 virsh autostart --disable "$name" >/dev/null 2>&1 || true
 
 info "$name starts now. To watch it: just console $name"

@@ -1,8 +1,8 @@
 # Architecture
 
-This page describes what the lab builds.
+This page describes what the cluster builds.
 
-The lab makes one virtual machine for each Kubernetes node. Each machine boots
+The cluster makes one virtual machine for each Kubernetes node. Each machine boots
 a stock Ubuntu cloud image. cloud-init then installs the Palette agent, and the
 agent registers the machine with your Palette tenant. Palette makes the cluster
 from the machines that registered.
@@ -22,9 +22,9 @@ flowchart TB
         IMG["cache<br/>one stock Ubuntu cloud image"]
         SEED["data<br/>one CIDATA ISO for each host"]
         subgraph LV["libvirt / KVM"]
-            NET["NAT network<br/>one subnet for the lab"]
+            NET["NAT network<br/>one subnet for the cluster"]
             POOL["storage pool<br/>one qcow2 disk for each host"]
-            subgraph VMS["Lab hosts"]
+            subgraph VMS["Cluster hosts"]
                 CP["control plane"]
                 WK1["worker 1"]
                 WK2["worker 2"]
@@ -45,7 +45,7 @@ flowchart TB
     PROF --> CLU
 ```
 
-Every host gets its own copy of the cloud image and its own seed ISO. The lab
+Every host gets its own copy of the cloud image and its own seed ISO. The cluster
 downloads the image one time. `qemu-img` then copies it into the storage pool
 for each host, which keeps the hosts independent.
 
@@ -65,8 +65,8 @@ sequenceDiagram
     participant V as libvirt
     participant P as Palette
 
-    U->>J: just cluster-up (this runs for each host)
-    J->>J: preflight, infra-up, image-fetch
+    U->>J: just infra-up (this runs for each host)
+    J->>J: preflight, net-up, pool-up, image-fetch
     J->>J: seed-iso.sh makes the CIDATA ISO for this host
     J->>V: qemu-img copies the cloud image for this host, then grows it
     J->>V: virt-install --import (no installation phase)
@@ -74,8 +74,8 @@ sequenceDiagram
     V->>V: cloud-init installs jq, zstd, rsync, and the other packages
     V->>V: cloud-init runs palette-agent-install.sh
     V->>P: the agent registers with the token
-    P-->>U: just palette-hosts shows the host
-    U->>P: make a cluster from the registered hosts
+    P-->>J: hosts-wait sees the record, and infra-up returns
+    U->>P: just cluster-up makes the cluster (Terraform, not built yet)
 ```
 
 ## The first boot
@@ -103,20 +103,23 @@ keeps the original.
 
 ## Where the state lives
 
-| State                 | Location                                 | Removed by            |
-| --------------------- | ---------------------------------------- | --------------------- |
-| Virtual machines      | libvirt, `qemu:///system`                | `just cluster-down`   |
-| Disk images           | `/var/lib/libvirt/images/$LAB_NAME`      | `just cluster-down`   |
-| Network and pool      | libvirt                                  | `just infra-down`     |
-| Seed ISO files        | `~/.local/share/palette-edge-libvirt`    | `just seed-clean`     |
-| Ubuntu cloud image    | `~/.cache/palette-edge-libvirt`          | `just image-clean`    |
-| Your token            | `~/.config/palette-edge-libvirt/envs`    | `just remove-project` |
-| Your API key          | `~/.config/palette-edge-libvirt/api-key` | `just api-key-clear`  |
-| Registered hosts      | Palette SaaS                             | `just cluster-deregister` |
-| Project and its token | Palette SaaS                             | `just remove-project` |
-| Profiles and clusters | Palette SaaS                             | you, in Palette       |
+| Layer | State | Location | Removed by |
+| --- | --- | --- | --- |
+| Infrastructure | Virtual machines | libvirt, `qemu:///system` | `just infra-down` |
+| Infrastructure | Disk images | `/var/lib/libvirt/images/$CLUSTER_NAME` | `just infra-down` |
+| Infrastructure | Network and pool | libvirt | `just infra-down` |
+| Infrastructure | Registered hosts | Palette SaaS | `just infra-down` |
+| Infrastructure | Seed ISO files | `~/.local/share/palette-edge-libvirt` | `just seed-clean` |
+| Cluster | Profile and cluster | Palette SaaS | you, in Palette |
+| Neither | Ubuntu cloud image | `~/.cache/palette-edge-libvirt` | `just image-clean` |
+| Neither | Your token | `~/.config/palette-edge-libvirt/envs` | `just remove-project` |
+| Neither | Your API key | `~/.config/palette-edge-libvirt/api-key` | `just api-key-clear` |
 
-`just nuke` removes every local lab object except the cloud image and the API
-key. It does not touch Palette, so it reports the host records that stay.
-`just cluster-deregister` removes those records, and `just remove-project`
-removes the project and its token.
+A layer removes everything that it made, on both sides. The host record belongs
+to the infrastructure layer, because registration makes it and it has no use
+when the machine is gone.
+
+`just nuke` removes both layers and the project: the machines, the host records,
+the seeds, the registration token, the Palette project, and the environment
+file. The cloud image and the API key stay, because neither belongs to one
+project.

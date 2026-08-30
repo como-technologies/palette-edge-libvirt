@@ -1,8 +1,8 @@
 # The workstation
 
-The lab runs on one Linux workstation with KVM. This page describes what
+The cluster runs on one Linux workstation with KVM. This page describes what
 `just host-setup` installs, why the restart is necessary, what `just preflight`
-tests, and how much capacity a lab needs.
+tests, and how much capacity a cluster needs.
 
 For the three steps, see [Prepare the workstation](./host-setup.md).
 
@@ -17,7 +17,7 @@ This is the recipe:
 `just host-setup-undo` removes those packages. It also removes you from the two
 groups.
 
-The lab needs no UEFI firmware package. The hosts boot a stock cloud image with
+The cluster needs no UEFI firmware package. The hosts boot a stock cloud image with
 the standard firmware.
 
 ## Why a restart
@@ -61,8 +61,8 @@ stops with a failure code if one item fails. The recipe tests four groups:
 
 Each `FAIL` line names its own fix, so run the recipe to see the current list.
 
-`just cluster-up` runs `just preflight` first, so a workstation that is not
-ready stops the lab before it makes any object.
+`just infra-up` runs `just preflight` first, so a workstation that is not
+ready stops the cluster before it makes any object.
 
 ## Capacity
 
@@ -77,8 +77,8 @@ when the topology needs all of the memory.
 The disks ask for 300 GB in total, but a qcow2 file is sparse. The true use is
 much lower, because each host writes only a few gigabytes.
 
-To make the lab smaller, lower `WORKER_COUNT` or `WORKER_MEMORY_MB`. See
-[Settings](./settings.md#the-lab-size).
+To make the cluster smaller, lower `WORKER_COUNT` or `WORKER_MEMORY_MB`. See
+[Settings](./settings.md#the-cluster-size).
 
 ## The tools that this repository needs
 
