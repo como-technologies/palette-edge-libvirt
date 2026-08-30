@@ -29,6 +29,9 @@ The lab uses Palette **agent mode**. Each host runs a stock Ubuntu cloud image,
 so the lab builds no operating system image. See
 [Design decisions](./decisions.md#agent-mode-not-edge-native).
 
+[Architecture](./architecture.md) gives the full diagram, the boot sequence of
+one host, and the location of each part of the state.
+
 ## Start here
 
 1. [Prepare the workstation](./host-setup.md) — `just host-setup`, then restart.

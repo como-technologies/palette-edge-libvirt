@@ -4,7 +4,6 @@
 
 # Getting started
 
-- [Architecture](./architecture.md)
 - [Prepare the workstation](./host-setup.md)
 - [Configure the tenant](./configuration.md)
 - [Projects](./projects.md)
@@ -13,6 +12,7 @@
 
 # Reference
 
+- [Architecture](./architecture.md)
 - [Recipes](./recipes.md)
 - [Settings](./settings.md)
 - [The lab network](./network.md)

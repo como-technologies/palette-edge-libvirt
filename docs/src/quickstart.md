@@ -86,6 +86,8 @@ just cluster-up
 
 ## More
 
+[Architecture](./architecture.md) describes what the recipes build, and where
+each part of the state lives.
 [Host registration](./edge-hosts.md) describes the seed ISO, the agent
 installation, and how to remove a host or rotate the token.
 [The lab network](./network.md) describes the network definition and the
