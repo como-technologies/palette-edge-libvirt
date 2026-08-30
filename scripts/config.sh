@@ -20,14 +20,18 @@ row "LIBVIRT_DEFAULT_URI" "${LIBVIRT_DEFAULT_URI:-qemu:///system}"
 
 info "palette"
 row "PALETTE_ENDPOINT" "${PALETTE_ENDPOINT:-api.spectrocloud.com}"
-row "PALETTE_PROJECT" "${PALETTE_PROJECT:-Default}"
+row "PALETTE_PROJECT" "${PALETTE_PROJECT:-MISSING. Run: just palette-projects}"
 # Never print the token. Print only its status.
 if [ -n "${PALETTE_EDGE_TOKEN:-}" ]; then
 	row "PALETTE_EDGE_TOKEN" "set (${#PALETTE_EDGE_TOKEN} characters)"
 else
 	row "PALETTE_EDGE_TOKEN" "MISSING. Copy .env.example to .env."
 fi
-row "EDGE_INSTALLER_VERSION" "${EDGE_INSTALLER_VERSION:-v4.7.6}"
+row "PALETTE_VIP_SKIP" "${PALETTE_VIP_SKIP:-true}"
+
+info "host image"
+row "UBUNTU_RELEASE" "${UBUNTU_RELEASE:-noble}"
+row "UBUNTU_IMAGE_URL" "${UBUNTU_IMAGE_URL:-(derived from the release)}"
 
 info "topology"
 row "control nodes" "${CONTROL_COUNT:-1} x ${CONTROL_VCPUS:-4} vcpu / ${CONTROL_MEMORY_MB:-8192} MB / ${CONTROL_DISK_GB:-60} GB"

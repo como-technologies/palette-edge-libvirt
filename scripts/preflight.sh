@@ -124,7 +124,11 @@ else
 	check "PALETTE_EDGE_TOKEN" no "" "copy .env.example to .env and add the token"
 fi
 check "PALETTE_ENDPOINT" yes "${PALETTE_ENDPOINT:-api.spectrocloud.com}"
-check "PALETTE_PROJECT" yes "${PALETTE_PROJECT:-Default}"
+if [ -n "${PALETTE_PROJECT:-}" ]; then
+	check "PALETTE_PROJECT" yes "${PALETTE_PROJECT}"
+else
+	check "PALETTE_PROJECT" no "" "not set. Run: just palette-projects, then just default-project"
+fi
 
 info "capacity"
 cpus=$(nproc)

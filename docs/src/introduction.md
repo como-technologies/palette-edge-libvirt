@@ -30,8 +30,9 @@ system image. See [Why agent mode](./architecture.md#why-agent-mode).
 
 ## Start here
 
-1. [Prepare the workstation](./host-setup.md).
-2. [Configure the tenant](./configuration.md).
-3. [Create the lab](./quickstart.md).
+1. [Prepare the workstation](./host-setup.md) — `just host-setup`, then restart.
+2. [Configure the tenant](./configuration.md) — `just api-key-set` and
+   `just new-project <name>`.
+3. [Create the lab](./quickstart.md) — `just cluster-up`.
 
 Read the [project rules](./rules.md) before you change the repository.

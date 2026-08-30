@@ -23,6 +23,7 @@ build_dir="${3:?build dir required}"
 root="$(repo_root)"
 
 : "${PALETTE_EDGE_TOKEN:?PALETTE_EDGE_TOKEN is empty. See .env.example.}"
+need_project
 
 vip_skip="${PALETTE_VIP_SKIP:-true}"
 case "$vip_skip" in
@@ -59,7 +60,7 @@ SEED_TEMPLATE="$root/templates/user-data.tmpl.yaml" \
 	SEED_OUT="$work/user-data" \
 	SEED_HOSTNAME="$name" \
 	SEED_ENDPOINT="${PALETTE_ENDPOINT:-api.spectrocloud.com}" \
-	SEED_PROJECT="${PALETTE_PROJECT:-Default}" \
+	SEED_PROJECT="$PALETTE_PROJECT" \
 	SEED_PASSWORD="${HOST_PASSWORD:-ubuntu}" \
 	SEED_VIP_SKIP="$vip_skip" \
 	SEED_AGENT_URL="$agent_url" \

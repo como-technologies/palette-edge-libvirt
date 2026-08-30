@@ -1,50 +1,64 @@
 # Configure the tenant
 
-All configuration goes in a `.env` file. Git ignores this file, because it holds
-your registration token.
-
-The recommended way is one project for each lab. `just new-project NAME` writes
-the file and fills in good defaults. See [Projects](./projects.md).
-
-To write the file by hand instead:
+Two commands configure the lab.
 
 ```bash
-cp .env.example .env
+just api-key-set            # store your Palette API key, one time
+just new-project pe-thelio  # make the project and write its file
 ```
 
-Then edit `.env`. To see the effective values at any time, run `just config`.
-That recipe prints the token status only. It never prints the token.
+The first command reads the key without an echo and writes it to one file
+outside the checkout. The second command makes the project in your tenant,
+makes a registration token for it, writes `envs/pe-thelio.env`, and points
+`.env` at that file.
 
-## Palette values
-
-You get these values from your Palette tenant.
+There is nothing else to fill in. To see the result:
 
 ```bash
-{{#include ../../.env.example:palette}}
+just config
 ```
 
-To find the registration token, open Palette. Go to **Tenant Settings**, then
-**Registration Tokens**. Make a token, or use an existing token.
+That recipe prints the length of the token, never its value.
 
-The API key is not in this file. Store it one time with `just api-key-set`.
-See [Projects](./projects.md#the-first-project).
+## What the two commands produce
 
-`PALETTE_PROJECT` is the value that causes the most lost time. The name is case
-sensitive, and a wrong name gives no error. Test it before you make any host:
+| Value | Where it comes from |
+| --- | --- |
+| `PALETTE_ENDPOINT` | The endpoint you use. The default is `api.spectrocloud.com`. |
+| `PALETTE_PROJECT` | The project name that you gave. |
+| `PALETTE_EDGE_TOKEN` | The token that `new-project` made for that project. |
+| `LAB_NAME` | The project name, shortened. A number is added if the prefix is in use. |
+| `LAB_SUBNET` | The first free subnet from 192.168.140 to 192.168.199. |
+| The API key | `~/.config/palette-edge-libvirt/api-key`, outside the checkout. |
+
+The API key is **not** in the project file. A key carries every permission of
+its owner, so it is a tenant credential. `just remove-project` must not delete
+it. See [Projects](./projects.md).
+
+There is **no default project**. A tenant need not have a project called
+`Default`, and a tenant can delete that one. A recipe that guesses a project
+name sends hosts to the wrong place, and Palette gives no error when it does.
+Every recipe that needs the name therefore stops without it.
+
+## Change the lab size
+
+Edit `envs/<project>.env`. These values set the number of nodes and the size of
+each node:
 
 ```bash
-just palette-projects
+{{#include ../../.env.example:topology}}
 ```
 
-## The Palette agent
+The Palette agent needs 2 CPU, 8 GB of memory, and 100 GB of storage for each
+host. These values give that minimum or more.
 
-```bash
-{{#include ../../.env.example:agent}}
-```
+`LAB_NAME` is the prefix of every libvirt object. A lab named `pethelio` gives
+the network `pethelio-net`, the pool `pethelio-pool`, and the domains
+`pethelio-cp-1`, `pethelio-wk-1`, and `pethelio-wk-2`.
 
-## The host image
+## Change the host image
 
-The lab uses the stock Ubuntu cloud image. It builds no custom image.
+The lab uses the stock Ubuntu cloud image. It builds no image.
 
 ```bash
 {{#include ../../.env.example:image}}
@@ -58,32 +72,23 @@ release:
 ```
 
 `just image-fetch` also reads the published `SHA256SUMS` file and tests the
-image against it. A image that does not match is deleted and downloaded
-again.
+image against it. An image that does not match is deleted and downloaded again.
 
-## Topology
-
-These values set the number of nodes and the size of each node.
+## Change the agent settings
 
 ```bash
-{{#include ../../.env.example:topology}}
+{{#include ../../.env.example:agent}}
 ```
 
-`LAB_NAME` is the prefix of every libvirt object. The default prefix `pe` gives
-the network `pe-net`, the pool `pe-pool`, and the domains `pe-cp-1`, `pe-wk-1`,
-and `pe-wk-2`. Change the prefix to run a second lab at the same time.
-
-The Palette agent needs 2 CPU, 8 GB of memory, and 100 GB of storage for each
-host. The default values give that minimum or more.
-
-## libvirt
+## Change the network
 
 ```bash
 {{#include ../../.env.example:libvirt}}
 ```
 
-Use a subnet that no other libvirt network uses. The default libvirt network
-usually uses `192.168.122.0/24`. To see the networks on your workstation, run
+`new-project` chooses a free subnet, so you rarely change this. Use a subnet
+that no other libvirt network uses. The default libvirt network usually uses
+`192.168.122.0/24`. To see the networks on your workstation, run
 `virsh net-list --all`.
 
 ## One command, one value
@@ -94,3 +99,8 @@ command, set the value on the command line:
 ```bash
 WORKER_COUNT=3 just cluster-up
 ```
+
+## Every value
+
+`.env.example` documents every variable. `just new-project` writes a file from
+it, so the two never disagree.

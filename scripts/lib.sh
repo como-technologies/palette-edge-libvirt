@@ -33,6 +33,20 @@ need() {
 		die "$1 is not installed. Run: just host-setup"
 }
 
+# need_project: put the project name in PALETTE_PROJECT, or stop.
+#
+# There is no default. A tenant need not have a project called "Default", and a
+# tenant can delete it. A recipe that guesses a project name sends hosts to the
+# wrong place, and Palette reports no error when it does.
+need_project() {
+	if [ -z "${PALETTE_PROJECT:-}" ]; then
+		die "PALETTE_PROJECT is empty. There is no default project.
+     To see the projects in your tenant:  just palette-projects
+     To make a project and its file:      just new-project <name>
+     To select one that exists:           just default-project <name>"
+	fi
+}
+
 # api_key_file: print the path of the Palette API key file.
 #
 # The key lives outside the checkout on purpose. It is a tenant credential, so

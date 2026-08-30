@@ -16,7 +16,7 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/palette-lib.sh"
 
 action="${1:?give an action: projects, hosts, or tokens}"
-project="${PALETTE_PROJECT:-Default}"
+project="${PALETTE_PROJECT:-}"
 
 need curl
 need python3
@@ -58,7 +58,9 @@ for p in items:
     uid = p["metadata"]["uid"]
     mark = "  <- PALETTE_PROJECT" if name == want else ""
     print("  {:<24} {}{}".format(name, uid, mark))
-if want not in [p["metadata"]["name"] for p in items]:
+if not want:
+    print("\n  PALETTE_PROJECT is not set. Select one: just default-project <name>")
+elif want not in [p["metadata"]["name"] for p in items]:
     sys.exit(
         "\nerror: PALETTE_PROJECT=" + repr(want)
         + " is not in this list. Correct it in .env."
@@ -66,6 +68,7 @@ if want not in [p["metadata"]["name"] for p in items]:
 '
 	;;
 hosts)
+	need_project
 	uid="$(require_project_uid)"
 	info "registered hosts in project $project"
 	api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid" | python3 -c '

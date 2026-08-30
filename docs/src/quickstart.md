@@ -3,18 +3,24 @@
 Complete [Prepare the workstation](./host-setup.md) and
 [Configure the tenant](./configuration.md) first.
 
-## 1. Test the project name
+## 1. Configure the tenant
 
 ```bash
-just palette-projects
+just api-key-set            # one time for the workstation
+just new-project pe-thelio  # the project, its token, and its file
 ```
 
-The recipe lists the projects in your tenant and marks the one that
-`PALETTE_PROJECT` names. Do this before you make any host.
+See [Configure the tenant](./configuration.md). To work on a project that
+already has a file, select it instead:
 
-A wrong project name gives no error at boot time. The host starts correctly, the
-agent runs, and the host never shows in Palette. This recipe finds that
-condition in one second.
+```bash
+just projects                  # the projects that have a file
+just default-project pe-thelio
+```
+
+`just palette-projects` lists the projects in your tenant and marks the one that
+`PALETTE_PROJECT` names. A wrong project name gives no error at boot time: the
+host starts, the agent runs, and the host never shows in Palette.
 
 ## 2. Create the lab
 
