@@ -142,6 +142,16 @@ migrates one into the layout, `just unadopt-project` reverses it.
 Palette keeps a project description in `metadata.annotations.description`, not
 in a `description` field.
 
+**Never put the API key in a project env file.** A Palette API key has no scope
+of its own — `spec` is only `{expiry, user}`, so it carries every permission of
+its owner, and only tenant-level roles can manage edge tokens. It lives in
+`~/.config/palette-edge-libvirt/api-key` via `just api-key-set`, read by
+`need_api_key` in `palette-lib.sh`. An earlier version copied it into each
+`envs/*.env`; `remove-project` then destroyed a tenant credential that Palette
+will not show again. Call `need_api_key` early in a script, never only inside a
+pipeline — `die` in a pipeline exits the subshell and the reader fails with a
+traceback instead of the message.
+
 **Each project owns a registration token.** `new-project` creates one bound to
 the project (`spec.defaultProject.uid`) and writes `spec.token` straight into
 the env file, so no token is ever copied by hand. `remove-project` deletes the

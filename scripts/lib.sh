@@ -33,6 +33,14 @@ need() {
 		die "$1 is not installed. Run: just host-setup"
 }
 
+# api_key_file: print the path of the Palette API key file.
+#
+# The key lives outside the checkout on purpose. It is a tenant credential, so
+# no project recipe may delete it, and `just nuke` must not reach it.
+api_key_file() {
+	printf '%s/palette-edge-libvirt/api-key\n' "${XDG_CONFIG_HOME:-$HOME/.config}"
+}
+
 # repo_root: print the absolute path of the checkout, from any directory.
 repo_root() {
 	cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd

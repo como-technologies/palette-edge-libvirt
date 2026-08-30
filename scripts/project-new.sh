@@ -28,6 +28,10 @@ target="$envs/$name.env"
 need curl
 need python3
 
+# Resolve the API key before any pipeline runs. die() inside a pipeline stops
+# only the subshell, and the reader then fails on empty input.
+need_api_key
+
 # Palette project names permit letters, numbers, and the hyphen. Stop early
 # with a clear message instead of an API error.
 if ! printf '%s' "$name" | grep -qE '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$'; then
@@ -136,7 +140,6 @@ subs = {
     "PALETTE_ENDPOINT": os.environ["ENDPOINT"],
     "PALETTE_PROJECT": os.environ["NAME"],
     "PALETTE_EDGE_TOKEN": os.environ.get("NEW_TOKEN", ""),
-    "PALETTE_API_KEY": os.environ.get("PALETTE_API_KEY", ""),
     "LAB_NAME": os.environ["LAB"],
     "LAB_SUBNET": os.environ["SUBNET"],
 }

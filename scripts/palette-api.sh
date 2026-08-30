@@ -21,6 +21,10 @@ project="${PALETTE_PROJECT:-Default}"
 need curl
 need python3
 
+# Resolve the API key before any pipeline runs. die() inside a pipeline stops
+# only the subshell, and the reader then fails on empty input.
+need_api_key
+
 # require_project_uid: print the uid of PALETTE_PROJECT, or stop with a clear
 # message that names the projects that do exist.
 require_project_uid() {

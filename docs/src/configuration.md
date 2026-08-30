@@ -26,6 +26,9 @@ You get these values from your Palette tenant.
 To find the registration token, open Palette. Go to **Tenant Settings**, then
 **Registration Tokens**. Make a token, or use an existing token.
 
+The API key is not in this file. Store it one time with `just api-key-set`.
+See [Projects](./projects.md#the-first-project).
+
 `PALETTE_PROJECT` is the value that causes the most lost time. The name is case
 sensitive, and a wrong name gives no error. Test it before you make any host:
 

@@ -27,6 +27,10 @@ link="$root/.env"
 need curl
 need python3
 
+# Resolve the API key before any pipeline runs. die() inside a pipeline stops
+# only the subshell, and the reader then fails on empty input.
+need_api_key
+
 uid="$(project_uid "$name" || true)"
 
 if [ -z "$uid" ]; then

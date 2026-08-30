@@ -168,6 +168,20 @@ ip host:
 ls:
     @scripts/lab-ls.sh "{{ lab }}"
 
+# --- credentials ------------------------------------------------------------
+
+# Store the Palette API key outside the checkout. Reads it without an echo.
+api-key-set:
+    @scripts/api-key.sh set
+
+# Report whether a Palette API key is stored, and its length only
+api-key-status:
+    @scripts/api-key.sh status
+
+# Delete the stored Palette API key
+api-key-clear:
+    @scripts/api-key.sh clear
+
 # --- projects ---------------------------------------------------------------
 
 # List the projects that have an environment file. The * marks the default.

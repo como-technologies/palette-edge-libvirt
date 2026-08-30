@@ -38,7 +38,6 @@ Step 3 gives values that do not collide with an existing lab:
 | `PALETTE_PROJECT` | The project name. |
 | `LAB_NAME` | The first 8 characters of the name, with a number if that prefix is in use. |
 | `LAB_SUBNET` | The first free subnet from 192.168.140 to 192.168.199. |
-| `PALETTE_API_KEY` | Copied from the current environment. |
 | `PALETTE_EDGE_TOKEN` | The token that step 2 makes for this project. |
 
 The recipe reads the subnets of the other environment files **and** of the
@@ -50,14 +49,22 @@ topology for that project.
 
 ### The first project
 
-A new checkout has no API key. Give it for the one command. The recipe makes
-the registration token, so you need no token:
+Store the API key one time. The recipe makes the registration token, so you
+need no token:
 
 ```bash
-PALETTE_API_KEY=... just new-project iris
+just api-key-set
+just new-project iris
 ```
 
-Later projects copy the API key from the current environment.
+The API key is **not** in the project file. A key carries every permission of
+the user that owns it, so it is a tenant credential, not a project one. It
+lives in `~/.config/palette-edge-libvirt/api-key`, outside the checkout, and no
+project recipe touches it. `just remove-project` therefore cannot delete it.
+
+An earlier version wrote a copy of the key into each project file. Removing one
+project then destroyed a tenant credential, and Palette does not show a key
+value again after it makes it.
 
 ## Change the default
 
@@ -78,7 +85,7 @@ just remove-project iris
 This is the twin of `new-project`. It reverses all four steps: it deletes the
 registration token, it deletes the project from the tenant, it deletes
 `envs/iris.env`, and it removes the `.env` link if that link pointed at the
-removed file.
+removed file. It does not touch the API key.
 
 The token goes first. **Palette refuses to delete a project while a token names
 it as its default project**, and the API reports that as an HTTP 500 with the

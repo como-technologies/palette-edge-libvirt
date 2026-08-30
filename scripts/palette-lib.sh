@@ -10,11 +10,26 @@ palette_endpoint() {
 	printf '%s\n' "${PALETTE_ENDPOINT:-api.spectrocloud.com}"
 }
 
+# need_api_key: put the API key in PALETTE_API_KEY, or stop.
+#
+# The environment wins, so one command can use a different key. Otherwise the
+# key comes from the file that `just api-key-set` writes. The key never lives
+# in a project environment file: it is a tenant credential, and a project
+# removal must not delete it.
 need_api_key() {
 	if [ -z "${PALETTE_API_KEY:-}" ]; then
-		die "PALETTE_API_KEY is empty.
-     Add it to .env, or give it for one command:
-       PALETTE_API_KEY=... just <recipe>
+		local file
+		file="$(api_key_file)"
+		if [ -s "$file" ]; then
+			PALETTE_API_KEY="$(cat "$file")"
+			export PALETTE_API_KEY
+		fi
+	fi
+
+	if [ -z "${PALETTE_API_KEY:-}" ]; then
+		die "there is no Palette API key.
+     Store one:   just api-key-set
+     Or give one: PALETTE_API_KEY=... just <recipe>
      Palette shows the key at User Menu > My API Keys."
 	fi
 }
