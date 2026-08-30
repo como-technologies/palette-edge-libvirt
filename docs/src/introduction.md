@@ -1,43 +1,53 @@
 # Introduction
 
-`palette-edge-libvirt` builds a Kubernetes test cluster on one workstation. It uses Spectro Cloud Palette (Profiles, Packs, and Edge) to create
-and remove test Kubernetes clusters on libvirt/KVM virtual machines.
+`palette-edge-libvirt` builds and removes Kubernetes test clusters on one
+workstation, from Spectro Cloud Palette packs and libvirt virtual machines.
 
-## Purpose
+## Let's just do it!
 
-The tooling validates a combination of an operating system, a CNI, a CSI, and
-add-on packs. You test the combination on virtual machines first. You commit the
-combination to real hardware only after the test passes.
-
-The reference workstation is a System76 Thelio with 32 cores and 128 GB of RAM.
-Any Linux workstation with KVM and sufficient memory works.
-
-## How the parts fit together
-
-| Part | Function |
+| Type this | More |
 | --- | --- |
-| Palette SaaS | Holds the cluster profiles and the packs. Registers the hosts. |
-| Ubuntu cloud image | The stock operating system. The tooling builds no image. |
-| Seed ISO | Gives the agent your tenant endpoint, project, and token. |
-| Palette agent | Installs at the first boot and registers the host. |
-| libvirt / KVM | Runs the virtual machines. |
-| OpenTofu | Makes the cluster profile and the cluster in Palette. |
-| `just` | Runs every action in this repository. |
-| mdBook | Builds this documentation. |
+| `just host-setup` | [Prepare the workstation](./host-setup.md). Installs libvirt and KVM. Restart when it finishes. |
+| `just tofu-install` | [Install OpenTofu](./host-setup.md#3-install-opentofu) into `~/.local/bin`. Needs no root. |
+| `just api-key-set` | [Configure the tenant](./tenant.md). Reads your Palette API key without an echo. |
+| `just new-project <project>` | [Create a project](./project.md). Makes the Palette project, its registration token, and its settings. |
+| `just infra-up` | [Create the machines](./machines.md). Returns when every host registers, in about 3 minutes. |
+| `just cluster-up` | [Create the cluster](./cluster.md). The profile and the cluster, in about 45 minutes. |
+| `just cluster-kubeconfig` | [Use the cluster](./cluster.md#5-use-the-cluster). Prints the administrator kubeconfig. |
 
-The tooling uses Palette **agent mode**. Each host runs a stock Ubuntu cloud
-image, so it builds no operating system image. See
-[Design decisions](./decisions.md#agent-mode-not-edge-native).
+The first three rows are one time for each workstation. Almost all of the hour
+that the last three take is a wait.
 
-[Architecture](./architecture.md) gives the full diagram, the boot sequence of
-one host, and the location of each part of the state.
+## Let's do it in reverse
 
-## Start here
+Every recipe that makes something has a twin that removes it, so the table above
+also reads from the bottom up:
 
-1. [Prepare the workstation](./host-setup.md) — `just host-setup`, then restart.
-2. [Configure the tenant](./tenant.md) — `just api-key-set`.
-3. [Create a project](./project.md) — `just new-project <project>`.
-4. [Create the machines](./machines.md) — `just infra-up`.
-5. [Create the cluster](./cluster.md) — `just cluster-up`.
+| Type this | More |
+| --- | --- |
+| `just cluster-down` | [Remove the cluster](./cluster.md#remove-the-cluster). The cluster and the profile. The machines stay. |
+| `just infra-down` | The host records, the machines, the pool, and the network. Refuses while a cluster holds them. |
+| `just remove-project <project>` | The Palette project, its registration token, its settings, and its OpenTofu state. |
+| `just image-clean` | The Ubuntu cloud image in the cache. |
+| `just api-key-clear` | The Palette API key. |
+| `just tofu-uninstall` | The OpenTofu that `just tofu-install` wrote. |
+| `just host-setup-undo` | libvirt, KVM, and the group membership. |
+
+*...and it's like we were never here* 😏
+
+`just nuke` is the first three rows in one command. The last four stay, because
+none of them belongs to one project.
+
+[Remove everything](./teardown.md) describes what each recipe leaves, and
+[project rule 2](./rules.md#2-every-create-recipe-has-a-remove-recipe) is why
+each one has a twin.
+
+## More
+
+[Architecture](./architecture.md) names each part, and walks one machine from a
+cloud image to a node of the cluster.
+[Recipes](./recipes.md) describes the two layers and every recipe.
+[Troubleshooting](./troubleshooting.md) names the fix for each failure that this
+tooling has met.
 
 Read the [project rules](./rules.md) before you change the repository.

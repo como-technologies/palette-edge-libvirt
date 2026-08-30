@@ -1,13 +1,45 @@
 # Architecture
 
-This page describes what the cluster builds.
+This page names each part of the tooling, and walks one virtual machine from a
+cloud image to a node of the cluster.
 
-The cluster makes one virtual machine for each Kubernetes node. Each machine boots
-a stock Ubuntu cloud image. cloud-init then installs the Palette agent, and the
-agent registers the machine with your Palette tenant. Palette makes the cluster
-from the machines that registered.
+## Purpose
+
+The tooling validates a combination of an operating system, a CNI, a CSI, and
+add-on packs. You test the combination on virtual machines first. You commit the
+combination to real hardware only after the test passes.
+
+The combination lives in the cluster profile in Palette, and not in an operating
+system image, so a new combination needs no new image and no new build. That is
+what makes a second test cheap.
+
+The reference workstation is a System76 Thelio with 32 cores and 128 GB of RAM.
+Any Linux workstation with KVM and sufficient memory works.
+[The workstation](./workstation.md) gives the capacity that one cluster needs.
 
 ## The parts
+
+| Part | Function |
+| --- | --- |
+| Palette SaaS | Holds the cluster profiles and the packs. Registers the hosts. |
+| Ubuntu cloud image | The stock operating system. The tooling builds no image. |
+| Seed ISO | Gives the agent your tenant endpoint, project, and token. |
+| Palette agent | Installs at the first boot and registers the host. |
+| libvirt / KVM | Runs the virtual machines. |
+| OpenTofu | Makes the cluster profile and the cluster in Palette. |
+| `just` | Runs every action in this repository. |
+| mdBook | Builds this documentation. |
+
+The tooling uses Palette **agent mode**. Each host runs a stock Ubuntu cloud
+image, so the tooling builds no operating system image. See
+[Design decisions](./decisions.md#agent-mode-not-edge-native).
+
+## How the parts fit together
+
+The tooling makes one virtual machine for each Kubernetes node. Each machine
+boots a stock Ubuntu cloud image. cloud-init then installs the Palette agent, and
+the agent registers the machine with your Palette tenant. Palette makes the
+cluster from the machines that registered.
 
 ```mermaid
 flowchart TB
