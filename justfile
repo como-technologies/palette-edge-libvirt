@@ -58,6 +58,7 @@ preflight:
 
 # --- host packages ----------------------------------------------------------
 
+# ANCHOR: hostsetup
 # Install libvirt, KVM, and the helper tools. Asks for the sudo password.
 host-setup:
     sudo apt-get update
@@ -71,6 +72,8 @@ host-setup:
     @echo "and the screen can stay blank after the restart. See the docs at"
     @echo "docs/src/troubleshooting.md for the correction."
     @echo "After the restart, run: just preflight"
+
+# ANCHOR_END: hostsetup
 
 # Remove the packages that host-setup installed. Asks for the sudo password.
 host-setup-undo:
