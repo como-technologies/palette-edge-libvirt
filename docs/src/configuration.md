@@ -1,6 +1,6 @@
 # Configure the tenant
 
-Two commands configure the lab.
+The workstation needs one credential: your Palette API key.
 
 ## 1. Store the API key
 
@@ -8,36 +8,25 @@ Two commands configure the lab.
 just api-key-set
 ```
 
-The recipe reads the key without an echo. It writes one file outside the
-checkout, so no project recipe can delete it. Palette shows the key at
-**User Menu** > **My API Keys**.
+The recipe reads the key without an echo and writes one file outside the
+checkout. Palette shows the key at **User Menu** > **My API Keys**.
 
-Do this one time for the workstation.
+Do this one time for the workstation. Every project uses the same key.
 
-## 2. Make the project
-
-```bash
-just new-project <project>
-```
-
-The recipe makes the project in your tenant, makes a registration token for
-that project, writes `envs/<project>.env`, and points `.env` at that file.
-
-Do this one time for each lab.
-
-## 3. Confirm the result
+## 2. Confirm the result
 
 ```bash
-just config
+just api-key-status
+just palette-projects
 ```
 
-The recipe prints the length of the token, never its value.
+The first recipe reports the length of the key, never its value. The second
+recipe reads your tenant with that key, so a correct list proves that the key
+works.
 
-There is nothing else to fill in. Continue to
-[Create the lab](./quickstart.md).
+## Next
 
-## To change a value
+Make a project. See [Projects](./projects.md).
 
-`just new-project` writes a good value for every setting. To change the number
-of nodes, the size of a node, the Ubuntu release, or the network, edit
-`envs/<project>.env`. [Settings](./settings.md) describes each value.
+The API key is the only value that you give by hand. `just new-project` writes
+every other value. [Settings](./settings.md) describes each one.

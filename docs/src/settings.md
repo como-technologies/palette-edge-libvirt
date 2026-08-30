@@ -1,41 +1,26 @@
 # Settings
 
-Each project has one environment file at `envs/<project>.env`. `.env` is a
-symbolic link to the file of the default project, and `set dotenv-load` in the
-justfile reads that link. See [Projects](./projects.md).
+This page describes each value in `envs/<project>.env`.
+[The project layout](./project-layout.md) describes the files themselves and
+which values `just new-project` chooses.
 
 `just new-project` writes a good value for every setting, so you change a value
 only when you want a different lab. To see the values that the recipes use now,
 run `just config`.
 
-## What new-project writes
-
-| Value | Where it comes from |
-| --- | --- |
-| `PALETTE_ENDPOINT` | The endpoint you use. The default is `api.spectrocloud.com`. |
-| `PALETTE_PROJECT` | The project name that you gave. |
-| `PALETTE_EDGE_TOKEN` | The token that `new-project` made for that project. |
-| `LAB_NAME` | The project name, shortened. A number is added if that prefix is in use. |
-| `LAB_SUBNET` | The first free subnet from 192.168.140 to 192.168.199. |
-
-The subnet comes from the other environment files **and** from the libvirt
-networks, so a new project never takes the subnet of a running lab.
-
 ## The two credentials
 
-The API key is **not** in the project file. A key carries every permission of
-its owner, so it is a tenant credential and not a project one. It lives at
-`~/.config/palette-edge-libvirt/api-key`, outside the checkout, and no project
-recipe touches it. `just remove-project` therefore cannot delete it.
-
-The registration token **is** in the project file. A token registers hosts into
-one project, so it belongs to that project and dies with it.
+The API key is **not** in the project file. It is a tenant credential, and it
+lives at `~/.config/palette-edge-libvirt/api-key`:
 
 ```bash
 just api-key-set      # store the API key
 just api-key-status   # report its length only
 just api-key-clear    # delete it
 ```
+
+The registration token **is** in the project file. A token registers hosts into
+one project, so it belongs to that project and dies with it.
 
 ## There is no default project
 

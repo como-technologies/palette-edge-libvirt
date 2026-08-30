@@ -21,5 +21,6 @@
 - [Recipes](./recipes.md)
 - [Settings](./settings.md)
 - [The workstation](./workstation.md)
+- [The project layout](./project-layout.md)
 - [Project rules](./rules.md)
 - [Troubleshooting](./troubleshooting.md)
