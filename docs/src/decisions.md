@@ -64,16 +64,61 @@ touches the other. The recipe reads the subnets of the other environment files
 and of the libvirt networks, so a new project never takes a subnet that a
 running cluster uses.
 
-## The cluster profile has no recipe yet
+## OpenTofu builds the cluster layer
 
-The cluster makes the hosts. A person makes the cluster profile and the cluster in
-Palette. This is the one gap against
-[project rule 1](./rules.md#1-every-action-is-a-recipe).
-[Create the cluster](./cluster.md) holds the console steps until a recipe
-replaces them.
+The cluster profile and the cluster were the one gap against
+[project rule 1](./rules.md#1-every-action-is-a-recipe). `just cluster-up` and
+`just cluster-down` close it, with the Spectro Cloud provider and the resources
+`spectrocloud_cluster_profile` and `spectrocloud_cluster_edge_native`.
 
-The Palette CLI cannot close it. `palette project` gives `list`, `switch`, and
-`deactivate` only, and the CLI has no command for a registration token. The
-Terraform provider does have `spectrocloud_cluster_profile` and
-`spectrocloud_cluster_edge_native`, so Terraform is the candidate for that
-layer.
+The Palette CLI could not close it. `palette project` gives `list`, `switch`,
+and `deactivate` only, and the CLI has no command for a registration token or a
+cluster profile.
+
+**OpenTofu and not Terraform.** OpenTofu is the fork with the MPL licence, the
+provider is the same one, and the configuration language is the same. Neither
+one is in the Ubuntu package list, so either needs an install recipe. `just
+tofu-install` takes the release archive, tests its checksum, and puts the binary
+in `~/.local/bin`, which needs no root.
+
+**The layers below keep their recipes.** OpenTofu owns two objects only: the
+profile and the cluster. The project, the token, and the machines have working
+recipes with clear failure messages, and Terraform state adds nothing to them.
+The API key never becomes a variable, so it reaches no state file.
+
+## The pod range is not the pack default
+
+The `edge-k8s` pack gives the pods `192.168.0.0/16`. That range holds every
+cluster subnet that `just new-project` allocates, and it holds most home and
+office networks as well.
+
+Calico gives no NAT to a destination inside its own pool. A pod that asks the
+gateway of the cluster network for DNS therefore sends a packet from a pod
+address, the gateway drops it, and every name stays unresolved. The failure is
+quiet and late: `kubectl get nodes` reports three ready nodes, and Palette waits
+for a management agent that cannot reach `api.spectrocloud.com`. The cluster
+sits in `Provisioning` until the recipe times out.
+
+`POD_CIDR` replaces that one line of the pack values, and the default is
+`10.244.0.0/16`. The service range `192.169.0.0/16` stays as the pack gives it,
+because no libvirt network of this repository uses `192.169`.
+
+The other way to correct the overlap is to move the cluster subnet out of
+`192.168.0.0/16`. It was not taken: `192.168` is the address space that libvirt
+and every example use for a NAT network, and one line of pack values is a
+smaller change than a new address plan.
+
+## The cluster always has a virtual address
+
+Palette refuses a cluster that gives no control plane endpoint. It answers
+`Parameter 'Host endpoint' should not be empty`, and it does that for one
+control plane node as firmly as for three.
+
+`CLUSTER_VIP` is therefore never empty, and `PALETTE_VIP_SKIP` is `false` so
+kube-vip claims that address. `just new-project` writes the `.10` address of the
+subnet it allocated, which is below the DHCP pool.
+
+The earlier default was the opposite: skip kube-vip for a single control plane
+node. That default was correct while nothing made a cluster, and it fails as
+soon as something does. The two settings sit in two different layers, so
+`just cluster-up` tests them together before it makes anything.

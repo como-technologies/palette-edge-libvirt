@@ -41,6 +41,25 @@ worker_vcpus := env_var_or_default("WORKER_VCPUS", "6")
 worker_memory := env_var_or_default("WORKER_MEMORY_MB", "16384")
 worker_disk := env_var_or_default("WORKER_DISK_GB", "100")
 
+# The cluster layer. OpenTofu makes the cluster profile and the cluster.
+tofu_version := env_var_or_default("TOFU_VERSION", "1.12.6")
+
+# Palette refuses a cluster that gives no control plane endpoint, so this value
+# is never empty. The address comes from the free range of the cluster subnet,
+# below the DHCP pool. See docs/src/network.md.
+cluster_vip := env_var_or_default("CLUSTER_VIP", subnet + ".10")
+
+# The pod range. It must hold neither the cluster subnet nor the address of the
+# workstation, and the pack default 192.168.0.0/16 holds both.
+pod_cidr := env_var_or_default("POD_CIDR", "10.244.0.0/16")
+
+# The packs are the combination under test, so each version is pinned. To see
+# the versions that a pack offers now: just palette-packs edge-k8s
+os_pack_version := env_var_or_default("OS_PACK_VERSION", "2.1.0")
+k8s_version := env_var_or_default("K8S_VERSION", "1.33.13")
+cni_version := env_var_or_default("CNI_VERSION", "3.32.1")
+csi_version := env_var_or_default("CSI_VERSION", "0.0.37")
+
 # ANCHOR: dirs
 # The tooling directories. The checkout holds the source only. Delete the checkout
 # and your projects, your tokens, and the downloaded image stay.
@@ -50,6 +69,14 @@ worker_disk := env_var_or_default("WORKER_DISK_GB", "100")
 config_dir := env_var_or_default("PEL_CONFIG_DIR", config_directory() / "palette-edge-libvirt")
 data_dir := env_var_or_default("PEL_DATA_DIR", data_directory() / "palette-edge-libvirt")
 cache_dir := env_var_or_default("PEL_CACHE_DIR", cache_directory() / "palette-edge-libvirt")
+
+# `just` has no state_directory() function, so this line builds the XDG state
+# path itself. The OpenTofu state goes here, one directory for each project.
+state_dir := env_var_or_default("PEL_STATE_DIR", env_var_or_default("XDG_STATE_HOME", home_directory() / ".local/state") / "palette-edge-libvirt")
+
+# The tools that this repository installs for your user. OpenTofu goes here, so
+# the install needs no root.
+bin_dir := env_var_or_default("PEL_BIN_DIR", home_directory() / ".local/bin")
 
 envs_dir := config_dir / "envs"
 image_dir := cache_dir / "images"
@@ -65,7 +92,9 @@ net := cluster + "-net"
 export LIBVIRT_DEFAULT_URI := uri
 export PEL_CONFIG_DIR := config_dir
 export PEL_DATA_DIR := data_dir
+export PEL_STATE_DIR := state_dir
 export PEL_CACHE_DIR := cache_dir
+export PEL_BIN_DIR := bin_dir
 
 # --- meta -------------------------------------------------------------------
 
@@ -274,16 +303,63 @@ palette-hosts:
 palette-tokens:
     @scripts/palette-api.sh tokens
 
+# List the clusters in your Palette project
+palette-clusters:
+    @scripts/palette-api.sh clusters
+
+# List the versions of one Edge Native pack in the public registry
+palette-packs pack:
+    @scripts/palette-api.sh packs "{{ pack }}"
+
 # --- cluster layer ----------------------------------------------------------
-# Layer 2. The cluster profile and the cluster, both in Palette. Terraform
-# builds this layer. It has no recipe yet, and that is the one gap against
-# project rule 1. See docs/src/cluster.md.
+# Layer 2. The cluster profile and the cluster, both in Palette. OpenTofu builds
+# this layer from the hosts that layer 1 registered. See docs/src/cluster.md.
+
+# ANCHOR: clusterup
+# Create the cluster profile and the cluster from the registered hosts
+cluster-up: (_tofu "apply")
+
+# Remove the cluster and the cluster profile. The hosts and the machines stay.
+cluster-down: (_tofu "destroy")
+
+# Show the changes that cluster-up would make. Changes nothing.
+cluster-plan: (_tofu "plan")
+
+# ANCHOR_END: clusterup
+
+# Show the cluster profile, the cluster, and the link to the Palette console
+cluster-show: (_tofu "output")
+
+# Print the administrator kubeconfig. Send it to a file: just cluster-kubeconfig > k
+cluster-kubeconfig: (_tofu "kubeconfig")
+
+# The one entry point to OpenTofu. Every cluster recipe passes through it, so
+# the state path, the credentials, and the host list are computed one time.
+[private]
+_tofu action:
+    @TOFU_VERSION="{{ tofu_version }}" CLUSTER="{{ cluster }}" CLUSTER_VIP="{{ cluster_vip }}" \
+        CLUSTER_SUBNET="{{ subnet }}" POD_CIDR="{{ pod_cidr }}" \
+        K8S_VERSION="{{ k8s_version }}" CNI_VERSION="{{ cni_version }}" \
+        CSI_VERSION="{{ csi_version }}" OS_PACK_VERSION="{{ os_pack_version }}" \
+        CONTROL_COUNT="{{ control_count }}" WORKER_COUNT="{{ worker_count }}" \
+        scripts/cluster.sh "{{ action }}"
+
+# --- opentofu ---------------------------------------------------------------
+
+# Install the pinned OpenTofu into ~/.local/bin. Needs no root.
+tofu-install:
+    @TOFU_VERSION="{{ tofu_version }}" BIN_DIR="{{ bin_dir }}" CACHE_DIR="{{ cache_dir }}/tofu" \
+        scripts/tofu-install.sh
+
+# Remove the OpenTofu that tofu-install put in ~/.local/bin
+tofu-uninstall:
+    @BIN_DIR="{{ bin_dir }}" CACHE_DIR="{{ cache_dir }}/tofu" scripts/tofu-uninstall.sh
 
 # --- everything -------------------------------------------------------------
 
 # ANCHOR: nuke
 # Remove every object of this project: both layers, the token, and the project
-nuke: infra-down
+nuke: cluster-down infra-down
     @scripts/nuke.sh
 # ANCHOR_END: nuke
 

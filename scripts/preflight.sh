@@ -47,6 +47,14 @@ else
 	check "iso tool" no "" "install genisoimage or xorriso"
 fi
 
+# The cluster layer needs OpenTofu. Ubuntu does not package it, so it has a
+# recipe of its own and not a line in host-setup.
+if command -v tofu >/dev/null; then
+	check "tofu" yes "$(tofu version 2>/dev/null | head -n1)"
+else
+	check "tofu" no "" "run: just tofu-install"
+fi
+
 # The hosts boot a stock cloud image with the standard firmware. The cluster needs
 # no UEFI firmware package.
 

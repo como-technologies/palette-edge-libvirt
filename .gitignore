@@ -13,6 +13,16 @@ images/
 *.iso
 *.img
 
+# OpenTofu state and provider files. `just cluster-up` puts both in
+# ~/.local/state/palette-edge-libvirt/<project>/, so neither belongs here. The
+# names below stay because a wrong PEL_ override would put a state file in the
+# checkout, and a state file holds the kubeconfig of the cluster.
+# terraform/.terraform.lock.hcl is committed on purpose: it pins the provider.
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfplan
+
 # mdBook output
 docs/book/
 

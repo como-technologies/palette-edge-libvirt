@@ -25,7 +25,11 @@ root="$(repo_root)"
 : "${PALETTE_EDGE_TOKEN:?PALETTE_EDGE_TOKEN is empty. Run: just projects}"
 need_project
 
-vip_skip="${PALETTE_VIP_SKIP:-true}"
+# kube-vip claims the control plane endpoint of the cluster. Palette refuses a
+# cluster that gives no endpoint, so the default enables kube-vip: a host that
+# skipped it registers correctly and then leaves the address unanswered, and the
+# cluster fails long after the mistake. See scripts/cluster.sh.
+vip_skip="${PALETTE_VIP_SKIP:-false}"
 case "$vip_skip" in
 true | false) ;;
 *) die "PALETTE_VIP_SKIP must be true or false. You gave '$vip_skip'." ;;

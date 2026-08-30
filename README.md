@@ -19,21 +19,35 @@ system image, so it needs no Docker and no CanvOS.
 ```bash
 just host-setup          # install libvirt, KVM, and the helper tools
 # restart the workstation for the new group membership
+just tofu-install        # OpenTofu into ~/.local/bin, no root
 just api-key-set         # store your Palette API key, one time
 just new-project pe      # makes the project, its token, and its env file
 just preflight           # test the workstation
 just infra-up            # network, pool, image, seeds, machines, registration
+just cluster-up          # the cluster profile and the cluster, in Palette
 ```
 
-`infra-up` returns when every host is registered, so the next layer is ready.
-That layer makes the cluster profile and the cluster in Palette, with
-**Palette eXtended Kubernetes - Edge (PXK-E)** for the Kubernetes layer. It has
-no recipe yet; Terraform is the plan.
+`infra-up` returns when every host is registered, so the cluster layer is ready
+when it does. `cluster-up` then makes the cluster profile and the cluster with
+OpenTofu, from public Palette packs:
+
+| Layer | Pack |
+| --- | --- |
+| Operating system | BYOOS (Edge), Agent Mode preset |
+| Kubernetes | Palette eXtended Kubernetes - Edge (PXK-E) |
+| Network | Calico |
+| Storage | Local path provisioner |
+
+```bash
+just cluster-show                          # the ids and the console link
+just cluster-kubeconfig > ~/.kube/pe.yaml  # the administrator kubeconfig
+```
 
 To remove everything on the workstation:
 
 ```bash
-just nuke
+just cluster-down        # the cluster and the profile
+just nuke                # both layers, the token, and the project
 ```
 
 ## Project rules
@@ -72,10 +86,12 @@ diagrams and `mdbook-gruvbox` for the theme.
 | `just` | Runs every recipe. |
 | `libvirt`, `qemu-kvm`, `virtinst` | Runs the virtual machines. |
 | `genisoimage` or `xorriso` | Builds the seed ISO. |
+| `tofu` | Makes the cluster profile and the cluster. |
 | `mdbook`, `mdbook-mermaid`, `mdbook-gruvbox` | Builds the documentation. |
 | `shellcheck` | Tests the shell scripts. |
 
-`just host-setup` installs the system packages. Install the `mdbook` tools with
+`just host-setup` installs the system packages, and `just tofu-install` installs
+OpenTofu into `~/.local/bin`. Install the `mdbook` tools with
 `cargo install mdbook mdbook-mermaid mdbook-gruvbox`.
 
 ## Security
@@ -90,9 +106,14 @@ Two credentials, kept apart on purpose:
   `~/.config/palette-edge-libvirt/api-key`, outside the checkout, so no project
   recipe can delete it. Use `just api-key-set`.
 
-The checkout holds the source only. The projects, the seeds, and the cloud
-image live in `~/.config`, `~/.local/share`, and `~/.cache`, so `rm -rf` on the
-checkout destroys no project. Run `just config` to see the paths.
+The checkout holds the source only. The projects, the seeds, the OpenTofu state,
+and the cloud image live in `~/.config`, `~/.local/share`, `~/.local/state`, and
+`~/.cache`, so `rm -rf` on the checkout destroys no project. Run `just config`
+to see the paths.
+
+The OpenTofu state holds the administrator kubeconfig of the cluster, so its
+directory is mode 0700 and the state file is mode 0600. The API key never
+becomes a variable, so it reaches no state file and no plan file.
 
 Run `just host-eject NAME` after a host registers. That recipe removes the seed
 ISO from the virtual machine, so the host keeps no copy of the token.

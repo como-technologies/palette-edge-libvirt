@@ -1,64 +1,109 @@
 # Create the cluster
 
-Palette makes the cluster from the hosts that registered. The workstation runs
-the virtual machines. Palette holds the cluster profile and the cluster.
+This page builds the cluster layer: the cluster profile and the cluster, both in
+Palette. OpenTofu makes them from the hosts that the layer below registered.
 
 This is layer 2. Complete [Create the machines](./machines.md) first —
 `just infra-up` does not return until every host registers, so the layer below
 is ready when it does.
 
-## This step has no recipe yet
+## 1. Install OpenTofu
 
-Every other action in this repository is a recipe. This one is not, so it is the
-one gap against [project rule 1](./rules.md#1-every-action-is-a-recipe).
+```bash
+just tofu-install
+```
 
-The plan is `just cluster-up` and `just cluster-down`, built on Terraform with
-the Spectro Cloud provider, for the cluster profile and the cluster only. The
-projects, the tokens, and the machines keep the recipes that they have. The
-steps below are the console steps until then.
+Ubuntu does not package OpenTofu. The recipe puts the pinned release in
+`~/.local/bin`, and it needs no root. Do this one time for each workstation.
 
-No cluster of this cluster is complete yet, so read the steps below as a summary of
-the Palette documentation, not as a tested procedure.
+## 2. See the changes
 
-## 1. Create the cluster profile
+```bash
+just cluster-plan
+```
 
-The profile is the combination under test. The cluster exists to give it hosts.
+The recipe prints what `cluster-up` would make, and changes nothing. It also
+tests your settings, so a wrong value stops here.
 
-Select **Palette eXtended Kubernetes - Edge (PXK-E)** for the Kubernetes layer.
-Add the CNI, the CSI, and the add-on packs to test.
+## 3. Build the layer
 
-## 2. Create the cluster
+```bash
+just cluster-up
+```
 
-1. Make a cluster and select the profile.
-2. Assign the registered hosts. Give the control plane pool the `-cp-` hosts
-   and the worker pool the `-wk-` hosts.
-3. Wait for the deployment. Palette shows the progress of each pack.
+The recipe makes two objects in Palette:
 
-The libvirt domain name and the Palette host name are the same, so `just ls` and
-the Palette host list agree.
+| Object | Name |
+| --- | --- |
+| cluster profile | `<CLUSTER_NAME>-infra` |
+| cluster | `<CLUSTER_NAME>` |
 
-## The virtual address
+The control plane pool takes the `-cp-` hosts and the worker pool takes the
+`-wk-` hosts. The libvirt domain name and the Palette host name are the same, so
+`just ls` and the Palette host list agree.
 
-A cluster with one control plane node needs no virtual address. `PALETTE_VIP_SKIP`
-is `true` for that reason.
+Palette then installs the four packs on every node. That takes tens of minutes.
 
-For more than one control plane node:
+The recipe is idempotent, so a second run makes no new object. See
+[The cluster profile](./cluster-profile.md) for each pack and each setting.
 
-1. Set `PALETTE_VIP_SKIP` to `false` in the project file.
-2. Run `just seed-clean`, then build the cluster again.
-3. Give the VIP in Palette. Use a free address of the cluster subnet. See
-   [The cluster network](./network.md#address-plan).
+## 4. Watch the build
 
-## Run a second combination
+```bash
+just palette-clusters   # the state and the health of the cluster
+just cluster-show       # the ids, and a link to the cluster in the console
+```
 
-The operating system image does not change between tests. Change the cluster
-profile in Palette and deploy again. The hosts stay as they are.
+The Palette console shows the progress of each pack. If the build fails, see
+[The cluster builds for an hour and then fails](./troubleshooting.md#the-cluster-builds-for-an-hour-and-then-fails).
+
+## 5. Use the cluster
+
+```bash
+just cluster-kubeconfig > ~/.kube/pe.yaml
+KUBECONFIG=~/.kube/pe.yaml kubectl get nodes
+```
+
+The kubeconfig is a credential. The recipe prints it and writes no file, so you
+choose the file and its mode.
+
+## Change the combination
+
+Change a pack version in the project file, then build the layer again:
+
+```bash
+just cluster-plan
+just cluster-up
+```
+
+Palette replaces that layer on the running cluster. The hosts stay as they are.
+`just palette-packs <name>` lists the versions that the public registry offers.
+[Settings](./settings.md#the-cluster-layer) describes each value.
 
 To change the hosts themselves, see
 [Create the hosts](./machines.md#change-the-machines).
 
 ## Remove the cluster
 
-Delete the cluster in Palette first, then the profile. `just infra-down` refuses
-while the project holds a cluster, because a cluster whose machines are gone is
-impossible to repair. See [Remove everything](./teardown.md).
+```bash
+just cluster-down
+```
+
+This removes the cluster and the cluster profile. The hosts, the machines, and
+the project all stay, so `just cluster-up` builds them again.
+
+Run it before `just infra-down`. That recipe refuses while the project holds a
+cluster, because a cluster whose machines are gone is impossible to repair.
+
+## Next
+
+The cluster is up. [Remove everything](./teardown.md) describes the way back
+down.
+
+## More
+
+[The cluster profile](./cluster-profile.md) describes the four packs, the
+virtual address, and where OpenTofu keeps its state.
+[Settings](./settings.md#the-cluster-layer) describes every value of this layer.
+[Architecture](./architecture.md) describes the two layers and the seam between
+them.

@@ -148,6 +148,9 @@ subs = {
     "PALETTE_EDGE_TOKEN": os.environ.get("NEW_TOKEN", ""),
     "CLUSTER_NAME": os.environ["CLUSTER"],
     "CLUSTER_SUBNET": os.environ["SUBNET"],
+    # The control plane endpoint. The .10 address is below the DHCP pool of
+    # the network, so nothing else can take it.
+    "CLUSTER_VIP": os.environ["SUBNET"] + ".10",
 }
 out = []
 for line in open(os.environ["SRC"]):

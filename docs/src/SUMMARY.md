@@ -18,6 +18,7 @@
 - [Settings](./settings.md)
 - [The cluster network](./network.md)
 - [Host registration](./edge-hosts.md)
+- [The cluster profile](./cluster-profile.md)
 - [The workstation](./workstation.md)
 - [The tooling directories](./directories.md)
 - [The project layout](./project-layout.md)

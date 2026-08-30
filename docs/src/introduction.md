@@ -21,6 +21,7 @@ Any Linux workstation with KVM and sufficient memory works.
 | Seed ISO | Gives the agent your tenant endpoint, project, and token. |
 | Palette agent | Installs at the first boot and registers the host. |
 | libvirt / KVM | Runs the virtual machines. |
+| OpenTofu | Makes the cluster profile and the cluster in Palette. |
 | `just` | Runs every action in this repository. |
 | mdBook | Builds this documentation. |
 
@@ -37,6 +38,6 @@ one host, and the location of each part of the state.
 2. [Configure the tenant](./tenant.md) — `just api-key-set`.
 3. [Create a project](./project.md) — `just new-project <project>`.
 4. [Create the machines](./machines.md) — `just infra-up`.
-5. [Create the cluster](./cluster.md) — in Palette, for now.
+5. [Create the cluster](./cluster.md) — `just cluster-up`.
 
 Read the [project rules](./rules.md) before you change the repository.

@@ -1,0 +1,51 @@
+# Values for the Public Repo pack `edge-native-byoi` 2.1.0, the BYOOS (Edge)
+# layer of the cluster profile.
+#
+# The line above records the version that these values came from.
+# `cluster-profile.tf` reads this file and fails the plan when the pinned
+# version disagrees with it, so a re-pin cannot silently keep old values.
+#
+# Two changes against the default values of the pack:
+#
+# 1. Agent Mode. The pack has two presets, Appliance Mode and Agent Mode. The
+#    default is Appliance Mode, and that mode needs `options.system.uri` to name
+#    a Kairos provider image that CanvOS builds. This repository builds no
+#    image: each host boots the stock Ubuntu cloud image and cloud-init installs
+#    the Palette agent. Agent Mode is therefore the preset that matches, and it
+#    takes the literal string "NA" for the image URI. The preset also removes
+#    `pack.content.images`, which named that same image.
+#
+#    The comment line below is how Palette records the choice, so the console
+#    shows "Agent Mode" as the selected preset for a profile that this file
+#    made.
+#
+# 2. The /opt/cni/bin permissions. A PXK-E cluster in agent mode leaves the
+#    contents of that directory with the wrong owner, and a CNI that does not
+#    run as root then cannot start. The profile uses Calico, which does run as
+#    root, so this stanza changes nothing today. It stays because it is the
+#    correction that Spectro Cloud publishes, and it keeps a change of the CNI
+#    pack safe. Each of the three stages runs the same command, so the owner is
+#    correct after a restart as well as after the install.
+#    See https://docs.spectrocloud.com/troubleshooting/edge/
+
+# spectrocloud.com/enabled-presets: Deployment Mode:byoi-agent-mode
+
+options:
+  system.uri: "NA"
+
+stages:
+  boot.before:
+    - name: "Ensure CNI directory permissions on restart"
+      if: '[ -d /opt/cni/bin ]'
+      commands:
+        - chown root:root -R /opt/cni/bin
+  boot:
+    - name: "Ensure CNI directory permissions on restart"
+      if: '[ -d /opt/cni/bin ]'
+      commands:
+        - chown root:root -R /opt/cni/bin
+  boot.after:
+    - name: "Ensure CNI directory permissions on restart"
+      if: '[ -d /opt/cni/bin ]'
+      commands:
+        - chown root:root -R /opt/cni/bin

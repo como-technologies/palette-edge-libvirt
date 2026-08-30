@@ -37,9 +37,10 @@ if [ -n "${PALETTE_PROJECT:-}" ] && [ -s "$(api_key_file)" ] &&
 	command -v curl >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
 	uid="$(project_uid "$PALETTE_PROJECT" 2>/dev/null || true)"
 	if [ -n "$uid" ]; then
-		clusters="$(api GET "v1/spectroclusters?limit=100" -H "ProjectUid: $uid" 2>/dev/null |
-			python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("items") or []))' 2>/dev/null || echo 0)"
-		if [ "$clusters" -gt 0 ]; then
+		# The count holds the live clusters only. Palette keeps the record
+		# of a deleted one, and that record must not block this recipe.
+		clusters="$(cluster_count "$uid" 2>/dev/null || echo 0)"
+		if [ "${clusters:-0}" -gt 0 ]; then
 			die "project $PALETTE_PROJECT holds $clusters cluster(s).
      The cluster layer sits above this one. Remove it first:
        just cluster-down

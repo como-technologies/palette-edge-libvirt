@@ -39,8 +39,9 @@ else
 	# Palette, and those are slow to find later.
 	hosts="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid" |
 		python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("items") or []))')"
-	clusters="$(api GET "v1/spectroclusters?limit=100" -H "ProjectUid: $uid" |
-		python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("items") or []))' 2>/dev/null || echo 0)"
+	# The live clusters only. Palette keeps the record of a deleted one, and
+	# that record must not block this recipe.
+	clusters="$(cluster_count "$uid" 2>/dev/null || echo 0)"
 
 	if [ "$hosts" -gt 0 ] || [ "$clusters" -gt 0 ]; then
 		die "project $name still holds $clusters cluster(s) and $hosts host(s).
@@ -89,6 +90,30 @@ if [ -f "$target" ]; then
 	info "removed $(short_path "$target")"
 else
 	skip "$(short_path "$target") is absent"
+fi
+
+# The OpenTofu state of the project. `cluster-down` emptied it of objects, and
+# an empty state is of no use once the project is gone.
+#
+# A state that still names an object stays. Palette holds that object, and this
+# directory is the only record of it. Losing the record leaves a cluster that no
+# recipe can remove.
+state="$(state_dir)/$name"
+if [ ! -d "$state" ]; then
+	skip "$(short_path "$state") is absent"
+elif [ -s "$state/terraform.tfstate" ] && python3 -c '
+import json, sys
+try:
+    data = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(1)
+sys.exit(0 if (data.get("resources") or []) else 1)
+' "$state/terraform.tfstate"; then
+	warn "$(short_path "$state") still names an object in Palette.
+         The directory stays. To remove the objects: just cluster-down"
+else
+	rm -rf "$state"
+	info "removed $(short_path "$state")"
 fi
 
 # A link to the removed file would break every recipe. Remove it and name the

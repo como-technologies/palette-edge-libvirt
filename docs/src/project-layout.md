@@ -38,6 +38,7 @@ Step 3 chooses values that do not collide with an existing cluster:
 | `PALETTE_PROJECT` | The project name. |
 | `CLUSTER_NAME` | The first 12 characters of the name, with a number if that prefix is in use. |
 | `CLUSTER_SUBNET` | The first free subnet from 192.168.140 to 192.168.199. |
+| `CLUSTER_VIP` | The `.10` address of that subnet, below the DHCP pool. |
 | `PALETTE_EDGE_TOKEN` | The token from step 2. |
 
 The recipe reads the subnets of the other environment files **and** of the

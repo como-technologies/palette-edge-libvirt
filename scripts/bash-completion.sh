@@ -49,11 +49,12 @@ emit() {
 #   host          a libvirt domain of this cluster, or a node of the topology
 #   project       a project that has an environment file
 #   role          control or worker
+#   action        an action of the OpenTofu entry point
 #
 # _PEL_KINDS_FREE names the parameters that hold free text. They get no
 # completion on purpose.
-_PEL_KINDS="host project role"
-_PEL_KINDS_FREE="description"
+_PEL_KINDS="host project role action"
+_PEL_KINDS_FREE="description pack"
 # ANCHOR_END: kinds
 
 # _pel_cluster: the CLUSTER_NAME of the current checkout.
@@ -149,6 +150,9 @@ _pel_just_complete() {
         ;;
     role)
         mapfile -t COMPREPLY < <(compgen -W "control worker" -- "$cur")
+        ;;
+    action)
+        mapfile -t COMPREPLY < <(compgen -W "plan apply destroy output kubeconfig" -- "$cur")
         ;;
     esac
     return 0

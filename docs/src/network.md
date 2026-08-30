@@ -23,12 +23,31 @@ most. See [Settings](./settings.md#the-cluster-size).
 | Range | Use |
 | --- | --- |
 | `.1` | The gateway on the workstation. |
-| `.2` to `.49` | Free. Use these for a fixed address. |
+| `.2` to `.9` | Free. Use these for a fixed address. |
+| `.10` | `CLUSTER_VIP`, the control plane endpoint. kube-vip claims it. |
+| `.11` to `.49` | Free. Use these for a fixed address. |
 | `.50` to `.199` | The DHCP pool for the edge hosts. |
 | `.200` to `.254` | Free. |
 
-The free ranges hold an address for a registry mirror or a control plane VIP.
-The DHCP pool never gives out those addresses.
+The DHCP pool never gives out an address below `.50`, so `CLUSTER_VIP` and any
+other fixed address are safe there. `just new-project` writes the `.10` address
+of the subnet that it allocated. See
+[The virtual address](./cluster-profile.md#the-virtual-address).
+
+## The three ranges of a cluster
+
+The cluster network is one of three ranges, and no two of them may overlap:
+
+| Range | Default | Set by |
+| --- | --- | --- |
+| The cluster network | `CLUSTER_SUBNET`, `192.168.140.0/24` | `just new-project` |
+| The pods | `POD_CIDR`, `10.244.0.0/16` | the project file |
+| The services | `192.169.0.0/16` | the `edge-k8s` pack |
+
+`POD_CIDR` must also hold no address of your workstation. The pack default for
+the pods is `192.168.0.0/16`, which holds every cluster subnet and most home
+networks, so the project file replaces it. See
+[The pod range](./cluster-profile.md#the-pod-range).
 
 ## Commands
 

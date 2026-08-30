@@ -80,10 +80,27 @@ different.
 {{#include ../../templates/project.env:agent}}
 ```
 
-`PALETTE_VIP_SKIP` controls kube-vip. A cluster with one control plane node does not
-need a virtual address. Set the value to `false` for more than one control plane
-node, then give the VIP in Palette. Use an address from the free range of the
-cluster subnet, for example `192.168.140.10`. See
+`PALETTE_VIP_SKIP` controls kube-vip, and it belongs with `CLUSTER_VIP` below.
+Palette refuses a cluster that gives no control plane endpoint, so keep this
+value `false` and let kube-vip claim that address. See
+[The virtual address](./cluster-profile.md#the-virtual-address).
+
+## The cluster layer
+
+```bash
+{{#include ../../templates/project.env:clusterlayer}}
+```
+
+Each pack version is pinned, because a pinned version is what makes a test
+repeatable. To see the versions that a pack offers now:
+
+```bash
+just palette-packs edge-k8s
+```
+
+`CLUSTER_VIP` is the control plane endpoint. `just new-project` writes the `.10`
+address of the subnet that it allocated, and that address is below the DHCP
+pool, so no host can take it. See
 [The cluster network](./network.md#address-plan).
 
 ## The network

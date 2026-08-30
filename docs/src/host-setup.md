@@ -1,6 +1,6 @@
 # Prepare the workstation
 
-Three steps make a new workstation ready. Do them one time.
+Four steps make a new workstation ready. Do them one time.
 
 > **Turn on the completion first.** It saves the most typing on this page and
 > every page after it.
@@ -33,7 +33,20 @@ restart. See
 A restart gives your shell the new group. Without the group, every `virsh`
 command fails. See [Why a restart](./workstation.md#why-a-restart).
 
-## 3. Test the result
+## 3. Install OpenTofu
+
+```bash
+just tofu-install
+```
+
+The cluster layer needs OpenTofu, and Ubuntu does not package it. The recipe
+downloads the pinned release, tests its checksum, and puts the one binary in
+`~/.local/bin`. It needs no root and no sudo password.
+
+`just tofu-uninstall` removes it. It removes only the binary that this recipe
+wrote, so an OpenTofu from your package manager stays as it is.
+
+## 4. Test the result
 
 ```bash
 just preflight

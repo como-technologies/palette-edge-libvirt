@@ -17,6 +17,8 @@ PAIRS=(
 	"net-up              net-down"
 	"pool-up             pool-down"
 	"infra-up            infra-down"
+	"cluster-up          cluster-down"
+	"tofu-install        tofu-uninstall"
 	"image-fetch         image-clean"
 	"seed                seed-clean"
 	"host-up             host-down"

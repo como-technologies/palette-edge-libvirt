@@ -52,20 +52,22 @@ need_project() {
 # The tooling directories.
 #
 # The checkout holds the source only. Every file that you want to keep lives in
-# one of three directories outside it, so `rm -rf` on the checkout destroys no
-# project, no token, and no download.
+# one of four directories outside it, so `rm -rf` on the checkout destroys no
+# project, no token, no state file, and no download.
 #
 #   config_dir   ~/.config/palette-edge-libvirt        the projects
 #   data_dir     ~/.local/share/palette-edge-libvirt   seeds and build files
+#   state_dir    ~/.local/state/palette-edge-libvirt   the OpenTofu state
 #   cache_dir    ~/.cache/palette-edge-libvirt         the cloud image
 #
 # The API key sits beside the projects, but api_key_file computes its path on
 # its own. See the comment there.
 #
-# The justfile computes the same three paths and exports them as PEL_CONFIG_DIR,
-# PEL_DATA_DIR, and PEL_CACHE_DIR. A script that a recipe calls therefore takes
-# the value of the recipe. A script that you call directly computes it again
-# from the XDG variables. Set the PEL_ variable to move a directory.
+# The justfile computes the same four paths and exports them as PEL_CONFIG_DIR,
+# PEL_DATA_DIR, PEL_STATE_DIR, and PEL_CACHE_DIR. A script that a recipe calls
+# therefore takes the value of the recipe. A script that you call directly
+# computes it again from the XDG variables. Set the PEL_ variable to move a
+# directory.
 config_dir() {
 	printf '%s\n' "${PEL_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/palette-edge-libvirt}"
 }
@@ -74,10 +76,37 @@ data_dir() {
 	printf '%s\n' "${PEL_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/palette-edge-libvirt}"
 }
 
+state_dir() {
+	printf '%s\n' "${PEL_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/palette-edge-libvirt}"
+}
+
 cache_dir() {
 	printf '%s\n' "${PEL_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/palette-edge-libvirt}"
 }
 # ANCHOR_END: dirs
+
+# ANCHOR: projectstate
+# project_state_dir: print the directory that holds the OpenTofu state of one
+# Palette project.
+#
+# The state names the cluster profile and the cluster that OpenTofu made, so
+# one project gets one directory. A second project therefore builds its own
+# cluster, and neither one can destroy the objects of the other.
+#
+# The state is not a cache. It is the only record that connects the objects in
+# Palette to this checkout, so it lives in the XDG state directory and never in
+# the checkout, never in the module, and never in the current directory.
+project_state_dir() {
+	need_project
+	printf '%s/%s\n' "$(state_dir)" "$PALETTE_PROJECT"
+}
+# ANCHOR_END: projectstate
+
+# bin_dir: print the directory that holds the tools this tooling installs for
+# your user. The directory needs no root, and it is usually already on PATH.
+bin_dir() {
+	printf '%s\n' "${PEL_BIN_DIR:-$HOME/.local/bin}"
+}
 
 # envs_dir: print the directory that holds one environment file for each
 # project. The files hold registration tokens, so the directory is mode 0700.

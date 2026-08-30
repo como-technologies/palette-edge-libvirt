@@ -256,6 +256,100 @@ A token with no project needs a replacement. Run `just remove-project NAME`
 and `just new-project NAME` again, or set the default project of the token in
 the console at **Tenant Settings** > **Registration Tokens**.
 
+## `just cluster-up` reports "Host endpoint should not be empty"
+
+```text
+Parameter 'Host endpoint' should not be empty
+```
+
+Palette refuses a cluster that gives no control plane endpoint. Set
+`CLUSTER_VIP` in the project file to a free address of the cluster subnet, below
+the DHCP pool. See [The virtual address](./cluster-profile.md#the-virtual-address).
+
+The recipe tests the value first, so this message reaches you only when
+`CLUSTER_VIP` names an address that Palette itself rejects.
+
+## `just cluster-up` reports that a host is not ready
+
+```text
+error: these host(s) are not ready in project <name>:
+       theliolab-wk-2
+```
+
+The cluster layer builds on the layer below it. Run `just infra-up`: it is
+idempotent, and it waits until every host registers. `just host-status <host>`
+shows the progress of one host, and
+[A host does not show in Palette](#a-host-does-not-show-in-palette) covers the
+rest.
+
+## The cluster builds for an hour and then fails
+
+Read the pack that stopped, in the Palette console. Three causes are specific to
+this repository:
+
+- **Nothing answers at `CLUSTER_VIP`.** The seed ISO of each host must carry
+  `PALETTE_VIP_SKIP=false`, or the agent installs no kube-vip. `just config`
+  shows the value that the recipes use now. To correct it, set the value in the
+  project file and build the machines again: `just seed-clean`, `just
+  infra-down`, `just infra-up`.
+- **The pod range holds the cluster subnet.** See the next item.
+- **A pack version does not fit the others.** `just palette-packs <name>` lists
+  the versions that the public registry offers. Palette lists Ubuntu with PXK-E
+  and Calico as a verified combination.
+
+`just cluster-down` removes the cluster and the profile, so a second attempt
+starts clean.
+
+## The nodes are ready but Palette keeps the cluster in Provisioning
+
+The nodes are up and the cluster does nothing. Read the log of the management
+agent from the control plane node:
+
+```bash
+kubectl -n cluster-<cluster-uid> logs deploy/cluster-management-agent-lite
+```
+
+This message means the pods cannot resolve a name:
+
+```text
+dial tcp: lookup api.spectrocloud.com on 192.169.0.10:53: server misbehaving
+```
+
+Read the CoreDNS log next. A timeout to the gateway of the cluster network is
+the overlap between the pod range and that network:
+
+```text
+[ERROR] plugin/errors: 2 api.spectrocloud.com. A: read udp 192.168.98.193:60862->192.168.140.1:53: i/o timeout
+```
+
+`POD_CIDR` must hold neither `CLUSTER_SUBNET` nor the address of your
+workstation. `just config` shows both. The pack default `192.168.0.0/16` holds
+both, so the project file replaces it. See
+[The pod range](./cluster-profile.md#the-pod-range).
+
+The pod range belongs to the Kubernetes layer, and Kubernetes does not change it
+in place. Build the cluster layer again:
+
+```bash
+just cluster-down
+just cluster-up
+```
+
+## `just cluster-up` reports that OpenTofu is absent
+
+```text
+error: OpenTofu is not installed. Run: just tofu-install
+```
+
+The recipe installs the pinned release into `~/.local/bin`. If the command still
+does not run after that, `~/.local/bin` is not on your `PATH`. The recipe prints
+a warning when it finds that, and the correction is one line in your shell
+profile:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
 ## The docs build fails on an include
 
 The path is wrong, or the anchor is absent. The paths in `docs/src/*.md` are

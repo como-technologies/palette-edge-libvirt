@@ -155,6 +155,26 @@ print(json.dumps({
 		python3 -c 'import json,sys; print(json.load(sys.stdin).get("uid",""))'
 }
 
+# ANCHOR: clustercount
+# cluster_count UID: print the number of clusters that a project still holds.
+#
+# Palette keeps the record of a cluster that it deleted, with the state
+# "Deleted". A count of every item in the list therefore never returns to zero,
+# and a recipe that refuses on that count refuses for ever: after a correct
+# `just cluster-down`, `just infra-down` reported "the project holds 1
+# cluster(s)" and no recipe could make that number smaller. Count the live ones.
+cluster_count() {
+	local body
+	body="$(api GET "v1/spectroclusters?limit=100" -H "ProjectUid: $1")" || return 1
+	printf '%s' "$body" | python3 -c '
+import json, sys
+items = json.load(sys.stdin).get("items") or []
+print(len([c for c in items
+           if ((c.get("status") or {}).get("state") or "") != "Deleted"]))
+'
+}
+# ANCHOR_END: clustercount
+
 # project_uid NAME
 # Prints the uid of the named project, or nothing if the project is absent.
 project_uid() {

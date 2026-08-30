@@ -12,13 +12,14 @@ from the machines that registered.
 ```mermaid
 flowchart TB
     subgraph SaaS["Palette SaaS"]
-        PROF["Cluster profile<br/>PXK-E, CNI, CSI, add-ons"]
+        PROF["Cluster profile<br/>BYOOS, PXK-E, Calico, local-path"]
         REG["Registered hosts"]
         CLU["Cluster"]
     end
 
     subgraph WS["Workstation"]
         JUST["just recipes"]
+        TF["state<br/>OpenTofu state for this project"]
         IMG["cache<br/>one stock Ubuntu cloud image"]
         SEED["data<br/>one CIDATA ISO for each host"]
         subgraph LV["libvirt / KVM"]
@@ -41,6 +42,9 @@ flowchart TB
     SEED -->|"each host reads<br/>its own seed"| VMS
     VMS --- NET
     VMS -->|"the agent registers<br/>each host"| REG
+    JUST -->|"just cluster-up"| TF
+    TF --> PROF
+    TF --> CLU
     REG --> CLU
     PROF --> CLU
 ```
@@ -52,6 +56,10 @@ for each host, which keeps the hosts independent.
 The workstation owns the virtual machines. Palette owns the cluster profile and
 the cluster. The seed ISO is the only link between the two. It carries your
 endpoint, your project, and your registration token.
+
+The OpenTofu state is the record of the cluster layer. It names the profile and
+the cluster that `just cluster-up` made, so `just cluster-down` can remove
+exactly those two objects and nothing else.
 
 See
 [The project layout](./project-layout.md#what-new-project-does).
@@ -75,7 +83,9 @@ sequenceDiagram
     V->>V: cloud-init runs palette-agent-install.sh
     V->>P: the agent registers with the token
     P-->>J: hosts-wait sees the record, and infra-up returns
-    U->>P: just cluster-up makes the cluster (Terraform, not built yet)
+    U->>J: just cluster-up
+    J->>P: OpenTofu makes the cluster profile and the cluster
+    P->>V: Palette installs the four packs on every node
 ```
 
 ## The first boot
@@ -110,10 +120,12 @@ keeps the original.
 | Infrastructure | Network and pool | libvirt | `just infra-down` |
 | Infrastructure | Registered hosts | Palette SaaS | `just infra-down` |
 | Infrastructure | Seed ISO files | `~/.local/share/palette-edge-libvirt` | `just seed-clean` |
-| Cluster | Profile and cluster | Palette SaaS | you, in Palette |
+| Cluster | Profile and cluster | Palette SaaS | `just cluster-down` |
+| Cluster | The OpenTofu state | `~/.local/state/palette-edge-libvirt` | `just remove-project` |
 | Neither | Ubuntu cloud image | `~/.cache/palette-edge-libvirt` | `just image-clean` |
 | Neither | Your token | `~/.config/palette-edge-libvirt/envs` | `just remove-project` |
 | Neither | Your API key | `~/.config/palette-edge-libvirt/api-key` | `just api-key-clear` |
+| Neither | OpenTofu | `~/.local/bin/tofu` | `just tofu-uninstall` |
 
 A layer removes everything that it made, on both sides. The host record belongs
 to the infrastructure layer, because registration makes it and it has no use

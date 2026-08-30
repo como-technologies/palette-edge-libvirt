@@ -8,9 +8,17 @@ the layers from the top.
 
 ## Remove the cluster layer
 
-Terraform removes the cluster and the cluster profile. That layer has no recipe
-yet, so delete both in the Palette console. See
-[Create the cluster](./cluster.md#remove-the-cluster).
+```bash
+just cluster-down
+```
+
+OpenTofu removes the cluster and the cluster profile. The hosts, the machines,
+and the project all stay, so `just cluster-up` builds them again. A project that
+has no cluster layer gets a skip.
+
+The recipe leaves the state file in
+`~/.local/state/palette-edge-libvirt/<project>/`. The file is then empty of
+objects, and the next `cluster-up` fills it again.
 
 ## Remove the infrastructure layer
 
@@ -33,17 +41,19 @@ whose machines are gone, and that cluster is then impossible to repair.
 just nuke
 ```
 
-`nuke` runs `infra-down`, then removes the seed ISO files, the registration
-token, the Palette project, and the environment file of the project. It asks you
-to type the project name first, because the delete is not reversible. `FORCE=1`
-answers in advance.
+`nuke` runs `cluster-down` and then `infra-down`, so it removes the layers from
+the top. It then removes the seed ISO files, the registration token, the Palette
+project, and the environment file of the project. It asks you to type the
+project name first, because the delete is not reversible. `FORCE=1` answers in
+advance.
 
-Two things stay, and neither belongs to one project:
+Three things stay, and none of them belongs to one project:
 
 | Stays | Where | Remove it with |
 | --- | --- | --- |
 | The Ubuntu cloud image | `~/.cache/palette-edge-libvirt` | `just image-clean` |
 | Your Palette API key | `~/.config/palette-edge-libvirt/api-key` | `just api-key-clear` |
+| OpenTofu | `~/.local/bin/tofu` | `just tofu-uninstall` |
 
 ## Remove the packages
 

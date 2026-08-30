@@ -22,6 +22,8 @@ someone writes it and wrong after the next rename. See
 | `-clean` | Delete generated files. |
 | `-status` | Report progress. Makes no change. |
 | `-undo` | Reverse a recipe that changes the workstation. |
+| `-install` | Install a tool for your user. |
+| `-uninstall` | Remove a tool that `-install` put there. |
 | `new-` | Create an object in your Palette tenant. |
 | `remove-` | Delete an object from your Palette tenant. |
 
@@ -107,7 +109,7 @@ workstation **and** in Palette, and each layer removes everything that it made.
 | Layer | On the workstation | In Palette |
 | --- | --- | --- |
 | Infrastructure | network, storage pool, disks, virtual machines | the host record of each machine |
-| Cluster | nothing | the cluster profile and the cluster |
+| Cluster | the OpenTofu state | the cluster profile and the cluster |
 
 ### The infrastructure layer
 
@@ -137,9 +139,20 @@ gone and that cluster is then impossible to repair.
 
 ### The cluster layer
 
-Terraform builds this layer. It has no recipe yet, and that is the one gap
-against [project rule 1](./rules.md#1-every-action-is-a-recipe). See
-[Create the cluster](./cluster.md).
+```just
+{{#include ../../justfile:clusterup}}
+```
+
+OpenTofu builds this layer, and `scripts/cluster.sh` is the one caller. The
+recipes make two objects in Palette: the cluster profile `<CLUSTER_NAME>-infra`,
+and the cluster `<CLUSTER_NAME>` on the hosts that the layer below registered.
+
+The state file names both objects, and it lives in
+`~/.local/state/palette-edge-libvirt/<project>/`. It is never in the checkout:
+lose it and Palette holds a cluster that no recipe can remove.
+
+`cluster-down` removes both objects. The hosts and the machines stay, so
+`cluster-up` builds them again. See [Create the cluster](./cluster.md).
 
 ### Everything
 
