@@ -141,6 +141,16 @@ migrates one into the layout, `just unadopt-project` reverses it.
 
 Palette keeps a project description in `metadata.annotations.description`, not
 in a `description` field.
+
+## Recipe parameters name a kind, not a position
+
+`host-up host role="worker"`, `default-project project`. The bash completion
+reads recipe names from `just --summary` and parameters from `just --dump
+--dump-format json`, then completes by parameter name — so it holds no list of
+recipes and a new recipe completes for free. Keep parameters named `host`,
+`project`, `role`, or add the new kind to `_PEL_KINDS` in
+`scripts/bash-completion.sh`. `scripts/lint-params.sh` fails the build if a
+parameter name is unknown.
 `.env.example` is the documented template and carries the anchors that
 `docs/src/configuration.md` includes, so **edit `.env.example` when you add a
 variable**, or the docs go stale.

@@ -117,8 +117,8 @@ image-clean:
 # --- seeds ------------------------------------------------------------------
 
 # Build the cloud-init seed ISO that registers NAME with Palette
-seed name:
-    @scripts/seed-iso.sh "{{ name }}" "{{ seed_dir }}" "{{ build_dir }}"
+seed host:
+    @scripts/seed-iso.sh "{{ host }}" "{{ seed_dir }}" "{{ build_dir }}"
 
 # Build a seed ISO for each node in the topology
 seed-all:
@@ -132,7 +132,7 @@ seed-clean:
 # --- hosts ------------------------------------------------------------------
 
 # Create one host VM. ROLE is control or worker and sets the size.
-host-up name role="worker":
+host-up host role="worker":
     #!/usr/bin/env bash
     set -euo pipefail
     case "{{ role }}" in
@@ -142,27 +142,27 @@ host-up name role="worker":
     esac
     VCPUS="$vcpus" MEMORY_MB="$mem" DISK_GB="$disk" \
     NETWORK="{{ net }}" POOL="{{ pool }}" IMAGE_DIR="{{ image_dir }}" SEED_DIR="{{ seed_dir }}" \
-        scripts/host-up.sh "{{ name }}"
+        scripts/host-up.sh "{{ host }}"
 
 # Stop one host VM, remove it, and delete its disk
-host-down name:
-    @scripts/host-down.sh "{{ name }}"
+host-down host:
+    @scripts/host-down.sh "{{ host }}"
 
 # Show the progress of the agent installation on one host
-host-status name:
-    @scripts/host-status.sh "{{ name }}"
+host-status host:
+    @scripts/host-status.sh "{{ host }}"
 
 # Remove the seed ISO from a host after the agent installs
-host-eject name:
-    @scripts/host-eject.sh "{{ name }}"
+host-eject host:
+    @scripts/host-eject.sh "{{ host }}"
 
 # Open the serial console of a host. Press ctrl-] to exit.
-console name:
-    virsh console "{{ name }}"
+console host:
+    virsh console "{{ host }}"
 
 # Show the DHCP address of a host
-ip name:
-    @scripts/host-ip.sh "{{ name }}"
+ip host:
+    @scripts/host-ip.sh "{{ host }}"
 
 # List all VMs in this lab and their state
 ls:
@@ -175,20 +175,20 @@ projects:
     @scripts/project-ls.sh
 
 # Create a Palette project, write envs/NAME.env, and make it the default
-new-project name description="":
-    @scripts/project-new.sh "{{ name }}" "{{ description }}"
+new-project project description="":
+    @scripts/project-new.sh "{{ project }}" "{{ description }}"
 
 # Delete a Palette project and its environment file. Asks before it deletes.
-remove-project name:
-    @scripts/project-remove.sh "{{ name }}"
+remove-project project:
+    @scripts/project-remove.sh "{{ project }}"
 
 # Point .env at the environment file of NAME
-default-project name:
-    @scripts/project-default.sh "{{ name }}"
+default-project project:
+    @scripts/project-default.sh "{{ project }}"
 
 # Move an existing regular .env into envs/NAME.env and link .env to it
-adopt-project name:
-    @scripts/project-adopt.sh "{{ name }}"
+adopt-project project:
+    @scripts/project-adopt.sh "{{ project }}"
 
 # Make .env a regular file again. The twin of adopt-project.
 unadopt-project:
@@ -275,9 +275,10 @@ bash-completion-uninstall:
 fmt:
     just --fmt
 
-# Test the format, the recipe pairs, the shell scripts, and the docs build
+# Test the format, the recipes, the shell scripts, and the docs build
 lint:
     just --fmt --check
     @scripts/lint-pairs.sh
+    @scripts/lint-params.sh
     @scripts/lint-shell.sh
     mdbook build docs

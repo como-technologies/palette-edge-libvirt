@@ -77,6 +77,28 @@ This is safe. It completes the recipe names of any justfile, and it completes
 the arguments only in this checkout. In another project the argument completion
 gives nothing.
 
+### The completion holds no list of recipes
+
+`just` is the source. The completion reads the recipe names from
+`just --summary` and the parameters from `just --dump --dump-format json`. A
+new recipe therefore completes with no change to the completion.
+
+This works because a parameter takes its name from the **kind** of value it
+holds, not from its position:
+
+```bash
+{{#include ../../scripts/bash-completion.sh:kinds}}
+```
+
+`just host-up host role="worker"` has the parameters `host` and `role`, so the
+completion offers the node names and then `control worker`. A new recipe
+`host-restart host` offers the node names with no edit.
+
+`just lint` runs `scripts/lint-params.sh`. That test reads the kinds from the
+completion and the parameters from `just`. A parameter with an unknown name
+stops the build, which is the moment to add the kind or to name the parameter
+as free text.
+
 ## The layers
 
 The `justfile` holds the configuration and thin recipes. Each recipe with logic
@@ -101,13 +123,15 @@ just fmt    # format the justfile
 just lint   # test the format, the pairs, the scripts, and the docs build
 ```
 
-`just lint` runs four tests:
+`just lint` runs five tests:
 
 1. `just --fmt --check` tests the format of the `justfile`.
 2. `scripts/lint-pairs.sh` tests
    [project rule 2](./rules.md#2-every-create-recipe-has-a-remove-recipe).
-3. `shellcheck` tests every script.
-4. `mdbook build` builds the book, which tests every include path and every
+3. `scripts/lint-params.sh` tests that the completion knows every recipe
+   parameter.
+4. `shellcheck` tests every script.
+5. `mdbook build` builds the book, which tests every include path and every
    anchor.
 
 The GitHub Actions workflow runs `just lint` on each push and each pull request.
