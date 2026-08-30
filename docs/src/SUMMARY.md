@@ -1,7 +1,6 @@
 # Summary
 
 [Introduction](./introduction.md)
-[Project rules](./rules.md)
 
 # Setup
 
@@ -20,4 +19,5 @@
 # Reference
 
 - [Recipes](./recipes.md)
+- [Project rules](./rules.md)
 - [Troubleshooting](./troubleshooting.md)

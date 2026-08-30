@@ -19,11 +19,13 @@ warn() {
 	printf 'warning: %s\n' "$*" >&2
 }
 
+# ANCHOR: skip
 # skip: print a message when a recipe finds no work to do.
 # The lab recipes are idempotent. A second run reports a skip and returns 0.
 skip() {
 	printf '    %s\n' "$*"
 }
+# ANCHOR_END: skip
 
 # need: stop the script if a command is not available.
 need() {

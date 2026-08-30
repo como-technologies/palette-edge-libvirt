@@ -261,8 +261,9 @@ docs-theme-clean:
 fmt:
     just --fmt
 
-# Test the format, the shell scripts, and the documentation build
+# Test the format, the recipe pairs, the shell scripts, and the docs build
 lint:
     just --fmt --check
+    @scripts/lint-pairs.sh
     @scripts/lint-shell.sh
     mdbook build docs
