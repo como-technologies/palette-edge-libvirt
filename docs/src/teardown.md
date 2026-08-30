@@ -46,7 +46,7 @@ these in Palette:
 
 Delete the cluster first. Then deregister each host. `just palette-hosts` lists
 the hosts that are still registered, and `just host-deregister <host>` removes
-one record.
+one record. See [Make the cluster](./cluster.md#remove-the-cluster).
 
 ## Remove the secrets
 

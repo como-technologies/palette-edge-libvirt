@@ -7,7 +7,8 @@
 - [Prepare the workstation](./host-setup.md)
 - [Configure the tenant](./configuration.md)
 - [Projects](./projects.md)
-- [Create the lab](./quickstart.md)
+- [Create the hosts](./hosts.md)
+- [Make the cluster](./cluster.md)
 - [Remove the lab](./teardown.md)
 
 # Reference

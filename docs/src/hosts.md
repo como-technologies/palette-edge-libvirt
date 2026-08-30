@@ -1,4 +1,7 @@
-# Create the lab
+# Create the hosts
+
+This page creates the virtual machines and registers them with your Palette
+project. It makes no cluster. [Make the cluster](./cluster.md) is the next step.
 
 Complete these three pages first:
 
@@ -53,29 +56,9 @@ just host-eject <host>
 
 The seed ISO holds your registration token. An ejected host keeps no copy.
 
-## 5. Make the cluster
+## Change the host size or the host count
 
-Palette makes the cluster from the registered hosts. In Palette:
-
-1. Make a cluster profile. Select **Palette eXtended Kubernetes - Edge
-   (PXK-E)** for the Kubernetes layer. Add the CNI, the CSI, and the add-ons to
-   test.
-2. Make a cluster. Select the profile. Assign the registered hosts to the
-   control plane pool and the worker pool.
-3. Wait for the deployment. Palette shows the progress for each pack.
-
-A lab with one control plane node needs no virtual address. For more than one
-control plane node, set `PALETTE_VIP_SKIP` to `false`, build the seeds again,
-and give a VIP in Palette. Use a free address of the lab subnet. See
-[The lab network](./network.md#address-plan).
-
-## Run a second combination
-
-The operating system image does not change between tests. Change the cluster
-profile in Palette and deploy again.
-
-To change the host size or the host count, edit the project file and build
-the lab again:
+Edit the project file, then build the lab again:
 
 ```bash
 just cluster-down
@@ -83,6 +66,10 @@ just cluster-up
 ```
 
 [Settings](./settings.md#the-lab-size) describes those values.
+
+## Next
+
+Every host is registered and idle. [Make the cluster](./cluster.md).
 
 ## More
 

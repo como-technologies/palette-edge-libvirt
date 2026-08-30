@@ -37,6 +37,7 @@ one host, and the location of each part of the state.
 1. [Prepare the workstation](./host-setup.md) — `just host-setup`, then restart.
 2. [Configure the tenant](./configuration.md) — `just api-key-set`.
 3. [Projects](./projects.md) — `just new-project <project>`.
-4. [Create the lab](./quickstart.md) — `just cluster-up`.
+4. [Create the hosts](./hosts.md) — `just cluster-up`.
+5. [Make the cluster](./cluster.md) — in Palette.
 
 Read the [project rules](./rules.md) before you change the repository.
