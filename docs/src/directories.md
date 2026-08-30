@@ -45,24 +45,3 @@ Three variables move the directories. Set them in your shell:
 ```bash
 {{#include ../../.env.example:dirs}}
 ```
-
-## Migrate an old checkout
-
-A checkout from before this layout keeps `envs/`, `seeds/`, `build/`, and
-`images/` in the working copy. One recipe moves all four:
-
-```bash
-just adopt-xdg
-```
-
-The recipe moves no file that the destination already holds. It reports each of
-those and keeps the copy in the checkout, so no version is lost.
-
-The twin moves the files back into the checkout:
-
-```bash
-just unadopt-xdg
-```
-
-`unadopt-xdg` keeps the API key where it is. That key is a tenant credential,
-and a working copy is not a safe place for it.

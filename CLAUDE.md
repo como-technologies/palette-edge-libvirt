@@ -37,7 +37,6 @@ just cluster-up           # full lab: preflight, infra, image, seeds, VMs
 just cluster-down         # remove the VMs, keep infra and image
 just nuke                 # cluster-down + infra-down + seed-clean
 
-just adopt-xdg            # move an old in-repo layout to ~/.config etc.
 just projects             # local project env files, * marks default
 just new-project NAME [d] # create Palette project + its env file + set default
 just remove-project NAME  # twin: delete project, env file, and link
@@ -155,8 +154,7 @@ directory. The repo therefore keeps exactly one lab file: `.env`, a symlink to
 `envs/<project>.env`. The second link holds the project choice and lives outside
 the checkout. A missing or dangling `.env` loads nothing and raises **no error**
 — the recipes silently fall back to the justfile defaults, so `just config` and
-`just projects` both report it and name the fix. `just adopt-xdg` moves an old
-in-repo layout out; `just unadopt-xdg` reverses it (but never moves the API key).
+`just projects` both report it and name the fix.
 
 `just default-project NAME` re-points both links; `just new-project` creates the
 tenant project, writes the env file (auto-allocating a free `LAB_NAME` and

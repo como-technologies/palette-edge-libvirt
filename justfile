@@ -211,16 +211,6 @@ api-key-status:
 api-key-clear:
     @scripts/api-key.sh clear
 
-# --- directories ------------------------------------------------------------
-
-# Move the lab files out of the checkout into ~/.config, ~/.local, and ~/.cache
-adopt-xdg:
-    @scripts/xdg-adopt.sh
-
-# Move the lab files back into the checkout. The twin of adopt-xdg.
-unadopt-xdg:
-    @scripts/xdg-unadopt.sh
-
 # --- projects ---------------------------------------------------------------
 
 # List the projects that have an environment file. The * marks the default.

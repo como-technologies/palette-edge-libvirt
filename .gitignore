@@ -1,6 +1,7 @@
-# The lab keeps every file that you want to keep outside the checkout. See
-# `just config` for the directories. The names below cover the link that the
-# justfile reads, and the old layout that `just adopt-xdg` moves out.
+# The lab writes every file that you want to keep outside the checkout. See
+# `just config` for the directories. `.env` is the one lab file in the checkout,
+# and it is a link. The directory names below hold no file now. They stay
+# because a wrong PEL_ override would put a registration token in one.
 .env
 .env.bak*
 envs/
