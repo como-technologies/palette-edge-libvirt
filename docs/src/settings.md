@@ -37,7 +37,7 @@ name.
 ## The lab size
 
 ```bash
-{{#include ../../.env.example:topology}}
+{{#include ../../templates/project.env:topology}}
 ```
 
 The Palette agent needs 2 CPU, 8 GB of memory, and 100 GB of storage for each
@@ -59,7 +59,7 @@ Two labs run at the same time if `LAB_NAME` and `LAB_SUBNET` both differ.
 The lab uses the stock Ubuntu cloud image. It builds no image.
 
 ```bash
-{{#include ../../.env.example:image}}
+{{#include ../../templates/project.env:image}}
 ```
 
 Keep `UBUNTU_IMAGE_URL` empty. `just image-fetch` then builds the URL from the
@@ -77,7 +77,7 @@ different.
 ## The agent
 
 ```bash
-{{#include ../../.env.example:agent}}
+{{#include ../../templates/project.env:agent}}
 ```
 
 `PALETTE_VIP_SKIP` controls kube-vip. A lab with one control plane node does not
@@ -89,7 +89,7 @@ lab subnet, for example `192.168.140.10`. See
 ## The network
 
 ```bash
-{{#include ../../.env.example:libvirt}}
+{{#include ../../templates/project.env:libvirt}}
 ```
 
 `new-project` chooses a free subnet, so you rarely change this. Use a subnet
@@ -100,7 +100,7 @@ that no other libvirt network uses. The default libvirt network usually uses
 ## The Palette values
 
 ```bash
-{{#include ../../.env.example:palette}}
+{{#include ../../templates/project.env:palette}}
 ```
 
 ## One command, one value
@@ -117,6 +117,6 @@ The second example operates on a lab whose environment file is gone.
 
 ## Every value
 
-`.env.example` documents every variable. `just new-project` writes a file from
+`templates/project.env` documents every variable. `just new-project` writes a file from
 it, so the two never disagree. This page includes the same file, so it cannot
 disagree either.

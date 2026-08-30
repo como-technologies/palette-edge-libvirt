@@ -92,8 +92,7 @@ else
 fi
 
 # A link to the removed file would break every recipe. Remove it and name the
-# next step. The .env pointer in the checkout stays. It names this link, and
-# the next `just default-project` makes the link again.
+# next step.
 if [ -L "$link" ] && [ "$(readlink "$link")" = "envs/$name.env" ]; then
 	rm -f "$link"
 	warn "$name was the default project. There is no default now."

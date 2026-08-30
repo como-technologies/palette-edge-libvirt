@@ -40,7 +40,7 @@ just nuke                 # cluster-down + infra-down + seed-clean
 just projects             # local project env files, * marks default
 just new-project NAME [d] # create Palette project + its env file + set default
 just remove-project NAME  # twin: delete project, env file, and link
-just default-project NAME # re-point .env at another project
+just default-project NAME # select the project that the recipes operate on
 just palette-projects     # list tenant projects, verify PALETTE_PROJECT
 just palette-hosts        # list hosts that registered
 just seed NAME            # build one CIDATA seed ISO
@@ -75,7 +75,7 @@ The workstation owns the virtual machines. Palette SaaS owns the cluster profile
 and the cluster. **The seed ISO is the only link between the two.**
 
 ```
-.env  ──►  scripts/seed-iso.sh  ──►  $PEL_DATA_DIR/seeds/NAME-seed.iso (CIDATA)
+project env  ──►  scripts/seed-iso.sh  ──►  $PEL_DATA_DIR/seeds/NAME-seed.iso
                                           │
 $PEL_CACHE_DIR/images/noble-...img  ──────┼──►  virt-install --import  ──►  VM
       (qemu-img copy + resize)                                              │
@@ -147,20 +147,29 @@ falling back to the XDG variable so a script still works when called directly.
 `api_key_file` deliberately ignores `PEL_CONFIG_DIR` — that variable can point
 at a checkout, and a tenant credential must never land in one.
 
-**`set dotenv-path` takes a const.** `just` rejects a function call there, and
-expands neither `~` nor `$HOME`, so the justfile cannot name the config
-directory. The repo therefore keeps exactly one lab file: `.env`, a symlink to
-`~/.config/palette-edge-libvirt/env`, which is itself a symlink to
-`envs/<project>.env`. The second link holds the project choice and lives outside
-the checkout. A missing or dangling `.env` loads nothing and raises **no error**
-— the recipes silently fall back to the justfile defaults, so `just config` and
-`just projects` both report it and name the fix.
+**The checkout holds no config file at all.** A `set` in a justfile takes a
+const — no function call, and no `~` or `$HOME` expansion — so `dotenv-path`
+cannot name the config directory. `dotenv-command` can, because a command runs
+in a shell:
 
-`just default-project NAME` re-points both links; `just new-project` creates the
+```just
+set dotenv-command := 'scripts/dotenv.sh'
+```
+
+`just` runs that from the justfile directory (verified, even when invoked from a
+subdirectory), reads stdout as an env file, and lets the **process environment
+win**, so `WORKER_COUNT=3 just cluster-up` still overrides. `dotenv.sh` follows
+`~/.config/palette-edge-libvirt/env -> envs/<project>.env` and cats it. That
+link is the only record of the choice, so every checkout agrees. With no link
+the script prints nothing and raises **no error** — the recipes silently fall
+back to the justfile defaults, so `just config` and `just projects` both report
+it and name the fix. Setting `dotenv-command` also makes `just` ignore any
+stray `.env` in the checkout entirely (verified).
+
+`just default-project NAME` makes the link; `just new-project` creates the
 tenant project, writes the env file (auto-allocating a free `LAB_NAME` and
 `LAB_SUBNET`, scanning both the env files and live libvirt networks), and sets
-it default. A plain `.env` written by hand still works — `just adopt-project
-NAME` migrates one into the layout, `just unadopt-project` reverses it.
+it default.
 
 Palette keeps a project description in `metadata.annotations.description`, not
 in a `description` field.
@@ -229,14 +238,15 @@ recipes and a new recipe completes for free. Keep parameters named `host`,
 `project`, `role`, or add the new kind to `_PEL_KINDS` in
 `scripts/bash-completion.sh`. `scripts/lint-params.sh` fails the build if a
 parameter name is unknown.
-`.env.example` is the documented template and carries the anchors that
-`docs/src/configuration.md` includes, so **edit `.env.example` when you add a
-variable**, or the docs go stale. The completion reads the project list from
-`just --evaluate envs_dir`, so it followed the files out of the checkout with no
-change of its own.
+`templates/project.env` is the template that `new-project` fills in, and it
+carries the anchors that the docs include, so **edit it when you add a
+variable**, or the docs go stale. It was `.env.example` until the tooling wrote
+every project file; nothing copies it by hand now. The completion reads the
+project list from `just --evaluate envs_dir`, so it followed the files out of
+the checkout with no change of its own.
 
 Every `justfile` variable uses `env_var_or_default`, so the repo works with no
-`.env` at all. Any value can be overridden for one command:
+project at all. Any value can be overridden for one command:
 `WORKER_COUNT=3 just cluster-up`.
 
 ## Secrets

@@ -137,7 +137,7 @@ else
 	info "write $(short_path "$target") (lab $lab_name, subnet $lab_subnet.0/24)"
 
 	NAME="$name" LAB="$lab_name" SUBNET="$lab_subnet" \
-		SRC="$root/.env.example" DST="$target" \
+		SRC="$root/templates/project.env" DST="$target" \
 		ENDPOINT="$(palette_endpoint)" NEW_TOKEN="$token" \
 		python3 -c '
 import os, re, sys

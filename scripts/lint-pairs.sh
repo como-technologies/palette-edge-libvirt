@@ -22,7 +22,6 @@ PAIRS=(
 	"host-up             host-down"
 	"cluster-up          cluster-down"
 	"new-project         remove-project"
-	"adopt-project       unadopt-project"
 	"docs                docs-clean"
 	"docs-theme          docs-theme-clean"
 	"bash-completion-install bash-completion-uninstall"
@@ -36,7 +35,7 @@ PAIRS=(
 # The pattern starts with a hyphen, so every grep that uses it needs the --
 # separator. Without it, grep reads the pattern as options and the test always
 # passes.
-CREATE_PATTERNS='-up$|-fetch$|-install$|-set$|^new-|^adopt-|-setup$'
+CREATE_PATTERNS='-up$|-fetch$|-install$|-set$|^new-|-setup$'
 
 cd "$(repo_root)"
 need just

@@ -85,18 +85,13 @@ envs_dir() {
 }
 
 # env_link: print the path of the link that selects the default project.
-# It points at envs/<project>.env.
+#
+# The link points at envs/<project>.env. `scripts/dotenv.sh` reads it, and the
+# justfile reads that script. The link is the only record of the choice, and it
+# is outside the checkout, so two checkouts of this repository operate on the
+# same project.
 env_link() {
 	printf '%s/env\n' "$(config_dir)"
-}
-
-# env_pointer: print the path of the .env file in the checkout.
-#
-# `set dotenv-path` in the justfile reads this path, and `just` accepts a
-# constant only. It cannot name a directory in your home directory. The file is
-# therefore a link to env_link, and it holds no value of its own.
-env_pointer() {
-	printf '%s/.env\n' "$(repo_root)"
 }
 
 # api_key_file: print the path of the Palette API key file.

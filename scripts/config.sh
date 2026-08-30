@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Show the configuration that the recipes use now.
 #
-# The justfile exports these values from .env or from its own defaults. This
+# The justfile takes these values from the project file or from its own
+# defaults. This
 # script reads the environment, so it always shows the effective value.
 
 set -euo pipefail
@@ -44,19 +45,12 @@ row "seeds" "$(short_path "$(data_dir)/seeds")"
 row "build" "$(short_path "$(data_dir)/build")"
 row "cloud image" "$(short_path "$(cache_dir)/images")"
 
-# The checkout holds one lab file: the .env link. Report what it reaches, and
-# name the correction when it reaches nothing.
-pointer="$(env_pointer)"
-if [ -L "$pointer" ]; then
-	if [ -f "$pointer" ]; then
-		info "source: $(short_path "$(readlink -f "$pointer")") and the justfile defaults"
-	else
-		info "source: the justfile defaults only"
-		warn ".env points at no file. Choose a project: just default-project <name>"
-	fi
-elif [ -f "$pointer" ]; then
-	info "source: the .env file in the checkout and the justfile defaults"
+# `scripts/dotenv.sh` reads the link and the justfile reads that script. Report
+# the file that the link reaches, and name the correction when it reaches none.
+link="$(env_link)"
+if [ -f "$link" ]; then
+	info "source: $(short_path "$(readlink -f "$link")") and the justfile defaults"
 else
 	info "source: the justfile defaults only"
-	warn "this checkout reads no project. To see the projects: just projects"
+	warn "there is no default project. Choose one: just default-project <name>"
 fi

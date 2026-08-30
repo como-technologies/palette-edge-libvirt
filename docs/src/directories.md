@@ -21,27 +21,34 @@ The lab follows the XDG Base Directory specification, so `XDG_CONFIG_HOME`,
 | Data | `~/.local/share/palette-edge-libvirt` | The seed ISO files and the build directory. |
 | Cache | `~/.cache/palette-edge-libvirt` | The Ubuntu cloud image. A download replaces it. |
 
-## The one file in the checkout
+## The checkout holds no configuration
 
-`.env` in the checkout is a symbolic link. It holds no value:
+One link selects the project:
 
 ```text
-<checkout>/.env  ->  ~/.config/palette-edge-libvirt/env  ->  envs/<project>.env
+~/.config/palette-edge-libvirt/env  ->  envs/<project>.env
 ```
 
-`set dotenv-path` in the justfile reads `.env`, and that setting takes a
-constant. A constant cannot name your home directory, so the link supplies the
-path. The second link holds the choice of project, and it is outside the
-checkout. `just default-project <project>` makes both links.
+`just` gives a setting no function and no tilde, so the justfile can name no
+path in your home directory. It can name a command:
 
-An absent or a broken `.env` loads nothing and reports no error. The recipes
-then run on the justfile defaults. `just config` and `just projects` report
-this, and name the recipe that corrects it.
+```just
+set dotenv-command := 'scripts/dotenv.sh'
+```
+
+`just` runs that script from the justfile directory, and reads the output as an
+environment file. The script computes the path, follows the link, and prints
+the file. This is the reason that the checkout holds no configuration file, and
+that two checkouts operate on the same project.
+
+`just default-project <project>` makes the link. With no link the script prints
+nothing and each recipe uses its default value. `just config` and
+`just projects` report this, and name the recipe that corrects it.
 
 ## Move a directory
 
 Three variables move the directories. Set them in your shell:
 
 ```bash
-{{#include ../../.env.example:dirs}}
+{{#include ../../templates/project.env:dirs}}
 ```

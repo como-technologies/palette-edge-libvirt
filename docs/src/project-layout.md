@@ -11,7 +11,7 @@ project, and a link selects the default one:
 
 The files are outside the checkout, so `rm -rf` on the checkout destroys no
 project. [The lab directories](./directories.md) describes the layout and the
-`.env` link that reaches it.
+link that selects one file.
 
 Each file holds a registration token. The directory has the mode 0700 and each
 file has the mode 0600.
@@ -43,7 +43,8 @@ Step 3 chooses values that do not collide with an existing lab:
 The recipe reads the subnets of the other environment files **and** of the
 libvirt networks, so a new project never takes the subnet of a running lab.
 
-Every other value comes from `.env.example`. See [Settings](./settings.md).
+Every other value comes from `templates/project.env`. See
+[Settings](./settings.md).
 
 ## The API key is not in the file
 
@@ -85,20 +86,6 @@ FORCE=1 just remove-project <project>
 The recipe removes **no** lab object on the workstation. Run `just cluster-down`
 first, or the virtual machines stay and their project is gone.
 
-## Adopt a .env that you wrote
-
-A `.env` file that you wrote by hand works where it is. To give it a project
-name and move it into the layout:
-
-```bash
-just adopt-project <project>
-```
-
-The twin makes `.env` a regular file again:
-
-```bash
-just unadopt-project
-```
 
 ## Two labs at the same time
 

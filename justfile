@@ -13,16 +13,19 @@
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# .env in the checkout is a link to ~/.config/palette-edge-libvirt/env, and that
-# link points at the environment file of the default project. `set dotenv-path`
-# takes a constant, so it cannot name the home directory. The link supplies the
-# path. An absent or broken link loads nothing and reports no error, so the
-# recipes still run on their default values.
-set dotenv-path := ".env"
+# The settings come from the environment file of the default project, and that
+# file is in your home directory. A `set` takes a constant, so it can name no
+# path there. It can name a command, and the command computes the path. The
+# checkout therefore holds no configuration file at all.
+#
+# `just` runs the command from the justfile directory. With no default project
+# the command prints nothing, and each recipe uses its default value.
+set dotenv-command := 'scripts/dotenv.sh'
 
 # --- configuration ----------------------------------------------------------
-# Each variable has a default value. The repository operates before you make
-# the .env file. Values in .env replace these defaults. See .env.example.
+# Each variable has a default value, so the repository operates before you make
+# a project. The environment file of the default project replaces these
+# defaults. See templates/project.env for every value.
 
 lab := env_var_or_default("LAB_NAME", "pe")
 uri := env_var_or_default("LIBVIRT_DEFAULT_URI", "qemu:///system")
@@ -228,14 +231,6 @@ remove-project project:
 # Select the project that every recipe operates on
 default-project project:
     @scripts/project-default.sh "{{ project }}"
-
-# Move a regular .env from the checkout into the project layout
-adopt-project project:
-    @scripts/project-adopt.sh "{{ project }}"
-
-# Make .env a regular file in the checkout again. The twin of adopt-project.
-unadopt-project:
-    @scripts/project-unadopt.sh
 
 # --- palette ----------------------------------------------------------------
 
