@@ -81,9 +81,11 @@ else:
 #
 # Palette refuses to delete a project while a token still names it.
 token_for_project() {
-	api GET "v1/edgehosts/tokens?limit=100" | UID="$1" python3 -c '
+	local body
+	body="$(api GET "v1/edgehosts/tokens?limit=100")" || return 1
+	printf '%s' "$body" | PEL_UID="$1" python3 -c '
 import json, os, sys
-want = os.environ["UID"]
+want = os.environ["PEL_UID"]
 for token in json.load(sys.stdin).get("items") or []:
     project = (token.get("spec") or {}).get("defaultProject") or {}
     if project.get("uid") == want:
@@ -94,9 +96,11 @@ for token in json.load(sys.stdin).get("items") or []:
 
 # token_name UID: print the name of one registration token.
 token_name() {
-	api GET "v1/edgehosts/tokens?limit=100" | UID="$1" python3 -c '
+	local body
+	body="$(api GET "v1/edgehosts/tokens?limit=100")" || return 1
+	printf '%s' "$body" | PEL_UID="$1" python3 -c '
 import json, os, sys
-want = os.environ["UID"]
+want = os.environ["PEL_UID"]
 for token in json.load(sys.stdin).get("items") or []:
     if token["metadata"]["uid"] == want:
         print(token["metadata"]["name"])
@@ -106,9 +110,11 @@ for token in json.load(sys.stdin).get("items") or []:
 
 # token_value UID: print the registration token itself. Never log this value.
 token_value() {
-	api GET "v1/edgehosts/tokens?limit=100" | UID="$1" python3 -c '
+	local body
+	body="$(api GET "v1/edgehosts/tokens?limit=100")" || return 1
+	printf '%s' "$body" | PEL_UID="$1" python3 -c '
 import json, os, sys
-want = os.environ["UID"]
+want = os.environ["PEL_UID"]
 for token in json.load(sys.stdin).get("items") or []:
     if token["metadata"]["uid"] == want:
         print((token.get("spec") or {}).get("token") or "")
@@ -131,13 +137,21 @@ print(json.dumps({
         "annotations": {"description": os.environ["DESC"]},
     },
     "spec": {
-        "defaultProject": {"uid": os.environ["PROJECT"]},
+        # The read shape and the write shape differ. A GET returns
+        # "defaultProject": {"name": ..., "uid": ...}, but a write takes
+        # "defaultProjectUid" as a bare uid. Sending the read shape gives
+        # HTTP 204 and no binding at all, and an unbound token registers a
+        # host into no project.
+        "defaultProjectUid": os.environ["PROJECT"],
         # Palette wants an ISO 8601 time in UTC.
         "expiry": expiry.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
     },
 }))
 ')"
-	api POST "v1/edgehosts/tokens" -H "Content-Type: application/json" -d "$body" |
+	local created
+	created="$(api POST "v1/edgehosts/tokens" \
+		-H "Content-Type: application/json" -d "$body")" || return 1
+	printf '%s' "$created" |
 		python3 -c 'import json,sys; print(json.load(sys.stdin).get("uid",""))'
 }
 
@@ -145,7 +159,9 @@ print(json.dumps({
 # Prints the uid of the named project, or nothing if the project is absent.
 project_uid() {
 	local want="$1"
-	api GET "v1/projects?limit=100" | WANT="$want" python3 -c '
+	local body
+	body="$(api GET "v1/projects?limit=100")" || return 1
+	printf '%s' "$body" | WANT="$want" python3 -c '
 import json, os, sys
 want = os.environ["WANT"]
 for p in json.load(sys.stdin).get("items") or []:
@@ -158,7 +174,9 @@ for p in json.load(sys.stdin).get("items") or []:
 # project_names
 # Prints every project name in the tenant, one for each line.
 project_names() {
-	api GET "v1/projects?limit=100" | python3 -c '
+	local body
+	body="$(api GET "v1/projects?limit=100")" || return 1
+	printf '%s' "$body" | python3 -c '
 import json, sys
 for p in json.load(sys.stdin).get("items") or []:
     print(p["metadata"]["name"])

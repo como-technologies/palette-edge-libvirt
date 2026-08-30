@@ -15,7 +15,7 @@ set -euo pipefail
 # shellcheck source=scripts/palette-lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/palette-lib.sh"
 
-action="${1:?give an action: projects or hosts}"
+action="${1:?give an action: projects, hosts, or tokens}"
 project="${PALETTE_PROJECT:-Default}"
 
 need curl
@@ -83,7 +83,23 @@ for h in items:
     print("  {:<20} {:<14} health={}".format(name, state, health))
 '
 	;;
+tokens)
+	info "registration tokens in this tenant"
+	body="$(api GET "v1/edgehosts/tokens?limit=100")"
+	printf '%s' "$body" | python3 -c '
+import json, sys
+items = json.load(sys.stdin).get("items") or []
+if not items:
+    print("  none")
+    sys.exit(0)
+for token in items:
+    project = (token.get("spec") or {}).get("defaultProject") or {}
+    name = token["metadata"]["name"]
+    bound = project.get("name") or "NO PROJECT -- hosts will not register"
+    print("  {:<24} -> {}".format(name, bound))
+'
+	;;
 *)
-	die "unknown action '$action'. Use projects or hosts."
+	die "unknown action '$action'. Use projects, hosts, or tokens."
 	;;
 esac

@@ -218,6 +218,10 @@ palette-projects:
 palette-hosts:
     @scripts/palette-api.sh hosts
 
+# List the registration tokens and the project each one registers into
+palette-tokens:
+    @scripts/palette-api.sh tokens
+
 # --- cluster ----------------------------------------------------------------
 
 # ANCHOR: clusterup

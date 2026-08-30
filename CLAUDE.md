@@ -152,6 +152,16 @@ will not show again. Call `need_api_key` early in a script, never only inside a
 pipeline — `die` in a pipeline exits the subshell and the reader fails with a
 traceback instead of the message.
 
+**The token API reads and writes different shapes.** A GET returns
+`spec.defaultProject: {name, uid}`, but a create or update takes
+`spec.defaultProjectUid` as a bare uid string. Sending the read shape back
+returns HTTP 204/201 with **no binding applied** — silent, and an unbound token
+registers hosts into no project. Never infer a Palette write shape from its
+read shape.
+
+**`UID` is readonly in bash.** `UID=x python3 ...` fails with "readonly
+variable"; the helpers use `PEL_UID`. shellcheck does not catch this.
+
 **Each project owns a registration token.** `new-project` creates one bound to
 the project (`spec.defaultProject.uid`) and writes `spec.token` straight into
 the env file, so no token is ever copied by hand. `remove-project` deletes the

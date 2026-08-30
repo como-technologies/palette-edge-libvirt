@@ -206,6 +206,23 @@ project. Palette lists the tokens at **Tenant Settings** >
 **Registration Tokens**. Change the default project of that token, or delete
 it. Then run the recipe again.
 
+## A host registers into no project
+
+The registration token has no default project. `just palette-hosts` shows
+nothing, and the host does not appear in the console.
+
+Palette returns the binding as `spec.defaultProject` but accepts it as
+`spec.defaultProjectUid`. A token that was made with the wrong field is
+accepted and stays unbound. To see the binding of every token:
+
+```bash
+just palette-tokens
+```
+
+A token with no project needs a replacement. Run `just remove-project NAME`
+and `just new-project NAME` again, or set the default project of the token in
+the console at **Tenant Settings** > **Registration Tokens**.
+
 ## The docs build fails on an include
 
 The path is wrong, or the anchor is absent. The paths in `docs/src/*.md` are
