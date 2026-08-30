@@ -47,14 +47,20 @@ info "configure continuous integration for $repo"
 
 # --- 1. protect main --------------------------------------------------------
 
-# A merge needs one approving review, and the two hosted checks must pass. The
-# self-hosted job runs after the merge, so it never sees unreviewed code.
+# A merge needs one approving review and the hosted check. The self-hosted job
+# runs after the merge, so it never sees unreviewed code.
+#
+# The context is the name of the JOB, not the name of the workflow, and it must
+# name a job that runs on a pull request. `lint` is the only one: docs.yml
+# builds the book on a push to main and gives the jobs `build` and `deploy`, so
+# neither ever reports on a pull request. A context that never reports blocks
+# every merge for ever.
 if gh api -X PUT "repos/$repo/branches/main/protection" \
 	--input - >/dev/null 2>&1 <<'JSON'; then
 {
   "required_status_checks": {
     "strict": true,
-    "contexts": ["lint", "docs"]
+    "contexts": ["lint"]
   },
   "enforce_admins": false,
   "required_pull_request_reviews": {
