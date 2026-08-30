@@ -36,7 +36,10 @@ target="/var/lib/libvirt/images/$ci_cluster"
 if ! sudo -n true 2>/dev/null && [ ! -t 0 ]; then
 	die "this recipe makes a user and a directory, so it needs root one time,
      and this session can neither ask for a password nor use a cached one.
-     Run it again from a terminal."
+     Give sudo the password first, then run the recipe again:
+       sudo -v && just runner-setup
+     A shell inside an editor or an agent is not a terminal either, so the
+     same two commands work there."
 fi
 
 # --- the user ---------------------------------------------------------------

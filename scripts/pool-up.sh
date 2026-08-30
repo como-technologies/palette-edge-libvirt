@@ -35,7 +35,9 @@ if [ ! -d "$target" ] || [ ! -w "$target" ]; then
 	if ! sudo -n true 2>/dev/null && [ ! -t 0 ]; then
 		die "the storage pool needs root one time, and this session can
      neither ask for a password nor use a cached one.
-     Run the recipe again from a terminal, or make the directory yourself:
+     Give sudo the password first, then run the recipe again:
+       sudo -v && just pool-up
+     Or make the directory yourself:
        sudo mkdir -p $target && sudo chown $USER $target"
 	fi
 
