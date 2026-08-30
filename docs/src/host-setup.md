@@ -2,6 +2,19 @@
 
 This page installs the virtualization tools and tests the result.
 
+> **Turn on the completion first.** It saves the most typing on this page and
+> every page after it.
+>
+> ```bash
+> just bash-completion-install   # every shell, from the next login
+> source <(just bash-completion) # this shell, now
+> ```
+>
+> The completion gives the recipe names, and it also gives the arguments: the
+> host names, the roles `control` and `worker`, and the project names. It is
+> safe for every project, because it reads the recipes from `just` itself. See
+> [Bash completion](./recipes.md#bash-completion).
+
 ## 1. Install the packages
 
 Run this recipe one time on a new workstation. The recipe asks for your sudo
