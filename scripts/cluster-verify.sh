@@ -53,7 +53,8 @@ trap 'rm -rf "$work"' EXIT
 
 export KUBECONFIG="$work/kubeconfig"
 
-info "cluster $CLUSTER in project $PALETTE_PROJECT"
+# shellcheck disable=SC2153  # CLUSTER comes from the recipe, not from `cluster`
+info "cluster ${CLUSTER:?cluster name required} in project $PALETTE_PROJECT"
 
 # cluster.sh prints its own message for a project with no cluster layer.
 "$here/cluster.sh" kubeconfig >"$KUBECONFIG" 2>"$work/err" || {

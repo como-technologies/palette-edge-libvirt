@@ -12,7 +12,14 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 : "${POOL:?}" "${CLUSTER:?}"
 need virsh
 
-target="/var/lib/libvirt/images/$CLUSTER"
+target="$(pool_target "$CLUSTER")"
+
+# A session pool lives in the home directory, so nothing below needs root. The
+# session daemon runs as you and writes there without help.
+if libvirt_session; then
+	mkdir -p "$target"
+	skip "session pool directory $target"
+else
 
 # --- the part that needs root -----------------------------------------------
 #
@@ -48,6 +55,7 @@ if [ ! -d "$target" ] || [ ! -w "$target" ]; then
 		die "could not give $target to $USER. Run: sudo chown $USER $target"
 	sudo chmod 0755 "$target"
 	info "gave $target to $USER"
+fi
 fi
 
 if virsh pool-info "$POOL" >/dev/null 2>&1; then

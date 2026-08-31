@@ -17,9 +17,55 @@ The runner is a systemd service that runs as its own user on the workstation. It
 makes the cluster machines directly with libvirt, so the nodes run on the metal
 and no memory waits idle for a job.
 
-The runner user holds **no sudo**. `pool-up.sh` asks for root only when the pool
-directory is absent or not writable, so `just runner-setup` makes that directory
-one time and gives it to the runner. Every recipe after that needs no password.
+## The runner uses the session daemon
+
+libvirt has two connections, and the difference decides what a compromised
+runner can reach.
+
+| | `qemu:///system` | `qemu:///session` |
+| --- | --- | --- |
+| The daemon runs as | root | the runner |
+| A domain may open | any file on the workstation | the files the runner can open |
+| Access comes from | the `libvirt` group | owning the session |
+
+The system socket is `root:libvirt` and `libvirtd.conf` sets `auth_unix_rw` to
+`none`, so **a member of the `libvirt` group drives a daemon that runs as
+root**. Such a member defines a domain whose disk is `/dev/nvme0n1`, starts it,
+and reads and writes every file on the workstation: your keys, your tokens,
+`/etc/shadow`. The `libvirt` group is the same as root, and no sudoers file
+changes that.
+
+The runner is therefore **not in the `libvirt` group**. It uses the session
+daemon, which runs as the runner and opens only what the runner can open. A
+build that goes wrong reaches one unprivileged account.
+
+Your own lab keeps `qemu:///system`, which is simpler and needs none of the
+setup below. Session mode is the CI path.
+
+## What a session cannot do for itself
+
+Three things need root, so `just runner-setup` does each one time.
+
+**The network.** A session makes no network: a bridge, NAT, and dnsmasq all need
+root. So root makes one system network, `cilab-net`, and the session domains
+attach to its bridge. The network still brings the subnet, the DHCP server, and
+the address that kube-vip claims, so nothing else changes.
+
+**The bridge helper.** A session domain reaches the bridge through
+`qemu-bridge-helper`. Ubuntu ships that program with no setuid bit and no
+capability, so root gives it `cap_net_admin` and writes `/etc/qemu/bridge.conf`.
+That file names the bridges any account may join, and it names `br-cilab` only.
+
+**Nothing else.** The pool lives in the home directory of the runner, so no
+directory under `/var/lib/libvirt` is needed and no recipe asks for a password.
+
+The scripts read `LIBVIRT_DEFAULT_URI` and take the right path for each: see
+`libvirt_session` and `pool_target` in `scripts/lib.sh`.
+
+{{#include ../../scripts/lib.sh:session}}
+
+The runner user holds **no sudo**, and with the session daemon that statement
+now means something: it is not root by another route either.
 
 ## The lab of CI is not your lab
 
@@ -90,8 +136,9 @@ just ci-setup         # protect main, make the lab environment, store the key
 just runner-status    # the service here, and the record in GitHub
 ```
 
-`just runner-setup` needs root one time. It makes the user, puts it in the
-`libvirt` and `kvm` groups, and makes `/var/lib/libvirt/images/cilab`.
+`just runner-setup` needs root one time. It makes the user, puts it in the `kvm`
+group and takes it out of `libvirt`, makes the system network of the CI lab,
+gives `qemu-bridge-helper` its capability, and allows `br-cilab`.
 
 It also gives the runner its own `just`. `cargo` installs it, exactly as the
 hosted workflow installs mdBook, because the `just` in your home directory

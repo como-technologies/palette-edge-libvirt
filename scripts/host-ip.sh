@@ -25,6 +25,28 @@ mac="$(virsh domiflist "$name" |
 	awk '$5 ~ /^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/ { print $5 }' | head -n1)"
 [ -n "$mac" ] || die "no interface found on $name"
 
+# A session domain is attached to a bridge and not to a libvirt network, and the
+# lease table of that network belongs to the system connection, which a session
+# account cannot read. The neighbour table of the bridge holds the same pair of
+# address and MAC, and every account reads it.
+if libvirt_session; then
+	bridge="$(virsh domiflist "$name" |
+		awk '$2 == "bridge" && $5 ~ /^([0-9a-fA-F]{2}:){5}/ { print $3 }' | head -n1)"
+	[ -n "$bridge" ] || die "$name is not attached to a bridge"
+
+	lease="$(ip neigh show dev "$bridge" 2>/dev/null |
+		awk -v m="$mac" 'tolower($0) ~ tolower(m) && $1 ~ /^[0-9]+\./ { print $1 }' |
+		head -n1 || true)"
+
+	[ -n "$lease" ] || die "no address for $name ($mac) on $bridge yet.
+     The neighbour table fills when the host sends its first packet, so a host
+     that is still starting has none.
+     To watch the boot:  just console $name"
+
+	printf '%s\n' "$lease"
+	exit 0
+fi
+
 net="$(virsh domiflist "$name" |
 	awk '$2 == "network" && $5 ~ /^([0-9a-fA-F]{2}:){5}/ { print $3 }' | head -n1)"
 [ -n "$net" ] || die "$name is not attached to a libvirt network"

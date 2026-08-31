@@ -182,6 +182,54 @@ require_cluster_name() {
      with a letter and ends with a letter or a number."
 }
 
+# ANCHOR: session
+# libvirt_session: return 0 when the recipes talk to the session daemon.
+#
+# There are two connections, and the difference is the privilege of the whole
+# tooling:
+#
+#   qemu:///system    libvirtd runs as root. It can open any file, so a person
+#                     who may define a domain may give that domain the disk of
+#                     the workstation. Membership of the `libvirt` group is
+#                     therefore the same as root.
+#   qemu:///session   libvirtd runs as you. It opens the files that you can
+#                     open and no others, so the privilege of a domain stops at
+#                     your account.
+#
+# Continuous integration takes the session connection, because the runner is an
+# account that other people can reach. A person builds a lab of their own on
+# either one.
+#
+# Three things are different in a session, and each one has a reason:
+#
+#   the network   a session cannot make one. Bridges, NAT, and dnsmasq all need
+#                 root. The bridge of a system network carries the session
+#                 domains instead, through /etc/qemu/bridge.conf.
+#   the pool      /var/lib/libvirt/images belongs to root, so the pool goes in
+#                 the home directory.
+#   the leases    the lease table belongs to the system connection. `ip neigh`
+#                 gives the same answer without it.
+libvirt_session() {
+	case "${LIBVIRT_DEFAULT_URI:-qemu:///system}" in
+	*session*) return 0 ;;
+	*) return 1 ;;
+	esac
+}
+
+# pool_target: print the directory that holds the disks of one cluster.
+#
+# A session pool cannot live under /var/lib/libvirt/images, because that
+# directory belongs to root and a session daemon has no way to write there.
+pool_target() {
+	local cluster="$1"
+	if libvirt_session; then
+		printf '%s/pools/%s\n' "$(data_dir)" "$cluster"
+	else
+		printf '/var/lib/libvirt/images/%s\n' "$cluster"
+	fi
+}
+# ANCHOR_END: session
+
 # have_domain: return 0 if libvirt knows the given domain.
 have_domain() {
 	virsh dominfo "$1" >/dev/null 2>&1

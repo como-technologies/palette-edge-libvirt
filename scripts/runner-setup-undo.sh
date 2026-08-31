@@ -23,7 +23,9 @@ user="${RUNNER_USER:?runner user required}"
 home="${RUNNER_HOME:-/home/$user}"
 ci_cluster="${CI_CLUSTER:?ci cluster name required}"
 
-target="/var/lib/libvirt/images/$ci_cluster"
+network="${ci_cluster}-net"
+bridge="br-${ci_cluster}"
+helper="${QEMU_BRIDGE_HELPER:-/usr/lib/qemu/qemu-bridge-helper}"
 
 if ! id "$user" >/dev/null 2>&1; then
 	skip "there is no user $user"
@@ -52,13 +54,43 @@ else
 	info "deleted the user $user"
 fi
 
-# The pool directory of the CI lab. `just infra-down` removes the files in it,
-# and rmdir refuses a directory that still holds one.
-if [ ! -d "$target" ]; then
-	skip "$target is absent"
-elif sudo rmdir "$target" 2>/dev/null; then
-	info "removed $target"
+# The pool of a session lab lives in the home directory of the runner, and the
+# user delete above took it.
+
+# --- the network of the CI lab ----------------------------------------------
+
+if virsh -c qemu:///system net-info "$network" >/dev/null 2>&1; then
+	NETWORK="$network" LIBVIRT_DEFAULT_URI=qemu:///system \
+		"$(dirname "${BASH_SOURCE[0]}")/net-down.sh"
 else
-	warn "$target still holds a file, so it stays.
-         Remove the CI lab first:  CLUSTER_NAME=$ci_cluster just infra-down"
+	skip "the network $network is absent"
+fi
+
+# --- the bridge helper ------------------------------------------------------
+#
+# Take the capability away and take this bridge out of the allowlist. Another
+# bridge in that file belongs to somebody else, so remove the line and not the
+# file.
+if [ -x "$helper" ] && sudo getcap "$helper" 2>/dev/null | grep -q cap_net_admin; then
+	if sudo setcap -r "$helper" 2>/dev/null; then
+		info "took cap_net_admin off $helper"
+	else
+		warn "could not take the capability off $helper"
+	fi
+else
+	skip "$helper has no capability of ours"
+fi
+
+if sudo test -f /etc/qemu/bridge.conf && sudo grep -qx "allow $bridge" /etc/qemu/bridge.conf; then
+	sudo sed -i "/^allow ${bridge}\$/d" /etc/qemu/bridge.conf ||
+		warn "could not take $bridge out of /etc/qemu/bridge.conf"
+	info "took $bridge out of /etc/qemu/bridge.conf"
+	# An empty allowlist is a file that allows nothing, which is the state
+	# before this repository wrote it.
+	if ! sudo grep -q . /etc/qemu/bridge.conf 2>/dev/null; then
+		sudo rm -f /etc/qemu/bridge.conf
+		info "removed the empty /etc/qemu/bridge.conf"
+	fi
+else
+	skip "/etc/qemu/bridge.conf does not allow $bridge"
 fi

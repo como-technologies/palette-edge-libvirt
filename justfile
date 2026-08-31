@@ -290,7 +290,8 @@ host-up host role="worker":
       *) echo "error: role must be control or worker. You gave '{{ role }}'." >&2; exit 2 ;;
     esac
     VCPUS="$vcpus" MEMORY_MB="$mem" DISK_GB="$disk" \
-    NETWORK="{{ net }}" POOL="{{ pool }}" IMAGE_DIR="{{ image_dir }}" SEED_DIR="{{ seed_dir }}" \
+    NETWORK="{{ net }}" POOL="{{ pool }}" CLUSTER="{{ cluster }}" \
+    IMAGE_DIR="{{ image_dir }}" SEED_DIR="{{ seed_dir }}" \
         scripts/host-up.sh "{{ host }}"
 
 # Stop one host VM, remove it, and delete its disk
@@ -448,8 +449,8 @@ kubectl-uninstall:
 # Make the runner user, its groups, and its pool directory. Needs root one time.
 runner-setup:
     @RUNNER_USER="{{ runner_user }}" RUNNER_HOME="{{ runner_home }}" \
-        CI_CLUSTER="{{ ci_cluster }}" JUST_VERSION="{{ just_version }}" \
-        scripts/runner-setup.sh
+        CI_CLUSTER="{{ ci_cluster }}" CI_SUBNET="{{ ci_subnet }}" \
+        JUST_VERSION="{{ just_version }}" scripts/runner-setup.sh
 
 # Remove the runner user and its pool directory. Asks before it deletes.
 runner-setup-undo:
@@ -476,6 +477,7 @@ runner-down:
 # from these, exactly as `just config` once reported a disk size that the
 # recipes did not use.
 ci-env:
+    @echo "LIBVIRT_DEFAULT_URI=qemu:///session"
     @echo "CLUSTER_NAME={{ ci_cluster }}"
     @echo "CLUSTER_SUBNET={{ ci_subnet }}"
     @echo "CLUSTER_VIP={{ ci_vip }}"

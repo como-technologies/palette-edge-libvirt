@@ -14,6 +14,14 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 : "${NETWORK:?}"
 need virsh
 
+# The network of a session lab belongs to the system connection, and root made
+# it. A session must not remove it, and cannot: it does not see it.
+if libvirt_session; then
+	skip "session mode does not own the network $NETWORK"
+	printf '    To remove it:  just runner-setup-undo\n'
+	exit 0
+fi
+
 if ! virsh net-info "$NETWORK" >/dev/null 2>&1; then
 	skip "network $NETWORK is absent"
 	exit 0

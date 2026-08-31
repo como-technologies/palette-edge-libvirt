@@ -69,7 +69,17 @@ disk="$pool_dir/$name.qcow2"
 # there as well. The copy keeps mode 0600, and `just host-down` deletes it.
 seed_in_pool="$pool_dir/$name-seed.iso"
 
-info "create $name: ${VCPUS} vcpu, ${MEMORY_MB} MB, ${DISK_GB} GB, network $NETWORK"
+# A session domain cannot name a libvirt network, because the network belongs to
+# the system connection. It names the bridge of that network instead, and
+# qemu-bridge-helper attaches the tap. /etc/qemu/bridge.conf allows this one
+# bridge and no other; `just runner-setup` writes it.
+if libvirt_session; then
+	net_arg="bridge=br-${CLUSTER:-${NETWORK%-net}}"
+else
+	net_arg="network=$NETWORK"
+fi
+
+info "create $name: ${VCPUS} vcpu, ${MEMORY_MB} MB, ${DISK_GB} GB, $net_arg"
 info "image: $(basename "$image")"
 
 # Copy the image, then grow it. The cloud image is about 600 MB. qcow2 files
@@ -91,7 +101,7 @@ virt-install \
 	--osinfo detect=on,require=off \
 	--disk "path=$disk,format=qcow2,bus=virtio" \
 	--disk "path=$seed_in_pool,device=cdrom,readonly=on" \
-	--network "network=$NETWORK,model=virtio" \
+	--network "$net_arg,model=virtio" \
 	--graphics none \
 	--console pty,target_type=serial \
 	--rng /dev/urandom \

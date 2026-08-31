@@ -18,6 +18,23 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 # reports its own minutes later, when `just cluster-up` makes the cluster.
 require_cluster_name "$CLUSTER"
 bridge="br-$CLUSTER"
+
+# A session daemon makes no network: a bridge, NAT, and dnsmasq all need root.
+# The lab of a session therefore uses the bridge of a system network that root
+# made one time, and `just runner-setup` is what makes it.
+#
+# Test the bridge rather than the network. The session connection cannot see a
+# system network at all, and the bridge is a device that every account reads.
+if libvirt_session; then
+	if [ -d "/sys/class/net/$bridge" ]; then
+		skip "session mode uses the bridge $bridge, which exists"
+		exit 0
+	fi
+	die "session mode needs the bridge $bridge, and there is none.
+     A session makes no network, so root makes the network one time and the
+     session domains take its bridge.
+     Run:  just runner-setup"
+fi
 root="$(repo_root)"
 
 need virsh

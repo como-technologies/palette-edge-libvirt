@@ -1,25 +1,30 @@
 #!/usr/bin/env bash
 # Prepare the workstation for a GitHub Actions runner.
 #
-# This is the only part of the runner that needs root, and it runs one time. It
-# makes three things:
+# This is the only part of the runner that needs root, and it runs one time:
 #
 #   the user       an account that is not yours, with no sudo
-#   the groups     libvirt and kvm, so the runner can make virtual machines
-#   the directory  /var/lib/libvirt/images/$CI_CLUSTER, owned by that user
+#   the group      kvm, and NOT libvirt
+#   the network    one system network, because a session daemon makes none
+#   the helper     cap_net_admin on qemu-bridge-helper, and one bridge in
+#                  /etc/qemu/bridge.conf
 #
-# The directory is the reason the runner needs no sudo of its own. `pool-up.sh`
-# asks for root only when the pool directory is absent or not writable, so a
-# directory that exists and belongs to the runner keeps every later recipe
-# password free. See scripts/pool-up.sh.
+# The runner drives the SESSION daemon, qemu:///session, which runs as the
+# runner itself. That is the whole point of this script. A member of the
+# `libvirt` group drives the system daemon, which runs as root, and can give a
+# domain the disk of the workstation: that membership is the same as root, and
+# no sudoers file changes it. The runner is not in that group, so the privilege
+# of a build stops at the runner account.
 #
-# The runner user gets no entry in sudoers. Nothing in the build needs one.
+# A session cannot make a network, so root makes one here and the session
+# domains take its bridge. The bridge carries the subnet, the DHCP server, and
+# the address that kube-vip claims, exactly as it does for a lab of yours.
 #
 # This script is idempotent.
 #
-# Env: RUNNER_USER RUNNER_HOME CI_CLUSTER
+# Env: RUNNER_USER RUNNER_HOME CI_CLUSTER CI_SUBNET JUST_VERSION
 #
-#   RUNNER_USER=ghrunner CI_CLUSTER=ci runner-setup.sh
+#   RUNNER_USER=ghrunner CI_CLUSTER=cilab CI_SUBNET=192.168.210 runner-setup.sh
 
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
@@ -28,8 +33,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 user="${RUNNER_USER:?runner user required}"
 home="${RUNNER_HOME:-/home/$user}"
 ci_cluster="${CI_CLUSTER:?ci cluster name required}"
+ci_subnet="${CI_SUBNET:?ci subnet required}"
+here="$(dirname "${BASH_SOURCE[0]}")"
 
-target="/var/lib/libvirt/images/$ci_cluster"
+network="${ci_cluster}-net"
+bridge="br-${ci_cluster}"
+helper="${QEMU_BRIDGE_HELPER:-/usr/lib/qemu/qemu-bridge-helper}"
 
 # Every change below needs root. Ask for it one time, and say so before sudo
 # prints a message that names no correction.
@@ -54,39 +63,95 @@ else
 fi
 
 # --- the groups -------------------------------------------------------------
+#
+# `kvm` only, and NOT `libvirt`.
+#
+# The socket of the system daemon is root:libvirt and libvirtd.conf sets
+# auth_unix_rw to "none", so a member of that group drives a daemon that runs as
+# root. Such a member can define a domain whose disk is the disk of the
+# workstation, start it, and read and write every file on it. The group is the
+# same as root, whatever the sudoers file says.
+#
+# The runner therefore takes the SESSION daemon, which runs as the runner. It
+# opens the files that the runner can open and no others.
+if id -nG "$user" | tr ' ' '\n' | grep -qx libvirt; then
+	sudo gpasswd -d "$user" libvirt >/dev/null ||
+		warn "could not take $user out of the group libvirt. Run: sudo gpasswd -d $user libvirt"
+	info "took $user out of the group libvirt, which is the same as root"
 
-for group in libvirt kvm; do
-	if getent group "$group" >/dev/null 2>&1; then
-		if id -nG "$user" | tr ' ' '\n' | grep -qx "$group"; then
-			skip "$user is in the group $group"
-		else
-			sudo usermod -aG "$group" "$user" ||
-				die "could not put $user in the group $group"
-			info "put $user in the group $group"
-		fi
-	else
-		warn "there is no group $group on this workstation.
-         Install the virtualization packages first:  just host-setup"
+	# A process takes its groups when it starts. The runner service is
+	# already running with the old set, so it keeps the group until it
+	# starts again, and a report of "not in the group" would be wrong.
+	if systemctl list-units --all --type=service --no-legend 2>/dev/null |
+		grep -q 'actions\.runner\.'; then
+		warn "the runner service still runs with the old groups.
+         A process takes its groups when it starts, so restart it:
+           just runner-down && just runner-up"
 	fi
-done
-
-# --- the pool directory -----------------------------------------------------
-
-# libvirt owns /var/lib/libvirt/images and it belongs to root. The directory
-# below belongs to the runner, so `just pool-up` finds it writable and asks for
-# no password.
-if [ -d "$target" ] && sudo test -O "$target" -o -w "$target" 2>/dev/null; then
-	skip "$target exists"
-else
-	info "make $target for the CI lab"
-	sudo mkdir -p "$target" ||
-		die "could not make $target. Run: sudo mkdir -p $target"
 fi
 
-sudo chown "$user" "$target" ||
-	die "could not give $target to $user. Run: sudo chown $user $target"
-sudo chmod 0755 "$target"
-info "$target belongs to $user"
+if getent group kvm >/dev/null 2>&1; then
+	if id -nG "$user" | tr ' ' '\n' | grep -qx kvm; then
+		skip "$user is in the group kvm"
+	else
+		sudo usermod -aG kvm "$user" || die "could not put $user in the group kvm"
+		info "put $user in the group kvm, for /dev/kvm"
+	fi
+else
+	warn "there is no group kvm on this workstation.
+         Install the virtualization packages first:  just host-setup"
+fi
+
+# --- the network of the CI lab ----------------------------------------------
+#
+# A session daemon makes no network. A bridge, NAT, and dnsmasq need root, so
+# root makes one system network here, one time, and the session domains take its
+# bridge. The network brings the subnet, the DHCP server, and the address that
+# kube-vip claims.
+if virsh -c qemu:///system net-info "$network" >/dev/null 2>&1; then
+	skip "the network $network exists"
+else
+	info "make the system network $network for the CI lab"
+	NETWORK="$network" CLUSTER="$ci_cluster" SUBNET="$ci_subnet" \
+		BUILD_DIR="${BUILD_DIR:-$(data_dir)/build}" \
+		LIBVIRT_DEFAULT_URI=qemu:///system "$here/net-up.sh" >/dev/null ||
+		die "could not make the network $network"
+	info "made $network on ${ci_subnet}.0/24, bridge $bridge"
+fi
+
+# --- the bridge helper ------------------------------------------------------
+#
+# A session domain attaches its tap to the bridge through qemu-bridge-helper.
+# Ubuntu ships that program with no setuid bit and no capability, on purpose, so
+# root grants the one capability that it needs. /etc/qemu/bridge.conf then names
+# the bridges that any account may join, and it names this one only.
+if [ ! -x "$helper" ]; then
+	warn "there is no $helper, so a session domain reaches no bridge.
+         Install the qemu-system-x86 package:  just host-setup"
+elif sudo getcap "$helper" 2>/dev/null | grep -q cap_net_admin; then
+	skip "$helper has cap_net_admin"
+else
+	sudo setcap cap_net_admin+ep "$helper" ||
+		die "could not give cap_net_admin to $helper.
+     Run: sudo setcap cap_net_admin+ep $helper"
+	info "gave cap_net_admin to $helper"
+fi
+
+if sudo grep -qx "allow $bridge" /etc/qemu/bridge.conf 2>/dev/null; then
+	skip "/etc/qemu/bridge.conf allows $bridge"
+else
+	info "allow $bridge in /etc/qemu/bridge.conf"
+	sudo mkdir -p /etc/qemu
+	sudo sh -c "printf 'allow %s\\n' '$bridge' >> /etc/qemu/bridge.conf" ||
+		die "could not write /etc/qemu/bridge.conf"
+	sudo chmod 0644 /etc/qemu/bridge.conf
+fi
+
+# --- the pool directory -----------------------------------------------------
+#
+# A session pool lives in the home directory of the runner, so this needs no
+# root and no directory under /var/lib/libvirt.
+skip "the session pool goes in the home directory of $user, so it needs no root"
 
 # --- a just that the runner can reach ---------------------------------------
 #
