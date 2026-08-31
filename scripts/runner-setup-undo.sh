@@ -32,8 +32,7 @@ if ! id "$user" >/dev/null 2>&1; then
 else
 	# The service runs as this user. A user that goes while its service
 	# stays leaves a unit that fails at every boot.
-	if systemctl list-units --all --type=service --no-legend 2>/dev/null |
-		grep -q 'actions\.runner\.'; then
+	if [ -n "$(runner_units)" ]; then
 		die "the runner service is still installed, and it runs as $user.
      Remove it first:  just runner-down"
 	fi

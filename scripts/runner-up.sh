@@ -68,8 +68,7 @@ dir="$home/actions-runner"
 # version of this script died there on every retry.
 
 service_installed() {
-	systemctl list-units --all --type=service --no-legend 2>/dev/null |
-		grep -q 'actions\.runner\.'
+	[ -n "$(runner_units)" ]
 }
 
 # config.sh writes .runner when it registers. The file belongs to the runner
@@ -78,10 +77,26 @@ registered_here() {
 	sudo test -f "$dir/.runner"
 }
 
+# A unit that names a runner directory with no `.service` marker is the leaving
+# of a removal that did not finish. svc.sh reads that marker to know its own
+# unit name, so it can neither start nor remove this one, and `svc.sh install`
+# refuses while the file is there. Clear it and carry on.
+if service_installed && ! sudo test -f "$dir/.service"; then
+	info "remove a runner unit that an earlier run left"
+	for unit in $(runner_units); do
+		sudo systemctl disable --now "$(basename "$unit")" >/dev/null 2>&1 || true
+		sudo rm -f "$unit"
+		info "removed $unit"
+	done
+	sudo systemctl daemon-reload
+fi
+
 if service_installed; then
 	skip "a runner service is installed already"
-	systemctl list-units --all --type=service --no-legend |
-		grep 'actions\.runner\.' | awk '{ printf "    %s %s\n", $1, $4 }'
+	for unit in $(runner_units); do
+		printf '    %s %s\n' "$(basename "$unit")" \
+			"$(systemctl is-active "$(basename "$unit")" 2>/dev/null || true)"
+	done
 	exit 0
 fi
 

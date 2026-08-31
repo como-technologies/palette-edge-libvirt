@@ -20,9 +20,12 @@ gh() { command gh "$@"; }
 
 
 info "the service on this workstation"
-if systemctl list-units --all --type=service --no-legend 2>/dev/null |
-	grep 'actions\.runner\.' | awk '{ printf "  %-52s %s\n", $1, $4 }' | grep .; then
-	:
+units="$(runner_units)"
+if [ -n "$units" ]; then
+	for unit in $units; do
+		printf '  %-52s %s\n' "$(basename "$unit")" \
+			"$(systemctl is-active "$(basename "$unit")" 2>/dev/null || true)"
+	done
 else
 	skip "no runner service is installed. To make one: just runner-up"
 fi

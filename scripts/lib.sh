@@ -230,6 +230,21 @@ pool_target() {
 }
 # ANCHOR_END: session
 
+# runner_units: print the path of each GitHub Actions runner unit file.
+#
+# The test is the FILE and not `systemctl list-units`. That command lists the
+# units that systemd has loaded, so a service that is stopped and unloaded does
+# not appear, and a script that believes it reports "no service is installed"
+# and leaves the unit file behind. `svc.sh install` then refuses with "exists"
+# and the runner can never start again.
+runner_units() {
+	local file
+	for file in /etc/systemd/system/actions.runner.*.service; do
+		[ -e "$file" ] || continue
+		printf '%s\n' "$file"
+	done
+}
+
 # have_domain: return 0 if libvirt knows the given domain.
 have_domain() {
 	virsh dominfo "$1" >/dev/null 2>&1
