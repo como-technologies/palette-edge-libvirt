@@ -147,8 +147,8 @@ keeps the original.
 
 | Layer | State | Location | Removed by |
 | --- | --- | --- | --- |
-| Infrastructure | Virtual machines | libvirt, `qemu:///system` | `just infra-down` |
-| Infrastructure | Disk images | `/var/lib/libvirt/images/$CLUSTER_NAME` | `just infra-down` |
+| Infrastructure | Virtual machines | libvirt, `$LIBVIRT_DEFAULT_URI` | `just infra-down` |
+| Infrastructure | Disk images | `/var/lib/libvirt/images/$CLUSTER_NAME`, or `~/.local/share/palette-edge-libvirt/pools/$CLUSTER_NAME` in a session | `just infra-down` |
 | Infrastructure | Network and pool | libvirt | `just infra-down` |
 | Infrastructure | Registered hosts | Palette SaaS | `just infra-down` |
 | Infrastructure | Seed ISO files | `~/.local/share/palette-edge-libvirt` | `just seed-clean` |
@@ -158,6 +158,12 @@ keeps the original.
 | Neither | Your token | `~/.config/palette-edge-libvirt/envs` | `just remove-project` |
 | Neither | Your API key | `~/.config/palette-edge-libvirt/api-key` | `just api-key-clear` |
 | Neither | OpenTofu | `~/.local/bin/tofu` | `just tofu-uninstall` |
+| Neither | kubectl | `~/.local/bin/kubectl` | `just kubectl-uninstall` |
+
+The disk images have two homes, because there are two libvirt connections. A
+session daemon runs as you and cannot write under `/var/lib/libvirt`, so its
+pool goes in the home directory. See
+[Continuous integration](./ci.md#the-runner-uses-the-session-daemon).
 
 A layer removes everything that it made, on both sides. The host record belongs
 to the infrastructure layer, because registration makes it and it has no use

@@ -384,6 +384,50 @@ the justfile, one drifted, and the recipe reported a 60 GB control plane disk
 while it built a 100 GB one. The recipe passes every computed value now, and the
 script prints what it receives.
 
+**The `libvirt` group is root.** The system socket is `root:libvirt` and
+`libvirtd.conf` sets `auth_unix_rw = "none"`, so a member drives a daemon that
+runs as root: define a domain whose disk is `/dev/nvme0n1`, start it, read and
+write every file on the workstation. No sudoers file changes this. CI therefore
+runs on `qemu:///session`, where libvirtd runs as the runner and opens only what
+the runner can open, and `runner-setup` takes the account OUT of the group.
+Fine-grained polkit ACLs do not help: they gate object and verb, not the disk
+path.
+
+**A session cannot make a network, a pool under /var/lib/libvirt, or read the
+lease table.** `runner-setup` makes one *system* network as root and the session
+domains attach to its bridge (`--network bridge=br-X`, not `network=X`), which
+keeps the subnet, DHCP and the VIP. That needs `setcap cap_net_admin+ep` on
+`qemu-bridge-helper` (Ubuntu ships it unprivileged) and `allow br-X` in
+`/etc/qemu/bridge.conf`. The pool moves to the home directory. `host-ip.sh` reads
+`ip neigh` on the bridge, because the lease table belongs to the system
+connection. `libvirt_session` and `pool_target` in `lib.sh` pick the path;
+`preflight` skips the libvirt-group test in a session.
+
+**`systemctl list-units` lists LOADED units.** A stopped, unloaded service does
+not appear, so a check built on it reports "not installed" while the unit file
+is still there — and `svc.sh install` then refuses with "exists" for ever. Test
+the FILE: `runner_units()` in `lib.sh`.
+
+**A Palette cluster name needs 3 characters at least**, matching
+`[a-z][a-z0-9-]{1,31}[a-z0-9]`, and the libvirt bridge caps it at 12. Palette
+applies its rule when it makes the cluster, minutes after `infra-up` built the
+machines under the same name, so `require_cluster_name` in `lib.sh` runs from
+`net-up.sh` and fails in a second.
+
+**Test for a usable key, not for the key FILE.** `infra-down` tested
+`[ -s "$(api_key_file)" ]`, so a key given in the environment — the documented
+way, and the only way CI gives it — skipped the whole Palette half silently and
+orphaned a host record for every machine it deleted. Use `have_api_key`.
+
+**A workflow must not repeat a justfile value.** The e2e workflow held its own
+`CLUSTER_NAME`, subnet, VIP and pod range; they drifted on the first change.
+`just ci-env` prints them and the workflow reads that into `GITHUB_ENV`. Same
+lesson as `just config`.
+
+**An interactive `gh` wrapper breaks `set -u`.** A `gh` shell function is
+exported into child shells, and one that reads `$GH_REPO` with no default aborts
+under `set -u` — silently, when stderr is redirected. Scripts call `command gh`.
+
 **`virsh` tables have a header row.** `domiflist` and `net-dhcp-leases` output
 parsed with plain awk field numbers matches the header: `host-ip.sh` reported
 the address as "Protocol" until it matched on the shape of a MAC instead.
@@ -450,6 +494,19 @@ ISO from the VM so the host holds no copy.
   Three nodes Ready on PXK-E `v1.33.13`, `podCIDR` from `POD_CIDR`, Calico up,
   and `spectro-storage-class` is the default StorageClass.
 - `cluster-down` destroys both objects in about 35s.
+- `cluster-verify` passes every test on that cluster.
+
+**Continuous integration is verified end to end on `qemu:///session`**, against
+the live tenant, on the `cilab` lab (192.168.210.0/24), with the runner as
+`ghrunner` in groups `ghrunner,kvm` and NOT `libvirt`:
+
+- the whole job in 16m28s: nuke, new-project, infra-up, cluster-up,
+  cluster-verify, nuke. The workstation and the tenant are both empty after it.
+- `virt-install --import` works with `--network bridge=br-cilab` in a session,
+  and the dnsmasq of the system network serves DHCP to the session taps.
+- kube-vip claims the VIP over a session tap: the API server answers at
+  `https://192.168.210.10:6443`. It does not answer ICMP, so `ping` proves
+  nothing there; the TCP connection is the test.
 
 `stylus.site.name` is confirmed good: it is not in the documented agent-mode
 example, but it is what makes the libvirt domain name and the Palette host name
@@ -460,4 +517,5 @@ Pinned combination that is known to work: `edge-native-byoi` 2.1.0 (Agent Mode),
 provider `spectrocloud` 0.29.9, OpenTofu 1.12.6.
 
 Still unverified: more than one control-plane node (`CONTROL_COUNT=3`, where
-kube-vip actually has to fail over), and a pack re-pin on a running cluster.
+kube-vip actually has to fail over), a pack re-pin on a running cluster, and
+`runner-setup-undo` (the twin exists and is linted, and nothing has run it).

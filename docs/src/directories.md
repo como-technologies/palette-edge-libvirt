@@ -18,9 +18,9 @@ The tooling follows the XDG Base Directory specification, so `XDG_CONFIG_HOME`,
 | Directory | Default | Holds |
 | --- | --- | --- |
 | Configuration | `~/.config/palette-edge-libvirt` | The API key, one environment file for each project, and the link that selects the default project. |
-| Data | `~/.local/share/palette-edge-libvirt` | The seed ISO files and the build directory. |
+| Data | `~/.local/share/palette-edge-libvirt` | The seed ISO files, the build directory, and the storage pool of a session lab. |
 | State | `~/.local/state/palette-edge-libvirt` | The OpenTofu state of the cluster layer, one directory for each project. |
-| Cache | `~/.cache/palette-edge-libvirt` | The Ubuntu cloud image, and the OpenTofu release archive. A download replaces either one. |
+| Cache | `~/.cache/palette-edge-libvirt` | The Ubuntu cloud image, and the release archives of OpenTofu, kubectl, and the GitHub Actions runner. A download replaces any of them. |
 
 `just tofu-install` puts the OpenTofu binary in `~/.local/bin`, which is a fifth
 directory. `PEL_BIN_DIR` moves it.

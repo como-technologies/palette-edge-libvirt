@@ -120,6 +120,34 @@ that no other libvirt network uses. The default libvirt network usually uses
 {{#include ../../templates/project.env:palette}}
 ```
 
+## Settings that no project holds
+
+The values above belong to a project, and `just new-project` writes them into
+its environment file. The values below belong to the workstation, so they live
+in the justfile and no project file carries them. Set one in the environment to
+change it for a command.
+
+| Setting | Default | What it decides |
+| --- | --- | --- |
+| `LIBVIRT_DEFAULT_URI` | `qemu:///system` | which libvirt daemon the recipes use. `qemu:///session` runs libvirt as you, and continuous integration takes that one. See [Continuous integration](./ci.md#the-runner-uses-the-session-daemon). |
+| `KUBECTL_VERSION` | `K8S_VERSION` | the kubectl that `just kubectl-install` writes. kubectl supports one minor version each side of the server. |
+| `TOFU_VERSION` | 1.12.6 | the OpenTofu that `just tofu-install` writes |
+
+And the settings of continuous integration, which
+[its own page](./ci.md) describes:
+
+| Setting | Default | What it decides |
+| --- | --- | --- |
+| `CI_CLUSTER_NAME` | `cilab` | the name of the CI lab. It sits outside the range that `new-project` allocates, so a CI lab and a lab of yours never collide. |
+| `CI_CLUSTER_SUBNET` | 192.168.210 | the subnet of the CI lab |
+| `CI_CLUSTER_VIP` | `$CI_CLUSTER_SUBNET.10` | the control plane endpoint of the CI lab |
+| `RUNNER_USER` | `ghrunner` | the account that runs the GitHub Actions runner |
+| `RUNNER_HOME` | `/home/$RUNNER_USER` | its home directory, which holds the runner, its `just`, and the session pool |
+| `RUNNER_VERSION` | 2.337.0 | the runner release. `just runner-pin` prints the current one. |
+| `RUNNER_SHA256` | (pinned) | the checksum of that release, which is what makes the download safe to run |
+| `RUNNER_LABELS` | `self-hosted,linux,x64,kvm` | the labels that `runs-on` matches |
+| `JUST_VERSION` | 1.58.0 | the `just` that cargo installs for the runner |
+
 ## One command, one value
 
 Each value is also a normal environment variable. To change one value for one

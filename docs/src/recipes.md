@@ -154,6 +154,56 @@ lose it and Palette holds a cluster that no recipe can remove.
 `cluster-down` removes both objects. The hosts and the machines stay, so
 `cluster-up` builds them again. See [Create the cluster](./cluster.md).
 
+### Test the cluster
+
+```bash
+just kubectl-install   # kubectl for the pinned Kubernetes version, no root
+just cluster-verify    # the test suite
+just kubectl-uninstall # the twin of kubectl-install
+```
+
+`cluster-verify` is the test suite of the repository. `cluster-up` returns 0
+when Palette reports that it made the cluster, and that is not the same as a
+cluster that operates, so this reads the cluster itself: the nodes, the pod
+range, the packs, and a pod that resolves a name. The end to end job in
+continuous integration runs it, and so can you. See
+[Continuous integration](./ci.md#what-it-tests).
+
+It needs kubectl, and `kubectl-install` writes one into `~/.local/bin` with no
+root, exactly as `tofu-install` does.
+
+### Continuous integration
+
+```bash
+just runner-setup   # the runner account and the grants it needs. Root, one time.
+just runner-up      # the runner and its systemd service
+just runner-status  # the service here, and the record in GitHub
+just runner-pin     # the version and checksum of the current runner release
+just ci-setup       # protect main, make the lab environment, store the key
+just ci-env         # the CI lab settings, which the workflow reads
+```
+
+Each one has a twin: `runner-setup-undo`, `runner-down`, `ci-setup-undo`.
+[Continuous integration](./ci.md) describes all of them.
+
+`ci-env` prints the settings of the CI lab as an environment file. The workflow
+reads it into `GITHUB_ENV`, so those settings live in the justfile and in no
+second place.
+
+### The documentation
+
+```bash
+just docs         # build the book into docs/book
+just docs-serve   # build it and serve it at http://localhost:3000
+just docs-clean   # delete the built book
+just docs-theme   # write the mermaid and gruvbox theme files
+just docs-theme-clean  # delete them again
+```
+
+The theme files are committed, so `docs-theme` runs one time for a new
+checkout. `just docs` and `just lint` both stop with a message that names it if
+the files are absent.
+
 ### Everything
 
 ```just
