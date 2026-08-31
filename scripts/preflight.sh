@@ -90,8 +90,14 @@ manager_stale() {
 	[ "$started" -lt "$changed" ]
 }
 
+# The libvirt group is what gives access to the SYSTEM daemon. A session daemon
+# runs as you and needs no group at all, and the runner is deliberately not in
+# that group: a member of it drives a daemon that runs as root. So this test
+# belongs to the system connection only.
 stale=""
-if ! in_db libvirt; then
+if libvirt_session; then
+	check "libvirt group" yes "not needed: the session daemon runs as you"
+elif ! in_db libvirt; then
 	check "libvirt group" no "" "you are not in the libvirt group. Run: just host-setup"
 elif ! in_session libvirt; then
 	stale=yes
