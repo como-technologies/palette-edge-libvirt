@@ -34,6 +34,7 @@ just default-project NAME # select the project that the recipes operate on
 just palette-projects     # list tenant projects, verify PALETTE_PROJECT
 just palette-hosts        # list hosts that registered
 just palette-clusters     # clusters + uid, API endpoint, profiles, console URL
+just palette-profiles     # cluster profiles of the project, whatever made them
 just palette-packs NAME [V] # pack versions, or the values of one version
 just seed NAME            # build one CIDATA seed ISO
 just host-up NAME [role]  # role is control or worker (default worker)
@@ -254,6 +255,41 @@ denied` on the next run. `protect_state` in `cluster.sh` uses `-maxdepth 1`.
 
 **`just` has no `state_directory()`.** The justfile builds the XDG state path by
 hand: `env_var_or_default("XDG_STATE_HOME", home_directory() / ".local/state")`.
+
+**A project holds a cluster profile after a failed run, and that stops the
+delete.** `cluster-down` removes the profiles that `cluster-up` made, and it
+finds them in the OpenTofu state, so a run that failed between the profile and
+the state leaves one that no state names. `remove-project` counted clusters and
+host records and passed, and Palette then refused the project:
+
+```
+Unable to delete the resource as cilab-infra clusterprofile(s) in-use
+DeletionResourceInUseError, HTTP 500
+```
+
+Nothing could remove that profile, so `nuke` could not empty the tenant — which
+is what CI asserts. `project-remove.sh` deletes the profiles of the project
+before the project, in the same way and for the same reason as the token, and
+`just palette-profiles` shows them.
+
+**The ProjectUid header is what makes a cluster profile visible, and Palette
+reports its absence as a permission.** `DELETE v1/clusterprofiles/{uid}` with no
+header:
+
+```
+Operation 'clusterProfile.delete' is forbidden.
+Verify the user has 'clusterProfile.delete' permission
+```
+
+The key held that permission all along. `GET v1/clusterprofiles` with no header
+returns 0 items in the same way, so a profile of a project simply does not exist
+for a request that names no project. Read that message as "which project?", not
+as a role to change in the console. The header also makes the delete safe: it
+cannot reach a profile of another project.
+
+**A profile carries its type on `spec.published`, not on `spec`.** There is no
+`spec.type`, so a column that reads one prints `-` for every profile.
+`spec.published` holds `type` (`cluster` or `add-on`), `cloudType`, and `packs`.
 
 **A Palette LIST can become a POST without notice, and the create keeps
 working.** In 2026-09 the tenant stopped answering a GET on two paths that this

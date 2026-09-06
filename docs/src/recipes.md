@@ -155,6 +155,11 @@ lose it and Palette holds a cluster that no recipe can remove.
 `cluster-down` removes all three. The hosts and the machines stay, so
 `cluster-up` builds them again. See [Create the cluster](./cluster.md).
 
+`just palette-profiles` reads the profiles from Palette instead of from the
+state, so it also shows a profile that a failed run left behind. A project
+cannot be deleted while it holds one, and `just remove-project` removes them
+with the project.
+
 `just dashboard` opens the Headlamp web interface that the add-on profile
 installs. It forwards a local port through the API server, so the cluster needs
 no ingress controller and the page asks for no sign-in. See

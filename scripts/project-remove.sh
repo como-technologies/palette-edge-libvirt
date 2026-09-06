@@ -53,6 +53,29 @@ else
        just nuke"
 	fi
 
+	# Palette refuses to delete a project while a cluster profile of that
+	# project still exists:
+	#
+	#   Unable to delete the resource as cilab-infra clusterprofile(s) in-use
+	#   DeletionResourceInUseError, HTTP 500
+	#
+	# `cluster-down` removes the profiles that `cluster-up` made, and it reads
+	# the OpenTofu state to find them. A run that failed between the profile
+	# and the state leaves a profile that no state names, and then no recipe
+	# could remove it: the check above passes, because a profile is neither a
+	# cluster nor a host record. A profile with no cluster is garbage for the
+	# same reason as a host record with no machine, so this recipe removes it.
+	#
+	# The header scopes the list to this project, so this can never reach a
+	# profile of another one.
+	mapfile -t profiles < <(cluster_profile_list "$uid" |
+		python3 -c '
+import json, sys
+for profile in json.load(sys.stdin).get("items") or []:
+    meta = profile["metadata"]
+    print(meta["uid"], meta["name"])
+' || true)
+
 	# Palette refuses to delete a project while a registration token names it
 	# as its default project. Find that token now, so the question can name
 	# everything that this recipe deletes.
@@ -69,6 +92,13 @@ else
 				"${token_label:-$token_uid}"
 			printf 'keeps the project while a token names it.\n'
 		fi
+		if [ "${#profiles[@]}" -gt 0 ]; then
+			printf 'It also deletes %s cluster profile(s), for the same reason:\n' \
+				"${#profiles[@]}"
+			for row in "${profiles[@]}"; do
+				printf '  %s\n' "${row#* }"
+			done
+		fi
 		printf 'This action is not reversible.\n'
 		printf 'Type the project name to continue: '
 		read -r answer
@@ -80,6 +110,20 @@ else
 		api DELETE "v1/edgehosts/tokens/$token_uid" >/dev/null
 		info "deleted the registration token ${token_label:-$token_uid}"
 	fi
+
+	# Then the cluster profiles, for the same reason.
+	#
+	# The header is not optional. A profile of a project is invisible without
+	# it, and Palette reports that absence as a permission of the API key:
+	#
+	#   Operation 'clusterProfile.delete' is forbidden. Verify the user has
+	#   'clusterProfile.delete' permission
+	#
+	# The key does hold that permission. The request simply named no project.
+	for row in "${profiles[@]}"; do
+		api DELETE "v1/clusterprofiles/${row%% *}" -H "ProjectUid: $uid" >/dev/null
+		info "deleted the cluster profile ${row#* }"
+	done
 
 	api DELETE "v1/projects/$uid" >/dev/null
 	info "deleted the project $name from the tenant"

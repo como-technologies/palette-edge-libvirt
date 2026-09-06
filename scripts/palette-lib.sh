@@ -196,6 +196,21 @@ edge_host_list() {
 }
 # ANCHOR_END: edgehostlist
 
+# ANCHOR: profilelist
+# cluster_profile_list UID: print the JSON body that holds every cluster profile
+# of one project. The uid goes in the ProjectUid header, and that header is what
+# scopes the answer: with no header this path returns nothing at all, and with
+# the header it returns the profiles of that one project. So a reader of this
+# list can never see, or delete, a profile of another project.
+#
+# This one is still a GET. `v1/projects` and `v1/edgehosts` are not, so keep the
+# call in this one function: when Palette moves this list too, the correction is
+# one line here.
+cluster_profile_list() {
+	api GET "v1/clusterprofiles?limit=50" -H "ProjectUid: $1"
+}
+# ANCHOR_END: profilelist
+
 # ANCHOR: clustercount
 # cluster_count UID: print the number of clusters that a project still holds.
 #

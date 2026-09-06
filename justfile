@@ -380,6 +380,10 @@ palette-tokens:
 palette-clusters:
     @scripts/palette-api.sh clusters
 
+# List the cluster profiles of your Palette project, whatever made them
+palette-profiles:
+    @scripts/palette-api.sh profiles
+
 # List the versions of one pack, or print the values of one version
 palette-packs pack version="":
     @scripts/palette-api.sh packs "{{ pack }}" "{{ version }}"
