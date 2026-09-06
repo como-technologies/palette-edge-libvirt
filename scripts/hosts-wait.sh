@@ -47,7 +47,7 @@ for i in $(seq 1 "${WORKER_COUNT:-2}"); do want+=("${CLUSTER}-wk-$i"); done
 # record is what the cluster layer reads, and this script waits for the record.
 # So a name passes if it has a domain OR it already holds a record.
 if command -v virsh >/dev/null 2>&1; then
-	body="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid")"
+	body="$(edge_host_list "$uid")"
 	registered="$(printf '%s' "$body" |
 		python3 -c '
 import json, sys
@@ -79,7 +79,7 @@ start="$(date +%s)"
 while :; do
 	# Read the name and the state of each registered host one time for each
 	# turn of the loop.
-	body="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid")"
+	body="$(edge_host_list "$uid")"
 	states="$(printf '%s' "$body" |
 		python3 -c '
 import json, sys

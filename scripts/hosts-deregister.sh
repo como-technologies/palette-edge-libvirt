@@ -41,7 +41,7 @@ uid="$(project_uid "$PALETTE_PROJECT")"
      To see the names: just palette-projects"
 
 # Tag each host, so the script can name the ones that it does not touch.
-mapfile -t rows < <(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid" |
+mapfile -t rows < <(edge_host_list "$uid" |
 	CLUSTER="$CLUSTER" python3 -c '
 import json, os, sys
 prefix = os.environ["CLUSTER"] + "-"

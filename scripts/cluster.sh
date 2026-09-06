@@ -247,7 +247,7 @@ require_ready_hosts() {
 	[ -n "$uid" ] || die "project $PALETTE_PROJECT does not exist in this tenant.
      To see the names: just palette-projects"
 
-	body="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid")"
+	body="$(edge_host_list "$uid")"
 	states="$(printf '%s' "$body" | python3 -c '
 import json, sys
 for host in json.load(sys.stdin).get("items") or []:

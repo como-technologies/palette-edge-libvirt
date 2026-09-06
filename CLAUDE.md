@@ -255,6 +255,42 @@ denied` on the next run. `protect_state` in `cluster.sh` uses `-maxdepth 1`.
 **`just` has no `state_directory()`.** The justfile builds the XDG state path by
 hand: `env_var_or_default("XDG_STATE_HOME", home_directory() / ".local/state")`.
 
+**A Palette LIST can become a POST without notice, and the create keeps
+working.** In 2026-09 the tenant stopped answering a GET on two paths that this
+repository reads every run:
+
+```
+{"code":405,"message":"method GET is not allowed, but [POST] are"}
+```
+
+| Was | Is now |
+| --- | --- |
+| `GET v1/projects?limit=100` | `POST v1/dashboard/projects` |
+| `GET v1/edgehosts?limit=100` | `POST v1/dashboard/edgehosts/search` |
+
+Both take `{"filter":{},"sort":[]}` and answer with the same `items` and the
+same fields, so only the call changed. `POST v1/projects`, `DELETE
+v1/projects/{uid}`, `v1/spectroclusters`, `v1/packs`, and `v1/edgehosts/tokens`
+were not touched.
+
+**The half that still worked is what made this expensive.** `new-project`
+created the project and then could not read it back
+(`the project was created but does not appear in the list`), and `nuke` read an
+absent project and left it in the tenant — so a nightly CI run orphaned a
+project each time and reported that the tenant was empty. `hosts-wait` would
+have waited the whole `REGISTER_TIMEOUT` for hosts that had already registered.
+
+`project_list` and `edge_host_list` in `palette-lib.sh` now hold those two calls
+one time each; there were four and seven call sites. **`v1/dashboard/edgehosts/search`
+refuses a limit over 50** (`code 608`), and `v1/dashboard/projects` accepts 100
+and caps the answer at 50 with no message. When a reader stops working, test the
+method before anything else:
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' -X GET \
+  -H "ApiKey: $key" "https://console.spectrocloud.com/v1/edgehosts?limit=50"
+```
+
 **Packs API filter syntax has no spaces around AND.**
 `filters=spec.name=edge-k8sANDspec.cloudTypes=edge-native`, URL-encoded.
 `spec.cloudTypes` matches inside the array; `spec.cloudType` (singular) silently

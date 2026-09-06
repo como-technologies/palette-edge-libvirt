@@ -261,6 +261,43 @@ project. Palette lists the tokens at **Tenant Settings** >
 **Registration Tokens**. Change the default project of that token, or delete
 it. Then run the recipe again.
 
+## A recipe reports "method GET is not allowed"
+
+```text
+  Palette says: method GET is not allowed, but [POST] are
+  Palette code: 405
+error: GET v1/projects?limit=100 returned HTTP 405
+```
+
+Palette moved that list from a GET to a POST. It did this to `v1/projects` and
+to `v1/edgehosts` in September 2026, so the recipes read `POST
+v1/dashboard/projects` and `POST v1/dashboard/edgehosts/search` now. If you see
+the message, your checkout is older than the change:
+
+```bash
+git pull
+```
+
+**Read the tenant before you believe a report of an empty tenant.** A list that
+answers 405 makes a recipe see nothing, and a recipe that sees nothing reports
+that there is nothing to remove. `just nuke` said "nothing of project X is left"
+while the project was still there. After an upgrade, look:
+
+```bash
+just palette-projects   # every project of the tenant
+just palette-hosts      # the hosts of PALETTE_PROJECT
+```
+
+Remove any project that a failed run left behind:
+
+```bash
+just remove-project <name>
+```
+
+If a different path starts to answer 405, one function in
+`scripts/palette-lib.sh` holds each list — `project_list` and `edge_host_list` —
+and the create, the update, and the delete are not affected.
+
 ## A host registers into no project
 
 The registration token has no default project. `just palette-hosts` shows

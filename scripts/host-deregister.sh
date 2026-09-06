@@ -37,7 +37,7 @@ uid="$(project_uid "$PALETTE_PROJECT")"
 
 # Read the record by name. The uid of an edge host is its name today, and this
 # lookup does not depend on that.
-body="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid")"
+body="$(edge_host_list "$uid")"
 host_uid="$(printf '%s' "$body" |
 	NAME="$name" python3 -c '
 import json, os, sys
