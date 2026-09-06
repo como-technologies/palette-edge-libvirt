@@ -29,5 +29,14 @@ jobs:
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
+      # `just lint` tests the OpenTofu module, and it skips that test when the
+      # command is absent. A skipped test reports success, so the module goes
+      # untested here unless this step puts OpenTofu on the runner. The recipe
+      # needs no root: it puts the one binary in ~/.local/bin.
+      - name: Install OpenTofu
+        run: |
+          just tofu-install
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+
       - name: Lint
         run: just lint
