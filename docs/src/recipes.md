@@ -109,7 +109,7 @@ workstation **and** in Palette, and each layer removes everything that it made.
 | Layer | On the workstation | In Palette |
 | --- | --- | --- |
 | Infrastructure | network, storage pool, disks, virtual machines | the host record of each machine |
-| Cluster | the OpenTofu state | the cluster profile and the cluster |
+| Cluster | the OpenTofu state | the two cluster profiles and the cluster |
 
 ### The infrastructure layer
 
@@ -144,15 +144,21 @@ gone and that cluster is then impossible to repair.
 ```
 
 OpenTofu builds this layer, and `scripts/cluster.sh` is the one caller. The
-recipes make two objects in Palette: the cluster profile `<CLUSTER_NAME>-infra`,
-and the cluster `<CLUSTER_NAME>` on the hosts that the layer below registered.
+recipes make three objects in Palette: the infrastructure cluster profile
+`<CLUSTER_NAME>-infra`, the add-on cluster profile `<CLUSTER_NAME>-addon`, and
+the cluster `<CLUSTER_NAME>` on the hosts that the layer below registered.
 
-The state file names both objects, and it lives in
+The state file names all three, and it lives in
 `~/.local/state/palette-edge-libvirt/<project>/`. It is never in the checkout:
 lose it and Palette holds a cluster that no recipe can remove.
 
-`cluster-down` removes both objects. The hosts and the machines stay, so
+`cluster-down` removes all three. The hosts and the machines stay, so
 `cluster-up` builds them again. See [Create the cluster](./cluster.md).
+
+`just dashboard` opens the Headlamp web interface that the add-on profile
+installs. It forwards a local port through the API server, so the cluster needs
+no ingress controller and the page asks for no sign-in. See
+[The add-on profile](./cluster-profile.md#the-add-on-profile).
 
 ### Test the cluster
 

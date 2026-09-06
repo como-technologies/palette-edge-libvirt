@@ -18,10 +18,15 @@
 # The state also holds the administrator kubeconfig of the cluster, so the
 # directory is mode 0700 and each file in it is mode 0600.
 #
+# A setting that this file does not export as TF_VAR_ is dead: the recipe passes
+# it, the script ignores it, and the module quietly uses the default of the
+# variable. Add the export below with the variable, not after it.
+#
 # Env: CLUSTER CONTROL_COUNT WORKER_COUNT CLUSTER_SUBNET CLUSTER_VIP POD_CIDR
-#      OS_PACK_VERSION K8S_VERSION CNI_VERSION CSI_VERSION
+#      OS_PACK_VERSION K8S_VERSION CNI_VERSION CSI_VERSION DASHBOARD_VERSION
 #      PALETTE_PROJECT PALETTE_ENDPOINT PALETTE_VIP_SKIP
 #
+#   cluster.sh validate
 #   cluster.sh plan
 #   cluster.sh apply
 #   cluster.sh destroy
@@ -32,18 +37,33 @@ set -euo pipefail
 # shellcheck source=scripts/palette-lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/palette-lib.sh"
 
-action="${1:?give an action: plan, apply, destroy, output, or kubeconfig}"
+action="${1:?give an action: validate, plan, apply, destroy, output, or kubeconfig}"
 : "${CLUSTER:?}"
 
 need curl
 need python3
 
-# Resolve the API key before any pipeline runs. die() inside a pipeline stops
-# only the subshell, and the caller then fails on empty input.
-need_api_key
-need_project
+# `validate` reads the module and nothing else. It reaches no tenant, so it
+# needs no API key, no project, and no state, and `just lint` can run it in a
+# checkout that has none of them. Every other action needs all three.
+validate_only=false
+[ "$action" = validate ] && validate_only=true
 
-state="$(project_state_dir)"
+if ! $validate_only; then
+	# Resolve the API key before any pipeline runs. die() inside a pipeline stops
+	# only the subshell, and the caller then fails on empty input.
+	need_api_key
+	need_project
+fi
+
+# TF_DATA_DIR goes below the state directory, and `validate` has no project to
+# take one from. A temporary directory keeps the provider out of the checkout,
+# which is the whole reason the real runs set TF_DATA_DIR at all.
+if $validate_only; then
+	state="$(mktemp -d)"
+else
+	state="$(project_state_dir)"
+fi
 
 # A project that never made a cluster layer has no state file. `just nuke`
 # reaches `cluster-down` on such a project, and that must not need OpenTofu at
@@ -102,13 +122,19 @@ SPECTROCLOUD_HOST="$(palette_endpoint)"
 TF_VAR_control_plane_hosts="$(json_list "${control[@]}")"
 TF_VAR_worker_hosts="$(json_list "${worker[@]}")"
 
-export SPECTROCLOUD_APIKEY="$PALETTE_API_KEY"
+# `validate` resolved neither of these, and it needs neither. Under `set -u` an
+# unguarded reference to an unset name ends the script with a bash message
+# instead of one of ours.
+export SPECTROCLOUD_APIKEY="${PALETTE_API_KEY:-}"
 export SPECTROCLOUD_HOST
 
 export TF_DATA_DIR="$state/tofu"
 export TF_IN_AUTOMATION=1
 
-export TF_VAR_palette_project="$PALETTE_PROJECT"
+# `validate` evaluates the variable validation rules, and one of them refuses an
+# empty project name. need_project gives this value for every other action, so
+# the fallback here belongs to `validate` alone and reaches no tenant.
+export TF_VAR_palette_project="${PALETTE_PROJECT:-validate}"
 export TF_VAR_cluster_name="$CLUSTER"
 export TF_VAR_control_plane_hosts
 export TF_VAR_worker_hosts
@@ -118,6 +144,7 @@ export TF_VAR_vip="${CLUSTER_VIP:-}"
 [ -z "${K8S_VERSION:-}" ] || export TF_VAR_k8s_version="$K8S_VERSION"
 [ -z "${CNI_VERSION:-}" ] || export TF_VAR_cni_version="$CNI_VERSION"
 [ -z "${CSI_VERSION:-}" ] || export TF_VAR_csi_version="$CSI_VERSION"
+[ -z "${DASHBOARD_VERSION:-}" ] || export TF_VAR_dashboard_version="$DASHBOARD_VERSION"
 
 # --- the checks that only a build needs -------------------------------------
 #
@@ -185,6 +212,11 @@ sys.exit(0 if (data.get("resources") or []) else 1)
 # Only the files of the directory itself. TF_DATA_DIR is below it and holds the
 # provider, and a provider that OpenTofu cannot execute stops every run.
 protect_state() {
+	# `validate` made this directory itself and it holds nothing to keep.
+	if $validate_only; then
+		rm -rf "$state"
+		return
+	fi
 	find "$state" -maxdepth 1 -type f -exec chmod 600 {} + 2>/dev/null || true
 }
 trap protect_state EXIT
@@ -274,6 +306,9 @@ tofu -chdir="$module" init -input=false -reconfigure \
 	die "tofu init failed in $(short_path "$module")"
 
 case "$action" in
+validate)
+	tofu -chdir="$module" validate
+	;;
 plan)
 	require_cluster_name "$CLUSTER"
 	require_vip
@@ -313,6 +348,6 @@ kubeconfig)
 	tofu -chdir="$module" output -raw kubeconfig
 	;;
 *)
-	die "unknown action '$action'. Use plan, apply, destroy, output, or kubeconfig."
+	die "unknown action '$action'. Use validate, plan, apply, destroy, output, or kubeconfig."
 	;;
 esac

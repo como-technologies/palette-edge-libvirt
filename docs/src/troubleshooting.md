@@ -357,6 +357,56 @@ just cluster-down
 just cluster-up
 ```
 
+## Headlamp asks for a token and says "error authenticating"
+
+`just dashboard` opens Headlamp with no sign-in at all. A sign-in page means
+the cluster runs the pack with its own default values, and that sign-in cannot
+complete over a port forward whatever token you paste.
+
+The pack stores the token in a cookie and scopes that cookie to the console
+path of the tenant application:
+
+```text
+Set-Cookie: headlamp-auth-main.0=...;
+  Path=/v1/tenantApps/<foreqID>/clusters/main; HttpOnly; Secure
+```
+
+A port forward serves the same pod at `/`. The path does not match, so the
+browser never sends the cookie back, every request after the sign-in carries no
+credential, and Headlamp answers 403. The token is correct and the service
+account is correct.
+
+The add-on profile therefore replaces one line of the pack values, and
+`unsafeUseServiceAccountToken` removes the sign-in. Build the add-on profile
+again:
+
+```bash
+just cluster-plan       # the change to the add-on profile
+just cluster-up
+```
+
+See [The add-on profile](./cluster-profile.md#the-add-on-profile) for what that
+value costs.
+
+## `just dashboard` says the port is busy
+
+```text
+error: something already answers on port 8443 of this workstation.
+```
+
+An earlier `just dashboard` left its port forward running. The recipe tests the
+port before it makes a token, so nothing is wasted. End the old one:
+
+```bash
+pgrep -af 'kubectl port-forward'
+```
+
+Or use another port for this run:
+
+```bash
+DASHBOARD_PORT=9443 just dashboard
+```
+
 ## `just cluster-up` reports that OpenTofu is absent
 
 ```text

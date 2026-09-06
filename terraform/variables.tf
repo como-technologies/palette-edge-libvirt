@@ -85,6 +85,19 @@ variable "csi_version" {
 }
 # ANCHOR_END: packversions
 
+# ANCHOR: dashboardversion
+variable "dashboard_version" {
+  description = "Version of the headlamp pack, the one add-on of the add-on profile. This pack is a workload, so a change here restarts no node."
+  type        = string
+  default     = "0.44.0"
+
+  validation {
+    condition     = length(var.dashboard_version) > 0
+    error_message = "dashboard_version is empty. Set DASHBOARD_VERSION in the project environment file, or see the versions: just palette-packs headlamp"
+  }
+}
+# ANCHOR_END: dashboardversion
+
 variable "console_url" {
   description = "Base URL of the Palette console, for the link that `just cluster-show` prints"
   type        = string
