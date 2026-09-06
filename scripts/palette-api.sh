@@ -30,7 +30,7 @@ need_api_key
 # require_project_uid: print the uid of PALETTE_PROJECT, or stop with a clear
 # message that names the projects that do exist.
 require_project_uid() {
-	body="$(api GET "v1/projects?limit=100")"
+	body="$(project_list)"
 	printf '%s' "$body" | PROJECT="$project" python3 -c '
 import json, os, sys
 want = os.environ["PROJECT"]
@@ -52,7 +52,7 @@ sys.exit(
 case "$action" in
 projects)
 	info "projects in this tenant"
-	body="$(api GET "v1/projects?limit=100")"
+	body="$(project_list)"
 	printf '%s' "$body" | PROJECT="$project" python3 -c '
 import json, os, sys
 want = os.environ["PROJECT"]
@@ -75,7 +75,7 @@ hosts)
 	need_project
 	uid="$(require_project_uid)"
 	info "registered hosts in project $project"
-	body="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid")"
+	body="$(edge_host_list "$uid")"
 	printf '%s' "$body" | python3 -c '
 import json, sys
 items = json.load(sys.stdin).get("items") or []

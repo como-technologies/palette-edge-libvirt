@@ -37,7 +37,7 @@ if [ -z "$uid" ]; then
 else
 	# Count what the project holds. A delete with content leaves orphans in
 	# Palette, and those are slow to find later.
-	body="$(api GET "v1/edgehosts?limit=100" -H "ProjectUid: $uid")"
+	body="$(edge_host_list "$uid")"
 	hosts="$(printf '%s' "$body" |
 		python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("items") or []))')"
 	# The live clusters only. Palette keeps the record of a deleted one, and

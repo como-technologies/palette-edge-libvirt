@@ -170,6 +170,32 @@ print(json.dumps({
 		python3 -c 'import json,sys; print(json.load(sys.stdin).get("uid",""))'
 }
 
+# ANCHOR: edgehostlist
+# edge_host_list UID: print the JSON body that holds every edge host of one
+# project. The uid goes in the ProjectUid header, which is what scopes the list.
+#
+# The list is a POST, and the path carries `search`. Palette answers a GET on
+# `v1/edgehosts` with HTTP 405, in the same way and at the same time as it
+# stopped answering a GET on `v1/projects`. That one broke `infra-up`: the
+# machines came up, the agent registered every host, and `hosts-wait` could not
+# read the records it was waiting for.
+#
+# `?limit=50` is not a preference. Over 50 this endpoint refuses the request:
+#
+#   {"code":608,"message":"limit in query should be less than or equal to 50"}
+#
+# A lab holds one control plane and a few workers, so 50 is far more than a
+# project of this repository ever holds.
+#
+# The answer holds `items`, and each item carries `metadata.name`,
+# `status.state`, and `status.health.state`, exactly as the old list did.
+edge_host_list() {
+	api POST "v1/dashboard/edgehosts/search?limit=50" \
+		-H "ProjectUid: $1" \
+		-H "Content-Type: application/json" -d '{"filter":{},"sort":[]}'
+}
+# ANCHOR_END: edgehostlist
+
 # ANCHOR: clustercount
 # cluster_count UID: print the number of clusters that a project still holds.
 #
@@ -190,12 +216,38 @@ print(len([c for c in items
 }
 # ANCHOR_END: clustercount
 
+# ANCHOR: projectlist
+# project_list: print the JSON body that holds every project of the tenant.
+#
+# The list is a POST, and it is not `v1/projects`. Palette answers a GET on
+# that path with HTTP 405 and names the method it wants:
+#
+#   {"code":405,"message":"method GET is not allowed, but [POST] are"}
+#
+# It was a GET until 2026-09, and the change broke every recipe that reads a
+# project: `new-project` created the project and then reported "the project was
+# created but does not appear in the list", and `remove-project` and `nuke` read
+# an absent project and left it in the tenant. `POST v1/projects` still CREATES
+# a project, so the create half went on working while the read half did not.
+#
+# One function holds the endpoint, and four readers call it. Four copies is how
+# the repository came to fix this in four places.
+#
+# The body takes a filter and a sort, and both may be empty. The answer holds
+# `items`, and each item carries `metadata.name` and `metadata.uid`, exactly as
+# the old list did.
+project_list() {
+	api POST "v1/dashboard/projects?limit=100" \
+		-H "Content-Type: application/json" -d '{"filter":{},"sort":[]}'
+}
+# ANCHOR_END: projectlist
+
 # project_uid NAME
 # Prints the uid of the named project, or nothing if the project is absent.
 project_uid() {
 	local want="$1"
 	local body
-	body="$(api GET "v1/projects?limit=100")" || return 1
+	body="$(project_list)" || return 1
 	printf '%s' "$body" | WANT="$want" python3 -c '
 import json, os, sys
 want = os.environ["WANT"]
@@ -210,7 +262,7 @@ for p in json.load(sys.stdin).get("items") or []:
 # Prints every project name in the tenant, one for each line.
 project_names() {
 	local body
-	body="$(api GET "v1/projects?limit=100")" || return 1
+	body="$(project_list)" || return 1
 	printf '%s' "$body" | python3 -c '
 import json, sys
 for p in json.load(sys.stdin).get("items") or []:
