@@ -32,6 +32,91 @@ just palette-packs edge-k8s
 just palette-packs cni-calico
 ```
 
+## The add-on profile
+
+A cluster carries one infrastructure profile and any number of add-on profiles.
+The difference is what a change costs:
+
+| Profile | Holds | A change |
+| --- | --- | --- |
+| `<CLUSTER_NAME>-infra` | os, k8s, cni, csi | rebuilds nodes |
+| `<CLUSTER_NAME>-addon` | workloads | is a Helm release on a live cluster |
+
+The add-on profile of this repository holds one pack, **Headlamp**. It is the
+Kubernetes web interface of the CNCF, and Palette ships it with a theme plugin
+of its own.
+
+An add-on pack takes a different lookup from an infrastructure pack, because it
+belongs to no cloud. `headlamp` carries the cloud type `all`, so a
+`cloud = ["edge-native"]` lookup finds nothing and the message names the pack
+and not the reason:
+
+```hcl
+{{#include ../../terraform/addon-profile.tf:dashboardpack}}
+```
+
+The pack takes its default values, and `terraform/cluster.tf` gives the cluster
+a second `cluster_profile` block for it:
+
+```hcl
+{{#include ../../terraform/addon-profile.tf:addonprofile}}
+```
+
+The values install a **ClusterIP** service on port 443, so nothing outside the
+cluster reaches it. `just dashboard` carries the connection through the API
+server, and the page opens with no sign-in:
+
+```bash
+just dashboard          # https://localhost:8443, ctrl-c to close
+```
+
+That path needs no ingress controller and no load balancer address.
+
+### Why the sign-in is off
+
+The pack is built to be served **behind the Palette console**. Its sign-in
+stores the token in a cookie and scopes that cookie to the console path of the
+tenant application, so a port forward, which serves the same pod at `/`, never
+gets the cookie back. Every request after the sign-in then carries no
+credential and Headlamp answers 403, while the page says only "error
+authenticating". A correct token cannot fix that.
+
+One line of the pack values removes the sign-in, in the same way and for the
+same reason as the pod range above:
+
+```hcl
+{{#include ../../terraform/addon-profile.tf:dashboardvalues}}
+```
+
+`unsafeUseServiceAccountToken` is Palette's name and the warning is real:
+whoever reaches the service gets `cluster-admin`. It is sound **here** because
+the service is a ClusterIP that nothing outside the cluster can reach, and the
+one way in is `just dashboard`, which needs the administrator kubeconfig before
+it can forward the port. The port forward is the gate. Give the service an
+ingress or a load balancer address and this value becomes wrong.
+
+To see the versions of the pack, and the values of one of them:
+
+```bash
+just palette-packs headlamp
+just palette-packs headlamp 0.44.0
+```
+
+### Read the pack state before you pin a pack
+
+`just palette-packs` prints a state in the last column, and `disabled` is a
+refusal and not a warning. Every version of `spectro-k8s-dashboard`, from 2.7.0
+to 7.14.0, reads `disabled` in Public Repo, and so does every version of
+`k8s-dashboard`. Such a pack resolves, and the plan is clean, and Palette then
+refuses the profile:
+
+```text
+ClusterProfileInvalidPackState: Cluster Profile operation not supported
+as pack spectro-k8s-dashboard:2.7.1 is disabled
+```
+
+That is why this profile holds Headlamp.
+
 ## Why the OS layer is different
 
 The BYOOS pack has two presets. The default is **Appliance Mode**, and that mode
@@ -162,6 +247,7 @@ terraform/versions.tf          the pins, and the local backend
 terraform/providers.tf         the provider, and the project test
 terraform/variables.tf         every value, from TF_VAR_ in cluster.sh
 terraform/cluster-profile.tf   the registry, the four packs, the profile
+terraform/addon-profile.tf     the dashboard pack, and the add-on profile
 terraform/cluster.tf           the appliances, and the cluster
 terraform/outputs.tf           the ids, the console link, the kubeconfig
 terraform/values/              the vendored pack values

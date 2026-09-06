@@ -54,7 +54,7 @@ emit() {
 # _PEL_KINDS_FREE names the parameters that hold free text. They get no
 # completion on purpose.
 _PEL_KINDS="host project role action"
-_PEL_KINDS_FREE="description pack"
+_PEL_KINDS_FREE="description pack version"
 # ANCHOR_END: kinds
 
 # _pel_cluster: the CLUSTER_NAME of the current checkout.

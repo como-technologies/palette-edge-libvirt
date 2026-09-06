@@ -40,8 +40,36 @@ resource "spectrocloud_cluster_edge_native" "this" {
     vip = var.vip
   }
 
+  # The infrastructure profile builds the nodes. It comes first, and a cluster
+  # has exactly one.
   cluster_profile {
     id = spectrocloud_cluster_profile.infra.id
+  }
+
+  # The add-on profile runs on the nodes that the profile above built. Palette
+  # installs it after the cluster answers, so it costs no node restart. See
+  # terraform/addon-profile.tf.
+  #
+  # The `pack` block repeats what the profile holds, and it has to.
+  #
+  # PALETTE GIVES A CLUSTER ITS OWN COPY OF A PROFILE, taken when the profile is
+  # attached. An edit to the profile after that changes the profile and nothing
+  # else: the console shows the new value, the cluster keeps the old one, and no
+  # pod restarts. Only the cluster carries the values that run.
+  #
+  # With `id` alone this resource has nothing to compare, so OpenTofu reports no
+  # change to make and the two copies drift apart for ever. The values here are
+  # the same `local.dashboard_values`, so a change to them is a change to this
+  # resource, and the provider writes it to the cluster.
+  cluster_profile {
+    id = spectrocloud_cluster_profile.addon.id
+
+    pack {
+      name   = data.spectrocloud_pack.dashboard.name
+      tag    = var.dashboard_version
+      uid    = data.spectrocloud_pack.dashboard.id
+      values = local.dashboard_values
+    }
   }
 
   # How a service of the cluster reaches the outside. LoadBalancer is the choice

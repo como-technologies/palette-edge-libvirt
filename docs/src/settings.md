@@ -103,6 +103,17 @@ address of the subnet that it allocated, and that address is below the DHCP
 pool, so no host can take it. See
 [The cluster network](./network.md#address-plan).
 
+## The add-on layer
+
+```bash
+{{#include ../../templates/project.env:addonlayer}}
+```
+
+The four packs above build the cluster. This pack runs on it. Palette keeps the
+two apart in two cluster profiles, so a change here is a Helm release on a live
+cluster and restarts no node. See
+[The add-on profile](./cluster-profile.md#the-add-on-profile).
+
 ## The network
 
 ```bash

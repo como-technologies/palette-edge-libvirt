@@ -108,12 +108,22 @@ for token in items:
 '
 	;;
 clusters)
+	# Everything that Palette knows about the clusters of this project: the
+	# uid, the API endpoint, each cluster profile, and the console page.
+	#
+	# This recipe reads Palette and nothing else, so it answers for a cluster
+	# that this checkout did not build. `just cluster-show` reads the
+	# OpenTofu state instead, so it knows only the cluster of this project on
+	# this workstation, and it says nothing after the state is gone.
 	need_project
 	uid="$(require_project_uid)"
 	info "clusters in project $project"
 	body="$(api GET "v1/spectroclusters?limit=100" -H "ProjectUid: $uid")"
-	printf '%s' "$body" | python3 -c '
-import json, sys
+	printf '%s' "$body" | PROJECT_UID="$uid" python3 -c '
+import json, os, sys
+
+project_uid = os.environ["PROJECT_UID"]
+
 # Palette keeps the record of a cluster that it deleted. That record is not a
 # cluster, so it does not belong in this list.
 items = [c for c in (json.load(sys.stdin).get("items") or [])
@@ -121,12 +131,47 @@ items = [c for c in (json.load(sys.stdin).get("items") or [])
 if not items:
     print("  none. To make one: just cluster-up")
     sys.exit(0)
+
 for c in items:
+    meta = c.get("metadata") or {}
     status = c.get("status") or {}
-    print("  {:<20} {:<14} health={}".format(
-        c["metadata"]["name"],
-        status.get("state", "-"),
-        (status.get("health") or {}).get("state", "-"),
+    annotations = meta.get("annotations") or {}
+
+    # Not status.health. That field is null on every cluster of this API, so
+    # a health column reported "-" for a cluster that was in good order. The
+    # conditions carry the state that Palette really holds.
+    #
+    # No backtick in this block. shellcheck reads one inside a single-quoted
+    # string as a command substitution and reports SC2016.
+    conditions = status.get("conditions") or []
+    true_count = len([x for x in conditions if x.get("status") == "True"])
+
+    print("  {:<20} {:<14} {} of {} condition(s) true".format(
+        meta.get("name", "-"), status.get("state", "-"),
+        true_count, len(conditions),
+    ))
+    print("    {:<10} {}".format("uid", meta.get("uid", "-")))
+
+    # The address of the API server. For this lab it is the virtual address
+    # that kube-vip claims, which is CLUSTER_VIP.
+    for endpoint in status.get("apiEndpoints") or []:
+        print("    {:<10} https://{}:{}".format(
+            "api", endpoint.get("host", "-"), endpoint.get("port", "-"),
+        ))
+
+    # One line for each cluster profile. The type "cluster" is the
+    # infrastructure profile, and "add-on" is an add-on profile.
+    for profile in (c.get("spec") or {}).get("clusterProfileTemplates") or []:
+        print("    {:<10} {:<22} {:<10} {}".format(
+            "profile", profile.get("name", "-"),
+            profile.get("type", "-"), profile.get("uid", "-"),
+        ))
+
+    # A dedicated instance uses a console of its own, and Palette gives its
+    # name here. Fall back to the SaaS console.
+    root = annotations.get("rootDomain") or "console.spectrocloud.com"
+    print("    {:<10} https://{}/projects/{}/clusters/{}/overview".format(
+        "console", root, project_uid, meta.get("uid", "-"),
     ))
 '
 	;;
@@ -134,10 +179,41 @@ packs)
 	# The versions of one pack in the public registry. This answers the
 	# question that a re-pin asks: which versions does Palette offer now?
 	# The cluster layer pins each version in the justfile.
+	#
+	# The filter names the pack only. An earlier version added
+	# ANDspec.cloudTypes=edge-native, and that hid every add-on pack: an
+	# add-on such as spectro-k8s-dashboard carries the cloud type "all", so
+	# the recipe answered "the registry holds no pack of that name" for a
+	# pack that the registry does hold. The cloud type is a column now, and
+	# a wrong-cloud pack shows as the wrong word instead of as an absence.
+	#
+	# With a version, the recipe prints the default values of that one
+	# version instead of the list. The repository vendors pack values
+	# (terraform/values/) and it replaces one line of others, and both of
+	# those need the default values of the pinned version in front of you.
 	name="${2:?give a pack name, for example edge-k8s}"
-	info "versions of the Edge Native pack $name in the public registry"
+	version="${3:-}"
 	body="$(api GET "v1/packs?limit=100" \
-		--data-urlencode "filters=spec.name=${name}ANDspec.cloudTypes=edge-native" -G)"
+		--data-urlencode "filters=spec.name=${name}" -G)"
+
+	if [ -n "$version" ]; then
+		info "default values of $name $version"
+		printf '%s' "$body" | PACK="$name" VERSION="$version" python3 -c '
+import json, os, sys
+name, want = os.environ["PACK"], os.environ["VERSION"]
+for pack in json.load(sys.stdin).get("items") or []:
+    if pack["spec"]["version"] == want:
+        sys.stdout.write(pack["spec"].get("values") or "")
+        sys.exit(0)
+sys.exit(
+    "error: the public registry holds no " + name + " " + want + ".\n"
+    "       To see the versions it does hold:  just palette-packs " + name
+)
+'
+		exit 0
+	fi
+
+	info "versions of the pack $name in the public registry"
 	printf '%s' "$body" | python3 -c '
 import json, re, sys
 
@@ -149,11 +225,17 @@ seen = {}
 for pack in json.load(sys.stdin).get("items") or []:
     spec = pack["spec"]
     # Palette holds each pack in two registries. Report the version one time.
-    seen[spec["version"]] = spec.get("annotations", {}).get("system_state", "active")
+    seen[spec["version"]] = (
+        spec.get("annotations", {}).get("system_state", "active"),
+        spec.get("layer") or "-",
+        spec.get("addonType") or ",".join(spec.get("cloudTypes") or []) or "-",
+    )
 if not seen:
-    sys.exit("error: the public registry holds no Edge Native pack of that name")
+    sys.exit("error: the public registry holds no pack of that name")
+print("  {:<16} {:<12} {:<12} {}".format("version", "layer", "cloud/type", "state"))
 for version in sorted(seen, key=key):
-    print("  {:<16} {}".format(version, seen[version]))
+    state, layer, kind = seen[version]
+    print("  {:<16} {:<12} {:<12} {}".format(version, layer, kind, state))
 '
 	;;
 *)

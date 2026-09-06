@@ -72,6 +72,13 @@ os_pack_version := env_var_or_default("OS_PACK_VERSION", "2.1.0")
 k8s_version := env_var_or_default("K8S_VERSION", "1.33.13")
 cni_version := env_var_or_default("CNI_VERSION", "3.32.1")
 csi_version := env_var_or_default("CSI_VERSION", "0.0.37")
+
+# The add-on profile. It holds Headlamp, the Kubernetes web interface, which is
+# a workload and not a layer of the machine, so a change here restarts no node.
+dashboard_version := env_var_or_default("DASHBOARD_VERSION", "0.44.0")
+
+# The local port that `just dashboard` forwards to the dashboard service.
+dashboard_port := env_var_or_default("DASHBOARD_PORT", "8443")
 # `just cluster-verify` reads the cluster with kubectl. kubectl supports one
 # minor version each side of the server, so this follows the pack by default.
 kubectl_version := env_var_or_default("KUBECTL_VERSION", k8s_version)
@@ -162,6 +169,7 @@ config:
         CLUSTER_VIP="{{ cluster_vip }}" POD_CIDR="{{ pod_cidr }}" \
         OS_PACK_VERSION="{{ os_pack_version }}" K8S_VERSION="{{ k8s_version }}" \
         CNI_VERSION="{{ cni_version }}" CSI_VERSION="{{ csi_version }}" \
+        DASHBOARD_VERSION="{{ dashboard_version }}" DASHBOARD_PORT="{{ dashboard_port }}" \
         TOFU_VERSION="{{ tofu_version }}" \
         scripts/config.sh
 
@@ -368,13 +376,13 @@ palette-hosts:
 palette-tokens:
     @scripts/palette-api.sh tokens
 
-# List the clusters in your Palette project
+# List the clusters of your Palette project: uid, endpoint, profiles, console
 palette-clusters:
     @scripts/palette-api.sh clusters
 
-# List the versions of one Edge Native pack in the public registry
-palette-packs pack:
-    @scripts/palette-api.sh packs "{{ pack }}"
+# List the versions of one pack, or print the values of one version
+palette-packs pack version="":
+    @scripts/palette-api.sh packs "{{ pack }}" "{{ version }}"
 
 # --- cluster layer ----------------------------------------------------------
 # Layer 2. The cluster profile and the cluster, both in Palette. OpenTofu builds
@@ -384,11 +392,14 @@ palette-packs pack:
 # Create the cluster profile and the cluster from the registered hosts
 cluster-up: (_tofu "apply")
 
-# Remove the cluster and the cluster profile. The hosts and the machines stay.
+# Remove the cluster and both cluster profiles. The hosts and the machines stay.
 cluster-down: (_tofu "destroy")
 
 # Show the changes that cluster-up would make. Changes nothing.
 cluster-plan: (_tofu "plan")
+
+# Test the OpenTofu module. Needs no project, no API key, and no cluster.
+cluster-validate: (_tofu "validate")
 
 # ANCHOR_END: clusterup
 
@@ -400,7 +411,12 @@ cluster-verify:
         CLUSTER_VIP="{{ cluster_vip }}" TOFU_VERSION="{{ tofu_version }}" \
         CNI_VERSION="{{ cni_version }}" CSI_VERSION="{{ csi_version }}" \
         OS_PACK_VERSION="{{ os_pack_version }}" \
+        DASHBOARD_VERSION="{{ dashboard_version }}" \
         scripts/cluster-verify.sh
+
+# Open the Kubernetes Dashboard of the cluster. Press ctrl-c to close it.
+dashboard:
+    @CLUSTER="{{ cluster }}" DASHBOARD_PORT="{{ dashboard_port }}" scripts/dashboard.sh
 
 # Show the cluster profile, the cluster, and the link to the Palette console
 cluster-show: (_tofu "output")
@@ -416,6 +432,7 @@ _tofu action:
         CLUSTER_SUBNET="{{ subnet }}" POD_CIDR="{{ pod_cidr }}" \
         K8S_VERSION="{{ k8s_version }}" CNI_VERSION="{{ cni_version }}" \
         CSI_VERSION="{{ csi_version }}" OS_PACK_VERSION="{{ os_pack_version }}" \
+        DASHBOARD_VERSION="{{ dashboard_version }}" \
         CONTROL_COUNT="{{ control_count }}" WORKER_COUNT="{{ worker_count }}" \
         scripts/cluster.sh "{{ action }}"
 
@@ -573,4 +590,6 @@ lint: _docs-theme-check
     @scripts/lint-params.sh
     @scripts/lint-includes.sh
     @scripts/lint-shell.sh
+    @if command -v tofu >/dev/null 2>&1; then just cluster-validate; \
+        else echo "    OpenTofu is absent, so the module is not tested. Run: just tofu-install"; fi
     mdbook build docs

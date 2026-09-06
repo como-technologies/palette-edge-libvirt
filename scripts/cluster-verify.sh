@@ -19,7 +19,7 @@
 # private directory, and the trap removes it.
 #
 # Env: CLUSTER CONTROL_COUNT WORKER_COUNT K8S_VERSION POD_CIDR CLUSTER_VIP
-#      PALETTE_PROJECT
+#      DASHBOARD_VERSION PALETTE_PROJECT
 #
 #   cluster-verify.sh
 
@@ -204,6 +204,11 @@ print(total, ready)
 
 pods_ready "calico" "calico"
 pods_ready "coredns" "coredns"
+
+# The add-on profile. Palette installs it after the cluster answers, so a pod
+# that is absent here means the add-on profile is not finished, and not that
+# the cluster is broken.
+pods_ready "headlamp" "headlamp"
 
 # The CSI pack makes the default StorageClass. A cluster with no default class
 # leaves every PersistentVolumeClaim pending.

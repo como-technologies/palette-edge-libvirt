@@ -6,6 +6,11 @@ output "cluster_profile_id" {
   value       = spectrocloud_cluster_profile.infra.id
 }
 
+output "addon_profile_id" {
+  description = "Palette uid of the add-on cluster profile"
+  value       = spectrocloud_cluster_profile.addon.id
+}
+
 output "cluster_id" {
   description = "Palette uid of the cluster"
   value       = spectrocloud_cluster_edge_native.this.id

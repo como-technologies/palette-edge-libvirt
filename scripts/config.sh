@@ -52,6 +52,12 @@ row "OS_PACK_VERSION" "edge-native-byoi ${OS_PACK_VERSION:-?} (Agent Mode)"
 row "K8S_VERSION" "edge-k8s ${K8S_VERSION:-?} (PXK-E)"
 row "CNI_VERSION" "cni-calico ${CNI_VERSION:-?}"
 row "CSI_VERSION" "csi-local-path-provisioner ${CSI_VERSION:-?}"
+
+info "add-on layer"
+row "DASHBOARD_VERSION" "headlamp ${DASHBOARD_VERSION:-?}"
+row "DASHBOARD_PORT" "https://localhost:${DASHBOARD_PORT:-8443} (just dashboard)"
+
+info "tools"
 if command -v tofu >/dev/null 2>&1; then
 	row "OpenTofu" "$(tofu version 2>/dev/null | head -n1) (pinned ${TOFU_VERSION:-?})"
 else

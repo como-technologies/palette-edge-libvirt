@@ -20,6 +20,8 @@ just hosts-deregister     # remove the Palette record of every host
 just cluster-up           # layer 2: cluster profile + cluster, via OpenTofu
 just cluster-down         # layer 2 down: destroys both; hosts and VMs stay
 just cluster-plan         # the changes cluster-up would make, and nothing else
+just cluster-validate     # tofu validate; no project, no API key, no cluster
+just dashboard            # port-forward the k8s dashboard, ctrl-c to close
 just cluster-show         # profile id, cluster id, console URL
 just cluster-kubeconfig   # print the admin kubeconfig (stdout only)
 just tofu-install         # pinned OpenTofu into ~/.local/bin, no root
@@ -31,8 +33,8 @@ just remove-project NAME  # twin: delete project, env file, and link
 just default-project NAME # select the project that the recipes operate on
 just palette-projects     # list tenant projects, verify PALETTE_PROJECT
 just palette-hosts        # list hosts that registered
-just palette-clusters     # list clusters in the project
-just palette-packs NAME   # versions of one edge-native pack in Public Repo
+just palette-clusters     # clusters + uid, API endpoint, profiles, console URL
+just palette-packs NAME [V] # pack versions, or the values of one version
 just seed NAME            # build one CIDATA seed ISO
 just host-up NAME [role]  # role is control or worker (default worker)
 just host-status NAME     # agent install progress
@@ -189,6 +191,27 @@ string, because a `replace` that matches nothing is silent. The service range
 `192.169.0.0/16` is fine and stays. `cluster.sh:require_pod_cidr` catches the
 overlap before anything is created.
 
+**A cluster carries no `status.health`.** It is `null` on
+`v1/spectroclusters`, on `v1/spectroclusters/{uid}`, and on the dashboard
+metadata endpoint, so `palette-clusters` printed `health=-` for a cluster in
+good order and told nobody anything. `status.conditions` is the real signal:
+each one holds `status: "True"` or not, and a healthy edge cluster shows 8 of 8.
+An edge HOST does carry health, so `palette-hosts` is right to print it.
+
+**The uid of a cluster is in Palette, not only in the state.**
+`just cluster-show` reads the OpenTofu state, so it answers only for a cluster
+that this checkout built. `just palette-clusters` reads the API and prints the
+uid, `status.apiEndpoints`, every entry of `spec.clusterProfileTemplates`, and
+the console URL, so it answers for any cluster of the project. The console host
+comes from `metadata.annotations.rootDomain`, which a dedicated instance sets to
+its own name — never hard-code `console.spectrocloud.com`.
+
+**`ProjectUid` DOES scope `v1/spectroclusters`.** Verified: the header with one
+project returns that project's clusters, the header with another returns none,
+and no header returns none. A cluster of another project cannot appear. So a
+surprising name in `just palette-clusters` is a cluster that really is in the
+project, and `cluster_count()` is right to count it.
+
 **Palette keeps deleted clusters in the list.** `v1/spectroclusters` returns them
 with `status.state == "Deleted"` for ever. Counting every item made `infra-down`
 refuse permanently after a correct `cluster-down`. `cluster_count()` in
@@ -236,6 +259,105 @@ hand: `env_var_or_default("XDG_STATE_HOME", home_directory() / ".local/state")`.
 `filters=spec.name=edge-k8sANDspec.cloudTypes=edge-native`, URL-encoded.
 `spec.cloudTypes` matches inside the array; `spec.cloudType` (singular) silently
 returns 0 items. `just palette-packs NAME` wraps it.
+
+**An add-on pack belongs to no cloud, so never filter one by cloud.**
+`palette-packs` used to append `ANDspec.cloudTypes=edge-native`, and every
+add-on pack then reported as absent: `spectro-k8s-dashboard` carries the cloud
+type `all`. The filter names the pack only now, and the layer and the cloud are
+columns, so a wrong-cloud pack shows the wrong word instead of nothing at all.
+`just palette-packs NAME VERSION` prints the default values of one version —
+that is how the dashboard namespace and service name below were read, and it is
+the recipe to use before vendoring or `replace`-ing any pack values.
+
+**The add-on profile is a SECOND profile, not a fifth pack.** A cluster takes
+one infrastructure profile plus any number of add-on profiles, and
+`spectrocloud_cluster_edge_native` takes one `cluster_profile` block for each.
+Palette installs the add-on after the cluster answers, so a change there is a
+Helm release and rebuilds no node. `terraform/addon-profile.tf` holds it:
+`cloud = "all"`, `type = "add-on"`, and the pack block needs `type = "helm"` and
+`registry_uid` as well as `uid`.
+
+**An add-on pack from Public Repo is NOT `type = "helm"`.** The obvious reading
+of the provider docs — `spectrocloud_pack_simple` with `type = "helm"` for a
+Helm chart — resolves, plans clean, and then fails the apply:
+
+```
+Invalid parameter 'PackType'; caused by: PackType 'helm' is not matching
+with registry type 'pack' for pack ''
+```
+
+Public Repo is a PACK registry. A pack that carries a Helm chart inside it is
+still a pack. Use `spectrocloud_pack` with no `cloud` (an add-on pack carries
+the cloud type `all`, so a cloud filter finds nothing), and leave `type` off the
+`pack` block so it takes the default `spectro`. `pack_simple` with
+`type = "helm"` is for a Helm registry that you added yourself.
+
+**`system_state: disabled` is a refusal, not a warning.** Verified: Palette
+accepts the profile at plan time and fails the apply with
+
+```
+ClusterProfileInvalidPackState: Cluster Profile operation not supported
+as pack spectro-k8s-dashboard:2.7.1 is disabled
+```
+
+Every version of `spectro-k8s-dashboard` (2.7.0 to 7.14.0) and of
+`k8s-dashboard` (2.0.1 to 2.7.0) reads `disabled` in this tenant's Public Repo,
+while `headlamp`, `nginx`, `metrics-server`, `cert-manager`, `argo-cd`, and
+`spectro-proxy` read `active`. Spectro's Deprecated Packs page lists none of
+them. **Read the last column of `just palette-packs <name>` before pinning any
+pack.** The add-on profile holds `headlamp` for this reason.
+
+**The Headlamp sign-in cannot complete over a port forward, so the pack values
+turn it off.** The pack is built to sit behind the Palette console: the sign-in
+puts the token in a cookie, and it scopes that cookie to the console path of the
+tenant application.
+
+```
+Set-Cookie: headlamp-auth-main.0=...;
+  Path=/v1/tenantApps/<foreqID>/clusters/main; HttpOnly; Secure
+```
+
+`just dashboard` serves the same pod at `/`. The path does not match, so the
+browser keeps the cookie, every request after the sign-in carries no credential,
+and the page says only "error authenticating". A correct token does not change
+that answer: measured against the live cluster, on `POST
+/clusters/main/apis/authorization.k8s.io/v1/selfsubjectrulesreviews`, which is
+the call the Authenticate button makes, a good token, a short token, a token
+with a line break in it, and an expired token all give the same page. So
+`terraform/addon-profile.tf` replaces `unsafeUseServiceAccountToken: false` with
+`true`, and `dashboard.sh` makes no token and prints none. **Do not put a token
+back into that recipe.** There is no sign-in on this path that can work.
+
+**Headlamp needs no token for its API calls.** The pack runs it with
+`-in-cluster` and its own service account is bound to `cluster-admin`, so the
+backend proxies to the API server with its own identity: `/clusters/main/version`
+answers 200 with a bearer token and without one. The pack also wires Palette OIDC
+(`-oidc-callback-url` from the `oidc` secret, pointing at the console), which is
+the console Connect path and not the port-forward path.
+
+**A backgrounded `kubectl port-forward` outlives its shell.** `dashboard.sh`
+cannot use `exec`, because the kubeconfig sits in a temporary directory that the
+shell must stay alive to remove. A child then survives any signal the shell takes
+but the child does not, and the orphan holds the local port and answers there
+with a forward to an older cluster. Keep the pid and kill it in the EXIT trap,
+and test the port with `/dev/tcp` BEFORE the recipe prints a URL, so the failure
+names the orphan.
+
+**A ClusterIP add-on needs no ingress here.** `just dashboard` forwards a local
+port through the API server, which the workstation already reaches. That is why
+the lab needs no ingress controller and no load balancer address. Palette's own
+Connect button is a different path and needs an OIDC identity provider plus the
+`spectro-proxy` pack. The headlamp pack binds its service account to
+`cluster-admin` and the page opens with no sign-in, so the port forward is the
+only gate: a person who runs the recipe can CHANGE the cluster — say so where
+they read it.
+
+**`cluster.sh validate` must reach no tenant.** `just lint` runs it, and a lint
+that needs an API key and a default project is a lint that a new checkout
+cannot run. The `validate` action therefore skips `need_api_key` and
+`need_project`, takes a temporary `TF_DATA_DIR`, and passes a placeholder
+`TF_VAR_palette_project` — `tofu validate` DOES evaluate variable validation
+rules, and one of those refuses an empty project name.
 
 **The API key never becomes a variable.** `cluster.sh` exports
 `SPECTROCLOUD_APIKEY`/`SPECTROCLOUD_HOST`, so no key reaches the state or a plan
@@ -514,7 +636,24 @@ identical, and registration works with it.
 
 Pinned combination that is known to work: `edge-native-byoi` 2.1.0 (Agent Mode),
 `edge-k8s` 1.33.13, `cni-calico` 3.32.1, `csi-local-path-provisioner` 0.0.37,
-provider `spectrocloud` 0.29.9, OpenTofu 1.12.6.
+`headlamp` 0.44.0 (add-on), provider `spectrocloud` 0.29.9, OpenTofu 1.12.6.
+
+**The add-on layer is verified end to end** against the live tenant, on the
+`addonlab` project, 1 control + 2 workers:
+
+- `cluster-up` builds three objects: `addonlab-infra`, `addonlab-addon`, and the
+  cluster. The add-on profile takes 4s; the cluster reports `Running` after
+  **20m32s**, against a 646s baseline with no add-on. Palette installs the
+  add-on after the cluster answers, so budget for that.
+- `cluster-verify` passes every test, `headlamp 1 of 1 pod(s) Ready` included.
+- `just dashboard` answers **HTTP 200** with `<title>Headlamp</title>` at
+  `https://localhost:8443`, and the page opens with no sign-in.
+
+One observation from that run, not a fault: the kubeconfig that Palette returns
+now names `https://cluster-<uid>.proxy.console.spectrocloud.com:443`, not the
+VIP. The VIP still answers (`https://192.168.140.10:6443/healthz` gives 200), so
+both paths work, and the note above about the kubeconfig server is now only
+sometimes true.
 
 Still unverified: more than one control-plane node (`CONTROL_COUNT=3`, where
 kube-vip actually has to fail over), a pack re-pin on a running cluster, and
