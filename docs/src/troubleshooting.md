@@ -261,6 +261,26 @@ project. Palette lists the tokens at **Tenant Settings** >
 **Registration Tokens**. Change the default project of that token, or delete
 it. Then run the recipe again.
 
+A cluster profile gives the same refusal, with a different name in it:
+
+```text
+Palette says: Unable to delete the resource as cilab-infra clusterprofile(s) in-use
+Palette code: DeletionResourceInUseError
+```
+
+`cluster-down` removes the profiles that `cluster-up` made, and it finds them in
+the OpenTofu state. A run that failed between the profile and the state leaves a
+profile that no state names. `just remove-project` deletes those too, so this
+message means the profile belongs to a different project, or something else
+holds it. To see what a project holds:
+
+```bash
+just palette-profiles   # every cluster profile of PALETTE_PROJECT
+just palette-clusters   # a profile that a live cluster still uses
+```
+
+A profile that a cluster uses cannot be deleted. Remove the cluster first.
+
 ## A recipe reports "method GET is not allowed"
 
 ```text

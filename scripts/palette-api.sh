@@ -11,13 +11,14 @@
 #   palette-api.sh projects
 #   palette-api.sh hosts
 #   palette-api.sh clusters
+#   palette-api.sh profiles
 #   palette-api.sh packs edge-k8s
 
 set -euo pipefail
 # shellcheck source=scripts/palette-lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/palette-lib.sh"
 
-action="${1:?give an action: projects, hosts, tokens, clusters, or packs}"
+action="${1:?give an action: projects, hosts, tokens, clusters, profiles, or packs}"
 project="${PALETTE_PROJECT:-}"
 
 need curl
@@ -172,6 +173,44 @@ for c in items:
     root = annotations.get("rootDomain") or "console.spectrocloud.com"
     print("    {:<10} https://{}/projects/{}/clusters/{}/overview".format(
         "console", root, project_uid, meta.get("uid", "-"),
+    ))
+'
+	;;
+profiles)
+	# The cluster profiles of the project, whatever made them.
+	#
+	# `cluster-down` removes the profiles that `cluster-up` made, and it finds
+	# them in the OpenTofu state. A run that failed between the profile and the
+	# state leaves one that no state names, and a project that holds such a
+	# profile refuses to be deleted:
+	#
+	#   Unable to delete the resource as cilab-infra clusterprofile(s) in-use
+	#
+	# This recipe is how you see that. `just remove-project` deletes them.
+	need_project
+	uid="$(require_project_uid)"
+	info "cluster profiles in project $project"
+	body="$(cluster_profile_list "$uid")"
+	printf '%s' "$body" | python3 -c '
+import json, sys
+items = json.load(sys.stdin).get("items") or []
+if not items:
+    print("  none")
+    sys.exit(0)
+for profile in items:
+    meta = profile["metadata"]
+    # The type, the cloud, and the packs are on the PUBLISHED profile, not on
+    # the spec. A spec.type does not exist, and a column that reads it prints
+    # "-" for every profile. No backtick here: shellcheck reads one inside a
+    # single-quoted string as a command substitution and reports SC2016.
+    published = (profile.get("spec") or {}).get("published") or {}
+    packs = published.get("packs") or []
+    print("  {:<24} {:<10} {:<12} {:<26} {} pack(s)".format(
+        meta.get("name", "-"),
+        published.get("type", "-"),
+        published.get("cloudType", "-"),
+        meta.get("uid", "-"),
+        len(packs),
     ))
 '
 	;;
