@@ -297,6 +297,48 @@ for host in json.load(sys.stdin).get("items") or []:
        just infra-down && just infra-up"
 }
 
+# wait_cluster_gone: block until Palette really removed the cluster.
+#
+# THE CLUSTER DELETE IS ASYNCHRONOUS AND THE PROVIDER DOES NOT WAIT FOR THE END
+# OF IT. `spectrocloud_cluster_edge_native` reported "Destruction complete after
+# 41s", the profiles went next, and Palette refused both in the same second:
+#
+#   DeletionResourceInUseError
+#   Unable to delete the resource as cilab spectrocluster(s) in-use
+#
+# The cluster was in `Deleting`, and a cluster in that state still holds its
+# profiles. `nuke` then stopped with the machines running and the project half
+# removed, which is the one thing teardown may not do. It is a race, so it is
+# also intermittent: the same destroy passed by hand on a slower tenant.
+#
+# `cluster_count` counts the clusters that are not `Deleted`, which is exactly
+# the condition to wait on: it counts a cluster in `Deleting` and stops counting
+# it when Palette is done.
+wait_cluster_gone() {
+	local uid="$1" waited=0 left
+	local timeout="${CLUSTER_DELETE_TIMEOUT:-600}" interval=10
+
+	while :; do
+		left="$(cluster_count "$uid" 2>/dev/null || echo 0)"
+		[ "$left" -eq 0 ] && break
+
+		if [ "$waited" -ge "$timeout" ]; then
+			die "Palette still holds $left cluster(s) of project $PALETTE_PROJECT after ${timeout}s.
+     A cluster that is deleting holds its cluster profiles, so the rest of this
+     recipe cannot run yet.
+     To see the state:  just palette-clusters
+     Then run this recipe again:  just cluster-down
+     A slow tenant needs a longer wait:  CLUSTER_DELETE_TIMEOUT=1200 just cluster-down"
+		fi
+
+		[ "$waited" -eq 0 ] && info "wait for Palette to finish the delete of the cluster"
+		sleep "$interval"
+		waited=$((waited + interval))
+	done
+
+	[ "$waited" -eq 0 ] || info "Palette finished the delete after ${waited}s"
+}
+
 # --- run OpenTofu -----------------------------------------------------------
 
 # `init` is idempotent and fast after the first run. `-reconfigure` keeps it
@@ -331,7 +373,24 @@ destroy)
 		skip "project $PALETTE_PROJECT has no cluster layer"
 		exit 0
 	fi
-	info "remove the cluster and the cluster profile of project $PALETTE_PROJECT"
+	info "remove the cluster and the cluster profiles of project $PALETTE_PROJECT"
+
+	# Two phases, because the cluster delete does not finish when the provider
+	# says it does. See wait_cluster_gone above.
+	#
+	# `-target` is right here and nowhere else in this repository: it names the
+	# one resource that has to go first and to be waited for. The destroy below
+	# takes everything, so nothing is left behind by targeting.
+	#
+	# The uid comes from Palette, not from the state, because the state holds
+	# no project uid. A project that is already gone leaves nothing to wait
+	# for.
+	tofu -chdir="$module" destroy -input=false -auto-approve \
+		-target=spectrocloud_cluster_edge_native.this
+
+	uid="$(project_uid "$PALETTE_PROJECT" || true)"
+	[ -z "$uid" ] || wait_cluster_gone "$uid"
+
 	tofu -chdir="$module" destroy -input=false -auto-approve
 	info "the hosts and the machines stay. To remove those: just infra-down"
 	;;
