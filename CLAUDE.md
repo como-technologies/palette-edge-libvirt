@@ -154,11 +154,24 @@ book, the README, this file, the code comments, and the commit messages. Use
 short sentences. Use the active voice. Use one idea in each sentence. Do not use
 idioms or figures of speech.
 
-**Delete a sentence that the reader already has.** The title, the headings, the
-table, and the command carry meaning. Do not count what the reader can count.
-Do not restate the title. Do not say that steps go in order.
+**Write in man-page voice.** The reader deploys Kubernetes clusters. Do not
+define a term that this reader knows. Do not describe what a command visibly
+does. A heading and a command block are a complete section. Prose is for a
+warning, a non-obvious consequence, or a link.
 
-Test each sentence: remove it. If the page loses no fact, leave it out.
+Test each sentence: **does it give an expert something that the command, the
+heading, and their own knowledge do not?** If not, delete it. Do not write a
+shorter replacement. Delete the line.
+
+Example: the heading `## 0. Completions (optional)` needs no sentence below it.
+The command block follows it. "The bash completion is optional. It gives the
+recipe names and their arguments:" is the error.
+
+Put a short fact in a comment on the command line, not in a sentence above it:
+
+```bash
+just host-setup   # libvirt, KVM, the tools, and the libvirt and kvm groups
+```
 
 A message that refuses an operation must name the correction. `set
 no-exit-message` makes that message the only text that the user reads.
