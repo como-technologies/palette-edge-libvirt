@@ -6,7 +6,7 @@ Every object that this repository creates has a recipe that removes it. See
 Each layer removes what it made, on the workstation **and** in Palette. Remove
 the layers from the top.
 
-## Remove the cluster layer
+## 1. Remove the cluster layer
 
 ```bash
 just cluster-down
@@ -20,7 +20,7 @@ The recipe leaves the state file in
 `~/.local/state/palette-edge-libvirt/<project>/`. The file is then empty of
 objects, and the next `cluster-up` fills it again.
 
-## Remove the infrastructure layer
+## 2. Remove the infrastructure layer
 
 ```bash
 just infra-down
@@ -41,7 +41,7 @@ removes it, because the pool directory holds this cluster and nothing else.
 `just hosts-deregister` removes only the host records, and
 `just host-deregister <host>` removes one. The machines stay in both cases.
 
-## Remove everything of the project
+## 3. Remove everything of the project
 
 ```bash
 just nuke
@@ -61,7 +61,7 @@ Three things stay, and none of them belongs to one project:
 | Your Palette API key | `~/.config/palette-edge-libvirt/api-key` | `just api-key-clear` |
 | OpenTofu | `~/.local/bin/tofu` | `just tofu-uninstall` |
 
-## Remove the packages
+## 4. Remove the packages
 
 ```bash
 just host-setup-undo

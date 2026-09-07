@@ -3,7 +3,7 @@
 One cluster serves one Palette project. Each project has its own environment file,
 and the recipes operate on one project at a time.
 
-## Create the project
+## 1. Create the project
 
 ```bash
 just new-project <project>
@@ -16,7 +16,7 @@ default.
 
 There is nothing to fill in afterwards.
 
-## See and select
+## 2. See and select
 
 ```bash
 just projects                  # the projects that have a file, * marks the default
