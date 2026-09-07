@@ -79,6 +79,9 @@ dashboard_version := env_var_or_default("DASHBOARD_VERSION", "0.44.0")
 
 # The local port that `just dashboard` forwards to the dashboard service.
 dashboard_port := env_var_or_default("DASHBOARD_PORT", "8443")
+
+# The local port that `just docs-serve` serves the book on.
+docs_port := env_var_or_default("DOCS_PORT", "3000")
 # `just cluster-verify` reads the cluster with kubectl. kubectl supports one
 # minor version each side of the server, so this follows the pack by default.
 kubectl_version := env_var_or_default("KUBECTL_VERSION", k8s_version)
@@ -560,7 +563,7 @@ docs: _docs-theme-check
 
 # Build the docs and serve them at http://localhost:3000 with live reload
 docs-serve: _docs-theme-check
-    mdbook serve docs --open
+    @DOCS_PORT="{{ docs_port }}" scripts/docs-serve.sh
 
 # Delete the built docs
 docs-clean:
