@@ -95,8 +95,11 @@ workstation. Expect to notice a CI run while you use a lab of your own.
 
 ## The repository is public
 
-A self-hosted runner executes code. On a public repository, four gates keep that
-code to what a person approved.
+A self-hosted runner executes code on a personal workstation. Name what is at
+risk before naming the gates: a shell as the runner account, and the Palette API
+key, which carries every permission of the person who made it.
+
+Four gates stand between an outsider and that.
 
 1. **The workflow names no `pull_request` trigger.** A fork cannot fire `push`,
    `schedule`, or `workflow_dispatch`, so a fork has no path to the workstation.
@@ -104,28 +107,76 @@ code to what a person approved.
    the workflow files of the pull request, not the ones on `main`, so a pull
    request can add a workflow of its own that names the runner. The approval
    setting is what stops it.
-3. **`main` is protected and a merge needs a review.** A pull request needs one
-   approval and the `lint` check before it reaches `main`.
+3. **`main` is protected.** A pull request needs one approval and the `lint`
+   check before it reaches `main`. Read the next section before you count this
+   one: it is weaker than it looks.
 4. **The `lab` environment admits protected branches only**, and it holds the
    Palette key, so a job on a side branch receives no credentials.
 
 `just ci-setup` makes all four.
 
-Gate 3 has a limit worth naming: `enforce_admins` is false, so a person with
-administration rights pushes to `main` without a review, and the runner then
-executes that push. The repository is a laboratory and the setting is
-deliberate. Two ways to close it, and each one costs something:
+### Write access is the boundary, and gate 3 is not
+
+Gate 3 does not make the statement people want it to make. `enforce_admins` is
+false, so an administrator pushes to `main` with no review and the runner
+executes that push.
+
+Turning it on would not fix the statement either. **Every account with write
+access to this repository is an administrator**, and an administrator removes a
+protection rule in one API call. A rule that binds only the people who can
+delete it binds nobody. It stops a slip. It stops no person who decides
+otherwise.
+
+Nor does a branch and a pull request add a gate by themselves. Somebody who can
+merge can merge what they wrote. The second-person check comes from the required
+approval, and only for a writer who is not an administrator — which, here, is
+nobody.
+
+So there is no technical gate behind write access. **Anybody who can put a
+commit on `main` runs code on this workstation.** The control is the list of
+people who have that access. Review it, keep it short, and treat adding a writer
+as granting a shell on the machine:
+
+```bash
+gh api repos/{owner}/{repo}/collaborators   --jq '.[] | "\(.login) \(.role_name) push=\(.permissions.push)"'
+```
+
+Two settings would each close a part of this, and each costs something:
 
 | Change | Closes | Costs |
 | --- | --- | --- |
-| `enforce_admins: true` | a direct push by an administrator | every change needs a pull request |
-| a required reviewer on `lab` | a run that nobody approved | every run waits for a click, including the nightly one |
+| `enforce_admins: true` | an administrator's **accidental** push. Not a deliberate one. | every change needs a pull request |
+| a required reviewer on `lab` | a run that nobody approved, whatever reached `main` | every run waits for a click, the nightly one included |
 
-Gate 2 is the one that matters most on a public repository, because it is the
-only path that needs no write access at all. The default policy,
-`first_time_contributors`, means the first time **only**: a person whose pull
-request was merged once runs a workflow without approval ever after.
-`just ci-setup` sets `all_external_contributors` instead.
+The second is the stronger of the two, because it gates the **run** and not the
+code, and no administrator right removes the need for the click without a
+deliberate settings change. `just ci-setup` sets neither. The repository is a
+laboratory on one workstation, and that is a judgement about cost, not a claim
+that the gates are complete.
+
+### Gate 2 is the one that matters most
+
+It is the only path to the runner that needs **no write access at all**. On a
+`pull_request` event GitHub runs the workflow files of the pull request, not the
+ones on `main`, so a pull request can add a workflow of its own that names the
+runner.
+
+The default policy, `first_time_contributors`, means the first time **only**: a
+person whose pull request was merged once runs a workflow without approval ever
+after. `just ci-setup` sets `all_external_contributors` instead.
+
+### What limits the damage
+
+The gates above prevent access. These limit what access is worth:
+
+- The runner holds **no sudo** and is **not** in the `libvirt` group, and
+  libvirt runs on `qemu:///session`, so a compromise reaches one unprivileged
+  account rather than root.
+- The Palette key reaches the job in the environment and never becomes a file,
+  so a run leaves no credential on the workstation.
+- The key is still a **tenant** credential with every permission of its owner.
+  Nothing on the workstation limits that, so rotate it if a run ever looks
+  wrong.
 
 ## No third-party actions
 

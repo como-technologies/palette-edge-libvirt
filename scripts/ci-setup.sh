@@ -2,23 +2,34 @@
 # Configure the GitHub side of continuous integration.
 #
 # The repository is public, so a self-hosted runner needs gates. This script
-# makes all of them, and each one closes a different path to your workstation:
+# makes three, and each one closes a different path to your workstation:
 #
-#   1. main is protected, and a merge needs a review. The runner therefore
-#      executes only code that a person approved. This is the gate that matters.
-#   2. A fork pull request needs approval from a maintainer before any workflow
-#      runs. Without it, a pull request can add a workflow of its own that names
-#      the self-hosted runner.
-#   3. The lab environment holds the Palette key and admits protected branches
-#      only, so a job on a side branch gets no credentials.
+#   1. A fork pull request needs approval from a maintainer, every time.
+#      THIS IS THE GATE THAT MATTERS, because it is the only path to the runner
+#      that needs no write access at all: on a `pull_request` event GitHub runs
+#      the workflow files of the pull request, so a pull request can add a
+#      workflow of its own that names the runner.
+#   2. The lab environment holds the Palette key and admits protected branches
+#      only, so a run on a side branch executes and gets no credentials.
+#   3. main is protected: a merge needs one review and the `lint` check.
+#
+# BE HONEST ABOUT WHAT 3 BUYS. It does not guarantee that the runner executes
+# reviewed code. `enforce_admins` is false, so an administrator pushes straight
+# to main; and every account with write access to this repository is an
+# administrator, who could turn the rule off in one call whatever it is set to.
+# Gate 3 is a guard against a slip, not against a person.
+#
+# So write access is the boundary, and it has no technical gate behind it.
+# Anybody who can put a commit on main runs code on the workstation. Review the
+# list of writers, and treat adding one as granting a shell there.
 #
 # A fourth gate is available and this script does not set it: a required
-# reviewer on the environment. It stops every run until a person approves, so it
-# also stops the nightly build. Add it at Settings > Environments if the
-# workstation needs a gate on the run as well as on the code.
+# reviewer on the environment. That one does gate the RUN rather than the code,
+# and it stops every run until a person approves, the nightly build included.
+# Add it at Settings > Environments if you want that.
 #
 # The e2e workflow names no `pull_request` trigger, so a fork cannot reach the
-# runner even before these gates. They are the second and third answers.
+# runner even before these gates.
 #
 # This script is idempotent. Each call sets the same state.
 #
@@ -52,8 +63,12 @@ info "configure continuous integration for $repo"
 
 # --- 1. protect main --------------------------------------------------------
 
-# A merge needs one approving review and the hosted check. The self-hosted job
-# runs after the merge, so it never sees unreviewed code.
+# A merge needs one approving review and the hosted check.
+#
+# `enforce_admins` stays false on purpose: this is a laboratory, and the owner
+# pushes to main. Read the rule for what it is. It stops an accidental push, and
+# it stops nobody who holds administration rights -- which, in this repository,
+# is everybody who can write at all. The header says more.
 #
 # The context is the name of the JOB, not the name of the workflow, and it must
 # name a job that runs on a pull request. `lint` is the only one: docs.yml
@@ -78,6 +93,7 @@ if gh api -X PUT "repos/$repo/branches/main/protection" \
 }
 JSON
 	info "main is protected: a merge needs one review and the hosted checks"
+	info "  an administrator still pushes straight to main (enforce_admins is false)"
 else
 	warn "could not protect main.
          The account needs administration rights on $repo.
