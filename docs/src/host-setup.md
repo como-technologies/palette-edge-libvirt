@@ -1,7 +1,5 @@
 # Prepare the workstation
 
-Three steps make a new workstation ready. Do them one time.
-
 The bash completion is optional. It gives the recipe names and their
 arguments:
 

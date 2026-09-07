@@ -1,6 +1,6 @@
 # The Palette API
 
-Six recipes read your tenant. They change nothing.
+These recipes read your tenant. They change nothing.
 
 | Recipe | Answer |
 | --- | --- |

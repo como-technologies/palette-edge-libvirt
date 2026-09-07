@@ -1,7 +1,5 @@
 # Tests
 
-This repository has two test recipes. Each one answers a different question.
-
 | Recipe | Question | Needs |
 | --- | --- | --- |
 | `just test` | Do the guards and the readers operate correctly? | Nothing. |
@@ -28,7 +26,7 @@ the hosted runner. They take approximately one second.
 
 ## What the tests examine
 
-The test files are in `tests/`. There is one file for each subject.
+The test files are in `tests/`:
 
 | File | Subject |
 | --- | --- |

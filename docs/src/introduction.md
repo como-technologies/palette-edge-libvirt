@@ -34,4 +34,4 @@ also reads from the bottom up:
 
 ## More
 
-[Getting started](./host-setup.md) explains each step.
+[Getting started](./host-setup.md)

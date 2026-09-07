@@ -154,5 +154,11 @@ book, the README, this file, the code comments, and the commit messages. Use
 short sentences. Use the active voice. Use one idea in each sentence. Do not use
 idioms or figures of speech.
 
+**Delete a sentence that the reader already has.** The title, the headings, the
+table, and the command carry meaning. Do not count what the reader can count.
+Do not restate the title. Do not say that steps go in order.
+
+Test each sentence: remove it. If the page loses no fact, leave it out.
+
 A message that refuses an operation must name the correction. `set
 no-exit-message` makes that message the only text that the user reads.
