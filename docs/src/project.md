@@ -16,31 +16,14 @@ default.
 
 There is nothing to fill in afterwards.
 
-## 2. See and select
+## 2. Confirm the result
 
 ```bash
-just projects                  # the projects that have a file, * marks the default
-just default-project <project> # work on a different project
+just projects   # the projects that have a file, * marks the default
 ```
 
 `just projects` reads the local files. `just palette-projects` reads your
 tenant.
-
-## Remove a project
-
-```bash
-just remove-project <project>
-```
-
-The recipe deletes the token, the project, and the file. It asks you to type
-the project name first, because a delete is not reversible.
-
-Remove the cluster first:
-
-```bash
-just infra-down
-just remove-project <project>
-```
 
 ## Next
 
