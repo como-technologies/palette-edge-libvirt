@@ -240,6 +240,15 @@ The theme files are committed, so `docs-theme` runs one time for a new
 checkout. `just docs` and `just lint` both stop with a message that names it if
 the files are absent.
 
+`docs-serve` tests the port before it starts mdBook. mdBook reports
+`Serving on: http://localhost:3000` and `Watching for changes...` and then
+stops, so a second server looks like a success and serves an older book.
+`DOCS_PORT` takes a different port:
+
+```bash
+DOCS_PORT=3001 just docs-serve
+```
+
 ### Everything
 
 ```just

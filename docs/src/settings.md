@@ -143,6 +143,7 @@ change it for a command.
 | `LIBVIRT_DEFAULT_URI` | `qemu:///system` | which libvirt daemon the recipes use. `qemu:///session` runs libvirt as you, and continuous integration takes that one. See [Continuous integration](./ci.md#the-runner-uses-the-session-daemon). |
 | `KUBECTL_VERSION` | `K8S_VERSION` | the kubectl that `just kubectl-install` writes. kubectl supports one minor version each side of the server. |
 | `TOFU_VERSION` | 1.12.6 | the OpenTofu that `just tofu-install` writes |
+| `DOCS_PORT` | 3000 | the port that `just docs-serve` serves the book on. The recipe refuses when something already answers there. |
 
 And the settings of continuous integration, which
 [its own page](./ci.md) describes:
