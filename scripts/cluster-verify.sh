@@ -69,14 +69,34 @@ chmod 600 "$KUBECONFIG"
 
 info "the API server"
 
+# The kubeconfig names one of two addresses, and the correction is not the same
+# for each one. Palette returns the virtual address that kube-vip claims, or its
+# own proxy: https://cluster-<uid>.proxy.console.spectrocloud.com:443. A message
+# that names the wrong one sends a person to test an address that did not fail.
+server="$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null)"
+
 if nodes_json="$(kubectl get nodes -o json 2>"$work/err")"; then
-	check "connection" yes "$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')"
+	check "connection" yes "$server"
 else
 	check "connection" no "" "$(head -n1 "$work/err")"
 	printf '\n'
-	die "the cluster does not answer at $(kubectl config view -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null).
-     The address is the virtual one that kube-vip claims. Test the route:
-       ping -c1 ${CLUSTER_VIP:-the VIP}
+
+	case "$server" in
+	*proxy.console*) whose="the Palette proxy, and not ${CLUSTER_VIP:-the virtual address}" ;;
+	*) whose="the virtual address that kube-vip claims" ;;
+	esac
+
+	# Not ping. The virtual address answers no ICMP, so a ping that fails
+	# proves nothing and a person then looks for a network fault that is not
+	# there. The TCP connection is the test. See docs/src/troubleshooting.md.
+	die "the cluster does not answer at $server.
+     That address is $whose.
+     A machine that does not run is the usual cause:
+       just ls
+     The virtual address answers no ping. Test it with TCP:
+       (exec 3<>/dev/tcp/${CLUSTER_VIP:-192.168.140.10}/6443) && echo open
+     To see what Palette holds:
+       just palette-clusters
      See docs/src/network.md."
 fi
 
