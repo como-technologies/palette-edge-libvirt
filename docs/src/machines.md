@@ -61,18 +61,3 @@ The seed ISO holds your registration token. An ejected host keeps no copy. See
 
 When every host is registered, continue to
 [Create the cluster](./cluster.md).
-
-## Change the machines
-
-Edit the project file, then build the layer again:
-
-```bash
-just infra-down
-just infra-up
-```
-
-`CONTROL_COUNT`, `WORKER_COUNT`, and the size of each role live in the project
-file. [Settings](./settings.md#the-cluster-size) describes them.
-
-Virtual machines are cheap, and the tooling ties a host to one cluster. Build
-them again rather than change one in place.

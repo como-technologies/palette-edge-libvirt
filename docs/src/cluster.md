@@ -110,7 +110,7 @@ Palette replaces that layer on the running cluster. The hosts stay as they are.
 [Settings](./settings.md#the-cluster-layer) describes each value.
 
 To change the hosts themselves, see
-[Create the hosts](./machines.md#change-the-machines).
+[Settings](./settings.md#the-cluster-size).
 
 ## Remove the cluster
 
