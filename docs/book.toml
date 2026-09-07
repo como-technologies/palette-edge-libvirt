@@ -17,7 +17,13 @@ command = "mdbook-mermaid"
 # Test each link while the book builds, with the rules in .mdbook-lint.toml.
 # `just lint` runs the same rules through scripts/lint-links.sh, so a broken
 # link stops `just docs` and `just docs-serve` as well.
+#
+# `optional` keeps a checkout that has no mdbook-lint able to build the book.
+# Without it, mdbook stops with exit code 101 and the book cannot be read at
+# all. scripts/lint-links.sh reports the skip, and continuous integration
+# installs the tool, so the test still runs where it decides a merge.
 [preprocessor.lint]
+optional = true
 
 [output.html]
 git-repository-url = "https://github.com/como-technologies/palette-edge-libvirt"
