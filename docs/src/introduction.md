@@ -8,7 +8,7 @@ workstation, from Spectro Cloud Palette packs and libvirt virtual machines.
 | Type this | More |
 | --- | --- |
 | `just host-setup` | [Prepare the workstation](./host-setup.md). Installs libvirt and KVM. Restart when it finishes. |
-| `just tofu-install` | [Install OpenTofu](./host-setup.md#3-install-opentofu) into `~/.local/bin`. Needs no root. |
+| `just tofu-install` | [Install OpenTofu](./host-setup.md#2-install-opentofu) into `~/.local/bin`. Needs no root. |
 | `just api-key-set` | [Configure the tenant](./tenant.md). Reads your Palette API key without an echo. |
 | `just new-project <project>` | [Create a project](./project.md). Makes the Palette project, its registration token, and its settings. |
 | `just infra-up` | [Create the machines](./machines.md). Returns when every host registers, in about 3 minutes. |

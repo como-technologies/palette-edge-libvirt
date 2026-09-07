@@ -1,18 +1,13 @@
 # Prepare the workstation
 
-Four steps make a new workstation ready. Do them one time.
+Three steps make a new workstation ready. Do them one time.
 
-> **Turn on the completion first.** It saves the most typing on this page and
-> every page after it.
->
-> ```bash
-> just bash-completion-install   # every shell, from the next login
-> source <(just bash-completion) # this shell, now
-> ```
->
-> The completion gives the recipe names, and it also gives the arguments: the
-> host names, the roles `control` and `worker`, and the project names. See
-> [Bash completion](./recipes.md#bash-completion).
+Turn on the completion first:
+
+```bash
+just bash-completion-install   # every shell, from the next login
+source <(just bash-completion) # this shell, now
+```
 
 ## 1. Install the packages
 
@@ -20,45 +15,35 @@ Four steps make a new workstation ready. Do them one time.
 just host-setup
 ```
 
-The recipe asks for your sudo password. It installs the virtualization tools
-and adds you to the `libvirt` group and the `kvm` group.
+The recipe asks for your sudo password. It installs the virtualization tools,
+and it adds you to the `libvirt` group and the `kvm` group.
 
-## 2. Restart the workstation
+Then restart the workstation. Your shell gets the new group at the next login,
+and each `virsh` command fails without it. See
+[Why a restart](./workstation.md#why-a-restart).
 
 **Make SSH access available from a second computer first.** These packages
-start a rebuild of the initramfs, and the screen can stay blank after the
-restart. See
+rebuild the initramfs, and the screen can stay blank after the restart. See
 [The screen is blank](./troubleshooting.md#the-screen-is-blank-after-the-restart).
 
-A restart gives your shell the new group. Without the group, every `virsh`
-command fails. See [Why a restart](./workstation.md#why-a-restart).
-
-## 3. Install OpenTofu
+## 2. Install OpenTofu
 
 ```bash
 just tofu-install
 ```
 
 The cluster layer needs OpenTofu, and Ubuntu does not package it. The recipe
-downloads the pinned release, tests its checksum, and puts the one binary in
-`~/.local/bin`. It needs no root and no sudo password.
+puts the pinned release in `~/.local/bin`, and it needs no root. See
+[The tools that this repository needs](./workstation.md#the-tools-that-this-repository-needs).
 
-`just tofu-uninstall` removes it. It removes only the binary that this recipe
-wrote, so an OpenTofu from your package manager stays as it is.
-
-## 4. Test the result
+## 3. Test the result
 
 ```bash
 just preflight
 ```
 
 The recipe prints `ok` or `FAIL` for each item, and it names the fix for each
-failure. It makes no change.
+failure. It makes no change. See
+[What preflight tests](./workstation.md#what-preflight-tests).
 
-When every item is `ok`, continue to
-[Configure the tenant](./tenant.md).
-
-## More
-
-[The workstation](./workstation.md) describes the packages, the reason for the
-restart, each test, and the capacity that a cluster needs.
+When each item is `ok`, continue to [Configure the tenant](./tenant.md).
