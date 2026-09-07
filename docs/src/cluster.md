@@ -1,15 +1,6 @@
 # Create the cluster
 
-## 1. Install OpenTofu
-
-```bash
-just tofu-install
-```
-
-Ubuntu does not package OpenTofu. The recipe puts the pinned release in
-`~/.local/bin`, and it needs no root. Do this one time for each workstation.
-
-## 2. See the changes
+## 1. See the changes
 
 ```bash
 just cluster-plan
@@ -18,7 +9,7 @@ just cluster-plan
 The recipe prints what `cluster-up` would make, and changes nothing. It also
 tests your settings, so a wrong value stops here.
 
-## 3. Build the layer
+## 2. Build the layer
 
 ```bash
 just cluster-up
@@ -43,7 +34,7 @@ cluster answers, so Headlamp appears some minutes later than the nodes.
 The recipe is idempotent, so a second run makes no new object. See
 [The cluster profile](./cluster-profile.md) for each pack and each setting.
 
-## 4. Watch the build
+## 3. Watch the build
 
 ```bash
 just palette-clusters   # the state, the uid, the endpoint, and both profiles
@@ -64,7 +55,7 @@ the console URL and in the `server:` line of `just cluster-kubeconfig`.
 The Palette console shows the progress of each pack. If the build fails, see
 [The cluster builds for an hour and then fails](./troubleshooting.md#the-cluster-builds-for-an-hour-and-then-fails).
 
-## 5. Use the cluster
+## 4. Use the cluster
 
 ```bash
 just cluster-kubeconfig > ~/.kube/pe.yaml
@@ -74,7 +65,7 @@ KUBECONFIG=~/.kube/pe.yaml kubectl get nodes
 The kubeconfig is a credential. The recipe prints it and writes no file, so you
 choose the file and its mode.
 
-## 6. Open the dashboard
+## 5. Open the dashboard
 
 ```bash
 just dashboard
