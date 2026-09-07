@@ -2,13 +2,7 @@
 
 This page builds the infrastructure layer: the network, the storage pool, the
 virtual machines, and the host record of each machine in Palette. It makes no
-Kubernetes cluster. [Create the cluster](./cluster.md) is the next step.
-
-Complete these three pages first:
-
-1. [Prepare the workstation](./host-setup.md)
-2. [Configure the tenant](./tenant.md)
-3. [Create a project](./project.md)
+Kubernetes cluster.
 
 `just config` shows the project that the recipes operate on now.
 
