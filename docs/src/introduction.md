@@ -16,8 +16,15 @@ workstation, from Spectro Cloud Palette packs and libvirt virtual machines.
 | `just cluster-kubeconfig` | [Use the cluster](./cluster.md#5-use-the-cluster). Prints the administrator kubeconfig. |
 
 The first three rows are one time for each workstation. The last four take
-about 14 minutes together, and almost all of that is a wait. See
-[Benchmark](./benchmark.md) for the time that each step takes.
+some minutes together, and almost all of that is a wait: Palette installs the
+packs on each node, and nothing here makes that faster.
+
+The times above are approximate on purpose. This page held a table of measured
+ones, and it went out of date the first time the pinned packs changed -- an
+add-on profile alone doubled `cluster-up`. The end to end job builds a whole
+cluster on every push to `main` and every night, so its run history holds real
+times for the current pins. Read those instead. See
+[Continuous integration](./ci.md).
 
 ## Let's do it in reverse
 

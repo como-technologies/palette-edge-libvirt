@@ -42,6 +42,7 @@ just host-status NAME     # agent install progress
 just console NAME         # serial console, ctrl-] to exit
 just ls                   # every cluster VM with state and address
 
+just ci-times             # per-step times of the last successful e2e runs
 just test [FILTER]        # the offline suite: no libvirt, no tenant, ~1s
 just lint                 # fmt, pairs, params, includes, shellcheck, test, docs
 just docs-serve           # book at http://localhost:3000 with live reload
@@ -104,27 +105,19 @@ everything its `-up` made.** This is the rule that keeps teardown honest.
 `ready` in Palette (`hosts-wait.sh`, 900s default via `REGISTER_TIMEOUT`),
 because a VM that never registered is useless to the cluster layer.
 
-**Measured baseline, three full round trips, 1 control + 2 workers on the
-Thelio.** Every step of both tables in `docs/src/introduction.md`, except
-`host-setup`, which needs a restart:
+**There is no measured baseline in this repository, and there must not be
+one.** A table of times is true of the day somebody measured it: the one that
+used to be here, and in `docs/src/benchmark.md`, said `cluster-up` took 646s,
+and the Headlamp add-on roughly doubled that without changing a word of it. No
+lint can test a number in a document.
 
-| Step | run 1 | run 2 | run 3 | mean |
-| --- | --- | --- | --- | --- |
-| `tofu-install` | (present) | 2.1s | 1.9s | 2.0s |
-| `new-project` | 2.3s | 2.9s | 2.7s | 2.6s |
-| `infra-up` | 209s | 179s | 187s | **192s** |
-| `cluster-up` | 636s | 668s | 634s | **646s** |
-| `cluster-kubeconfig` | 0.4s | 2.7s | 0.4s | 1.2s |
-| `cluster-down` | 40s | 46s | 40s | **42s** |
-| `infra-down` | 9.6s | 7.0s | 8.9s | 8.5s |
-| `remove-project` | 4.1s | 3.5s | 3.3s | 3.6s |
-| forward total | | | | **843s (14m)** |
-| reverse total | | | | **54s** |
-
-`api-key-set`, `api-key-clear`, `image-clean`, and `tofu-uninstall` each measure
-under 0.1s. The cloud image download sits inside `infra-up` and costs less than
-the variance in registration: runs 2 and 3 downloaded it and still beat run 1,
-which had it cached. **Teardown is 16 times faster than build.**
+`just ci-times` reads the pipeline instead. The e2e job builds a whole cluster
+on every push to `main` and every night, on the reference workstation, with the
+pins that the justfile holds now, so GitHub already holds a measurement that
+cannot go stale. `scripts/ci-times.sh` reads `started_at` and `completed_at` of
+each step of the last successful runs. Recent shape: machines about 3m, cluster
+about 12m, verify seconds, teardown under a minute, whole job about 16m. Quote
+the recipe, never a number.
 
 **Hosts are tied to clusters; VMs are never reused.** That decision is what makes
 `infra-down` safe to deregister host records — a record whose VM is gone is

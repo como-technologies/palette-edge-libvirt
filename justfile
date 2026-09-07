@@ -504,6 +504,15 @@ ci-env:
     @echo "CLUSTER_VIP={{ ci_vip }}"
     @echo "POD_CIDR={{ pod_cidr }}"
 
+# Report how long each step of the end to end job really took
+#
+# This replaces the table of measured times that this repository used to
+# publish. A number in a document is true of the day it was written; the
+# pipeline builds a whole cluster on every push to main and every night, so it
+# measures the pins that are in the justfile now.
+ci-times:
+    @scripts/ci-times.sh
+
 # Show the state of the runner service and its registration
 runner-status:
     @scripts/runner-status.sh

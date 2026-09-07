@@ -200,6 +200,39 @@ gives a cluster where every node is Ready, `kubectl` answers, and no pod
 resolves a name. Every test above it passes on that cluster. See
 [The cluster profile](./cluster-profile.md).
 
+## How long a build takes
+
+The job is the measurement. It builds a whole cluster on every push to `main`
+and every night, on the reference workstation, from the pins that the
+`justfile` holds now:
+
+```bash
+just ci-times            # the last 3 successful runs, step by step
+CI_RUNS=10 just ci-times # a longer history
+```
+
+```text
+  step                                           run 1     run 2     run 3       mean
+  Make the machines                              2m57s     2m58s     2m58s      2m57s
+  Make the cluster                              12m00s    13m43s     9m34s     11m45s
+  Test the cluster                                  6s        4s        5s         5s
+  Remove everything                                54s       54s       51s        53s
+  whole job                                     16m03s    17m46s    13m35s     15m48s
+```
+
+Almost all of it is `just cluster-up`, and almost all of that is a wait for
+Palette to install the packs on each node. The spread between runs is the
+tenant, not the workstation.
+
+This book used to publish a table of times that somebody measured by hand. It
+went out of date the first time the pins changed — an add-on profile alone
+roughly doubled `cluster-up` — and no test could notice, because a number in a
+document is not testable. The recipe reads the pipeline instead, so the answer
+is never stale and there is no table to maintain.
+
+The recipe reads only what GitHub already recorded. It needs `gh` and its
+credentials, and it changes nothing.
+
 ## Pin the runner again
 
 The runner archive carries a pinned checksum, and that is what makes it safe to
