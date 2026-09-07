@@ -1,15 +1,6 @@
 # Create the cluster
 
-## 1. See the changes
-
-```bash
-just cluster-plan
-```
-
-The recipe prints what `cluster-up` would make, and changes nothing. It also
-tests your settings, so a wrong value stops here.
-
-## 2. Build the layer
+## 1. Build the layer
 
 ```bash
 just cluster-up
@@ -34,7 +25,7 @@ cluster answers, so Headlamp appears some minutes later than the nodes.
 The recipe is idempotent, so a second run makes no new object. See
 [The cluster profile](./cluster-profile.md) for each pack and each setting.
 
-## 3. Watch the build
+## 2. Watch the build
 
 ```bash
 just palette-clusters   # the state, the uid, the endpoint, and both profiles
@@ -55,7 +46,7 @@ the console URL and in the `server:` line of `just cluster-kubeconfig`.
 The Palette console shows the progress of each pack. If the build fails, see
 [The cluster builds for an hour and then fails](./troubleshooting.md#the-cluster-builds-for-an-hour-and-then-fails).
 
-## 4. Use the cluster
+## 3. Use the cluster
 
 ```bash
 just cluster-kubeconfig > ~/.kube/pe.yaml
@@ -65,7 +56,7 @@ KUBECONFIG=~/.kube/pe.yaml kubectl get nodes
 The kubeconfig is a credential. The recipe prints it and writes no file, so you
 choose the file and its mode.
 
-## 5. Open the dashboard
+## 4. Open the dashboard
 
 ```bash
 just dashboard

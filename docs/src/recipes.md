@@ -152,6 +152,9 @@ The state file names all three, and it lives in
 `~/.local/state/palette-edge-libvirt/<project>/`. It is never in the checkout:
 lose it and Palette holds a cluster that no recipe can remove.
 
+`cluster-plan` prints what `cluster-up` would make, and changes nothing. It
+also tests the settings, so a wrong value stops before Palette makes an object.
+
 `cluster-down` removes all three. The hosts and the machines stay, so
 `cluster-up` builds them again. See [Create the cluster](./cluster.md).
 

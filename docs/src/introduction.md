@@ -13,7 +13,7 @@ workstation, from Spectro Cloud Palette packs and libvirt virtual machines.
 | `just new-project <project>` | [Create a project](./project.md). Makes the Palette project, its registration token, and its settings. |
 | `just infra-up` | [Create the machines](./machines.md). Returns when every host registers, in about 3 minutes. |
 | `just cluster-up` | [Create the cluster](./cluster.md). The profile and the cluster, in about 11 minutes. |
-| `just cluster-kubeconfig` | [Use the cluster](./cluster.md#4-use-the-cluster). Prints the administrator kubeconfig. |
+| `just cluster-kubeconfig` | [Use the cluster](./cluster.md#3-use-the-cluster). Prints the administrator kubeconfig. |
 
 ## Let's do it in reverse
 
