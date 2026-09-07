@@ -95,10 +95,11 @@ else:
 # token_list: print the JSON body that holds every registration token of the
 # tenant.
 #
-# One function holds this endpoint, and four readers call it. That is the same
-# lesson as `project_list` below, applied before Palette teaches it again: a
-# LIST of this API can become a POST with no notice, and the repository came to
-# correct `v1/projects` in four places because four places held the call.
+# One function holds this endpoint, and four reader functions call it.
+# `project_list` below has the same structure, and for the same reason. A LIST
+# request of this API can become a POST request with no notice. The repository
+# had four copies of the `v1/projects` request, thus one change to the API
+# needed four corrections.
 #
 # A token is a tenant object and not a project one, so this takes no ProjectUid
 # header. `spec.defaultProject` is what binds one to a project.

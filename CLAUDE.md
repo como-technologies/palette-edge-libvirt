@@ -2,10 +2,10 @@
 
 Guidance for Claude Code when working in this repository.
 
-**The book is the documentation, and this file is not a second copy of it.**
-`docs/src/` holds every fact, with the error text and the correction, and
-`just lint` tests it. Read the page before you change the thing it describes.
-When you learn something new, put it in the book and leave this file alone.
+**The book is the documentation. This file is not a second copy of it.**
+`docs/src/` holds each fact, with the error text and the correction. `just lint`
+examines the book. Read the page before you change the item that it describes.
+When you learn a new fact, put it in the book. Do not add it to this file.
 
 ## Read this first
 
@@ -23,18 +23,19 @@ When you learn something new, put it in the book and leave this file alone.
 | What does a setting do? | `docs/src/settings.md` |
 | Why is it built this way? | `docs/src/decisions.md` |
 
-The two in bold hold what used to be in this file. `scripts.md` is the one to
-read before you edit a script: every trap on it is silent, and each one cost a
-day.
+The two pages in bold text hold the facts that this file held before. Read
+`scripts.md` before you change a script. Each condition on that page gives no
+error message.
 
 ## Project rules
 
 These are hard rules. They override convenience. `docs/src/rules.md` explains
 each one.
 
-1. **Every action is a recipe.** Never run a one-off command, and never tell the
-   user to click a button in a web interface when a command can do the task. If
-   a task has no recipe, add the recipe to the `justfile` first, then run it.
+1. **Every action is a recipe.** Do not run a single command manually. Do not
+   tell the user to click a button in a web interface when a command can do the
+   task. If a task has no recipe, add the recipe to the `justfile`. Then run
+   it.
 2. **Every create recipe has a remove recipe.** When you add `x-up`, add
    `x-down`. `scripts/lint-pairs.sh` fails the build on a create with no twin.
 3. **Every recipe is idempotent.** Test the state, then act. If the object
@@ -59,36 +60,38 @@ and when it stops it reports nothing: the recipe still returns 0 and the cost
 arrives an hour later. `tests/*.test.sh` reach no libvirt, no tenant, and no
 network, so a new one must not either. See `docs/src/tests.md`.
 
-**Never write a `trap ... EXIT` in a test file.** That trap prints the tally,
-and a second one discards it silently.
+**Do not write a `trap ... EXIT` in a test file.** That trap prints the
+totals. A second trap replaces it, and the file then reports nothing.
 
 ## Standing decisions
 
-**Do not reintroduce Edge Native or CanvOS.** It was tried and removed in
-2da762e. There is no prebuilt Edge installer ISO to download, so that path needs
-a local CanvOS build, and CanvOS needs Docker — which the agent-mode
-documentation tells you not to install on the host. This tooling uses Palette
-**agent mode**: the host boots the stock Ubuntu cloud image and cloud-init
-installs the agent. See `docs/src/decisions.md`.
+**Do not add Edge Native or CanvOS again.** Commit 2da762e removed them. There
+is no prebuilt Edge installer ISO to download. Thus that method needs a local
+CanvOS build, and CanvOS needs Docker. The agent-mode documentation tells you
+not to install Docker on the host. This tooling uses Palette **agent mode**: the
+host starts the standard Ubuntu cloud image, and cloud-init installs the agent.
+See `docs/src/decisions.md`.
 
-**Never run `tofu` by hand.** `scripts/cluster.sh` is the only caller. It
-computes the state path, the credentials, and the host list one time and in one
-way, and a `tofu` run outside it writes state to the wrong place.
+**Do not run `tofu` manually.** `scripts/cluster.sh` is the only caller. That
+script computes the state path, the credentials, and the host list one time. A
+`tofu` command outside that script writes the state to an incorrect
+directory.
 
 **Never print the token.** `just config` and `just preflight` print its length.
 Keep it that way.
 
-**Never publish a measured time.** A number in a document is true of the day
-somebody measured it: the table that used to be here said `cluster-up` took
-646s, and an add-on profile doubled that without changing a word. `just
-ci-times` reads the pipeline, which measures the pins that the justfile holds
-now. Quote the recipe, never a number.
+**Do not publish a measured time.** A number in a document is correct only for
+the day of the measurement. The table in this file gave 646s for `cluster-up`.
+An add-on profile then made that value two times larger, and no person changed
+the table. `just ci-times` reads the pipeline, which measures the pinned
+versions that the justfile holds now. Give the recipe, and not a number.
 
-**Never put a credential in the checkout.** The API key is a tenant credential
-and lives at `~/.config/palette-edge-libvirt/api-key`; `api_key_file` ignores
-`PEL_CONFIG_DIR` on purpose, because that variable can name a checkout. The
-registration token belongs to one project and lives in that project's
-environment file. `docs/src/project-layout.md` says why they are apart.
+**Do not put a credential in the checkout.** The API key is a tenant
+credential. It is at `~/.config/palette-edge-libvirt/api-key`. `api_key_file`
+does not use `PEL_CONFIG_DIR`, because that variable can name a checkout. The
+registration token belongs to one project, and it is in the environment file of
+that project. `docs/src/project-layout.md` gives the reason for the two
+locations.
 
 ## The shape of the repository
 
@@ -108,13 +111,13 @@ Two layers, and each owns objects on **both** sides:
 | infrastructure | network, pool, disks, VMs | host records | `infra-up` / `infra-down` |
 | cluster | the OpenTofu state | profiles, cluster | `cluster-up` / `cluster-down` |
 
-The seam is registration: `infra-up` does not return until every host is `ready`
-in Palette, because a machine that never registered is of no use to the layer
-above. `docs/src/architecture.md` has the detail.
+Registration is the connection between the two layers. `infra-up` does not
+return until each host has the `ready` state in Palette. A machine that did not
+register is not usable by the layer above. See `docs/src/architecture.md`.
 
-`templates/project.env` is the file that `new-project` fills in, and it carries
-the anchors that the book includes. **Edit it when you add a setting**, or the
-book goes stale.
+`new-project` writes values into `templates/project.env`. That file also holds
+the anchors that the book includes. **Change that file when you add a
+setting.** If you do not, the book does not describe the new setting.
 
 To run a script directly, set its environment:
 
@@ -125,11 +128,12 @@ NETWORK=pe-net SUBNET=192.168.140 BUILD_DIR=./build scripts/net-up.sh
 
 ## What is verified
 
-Both layers, end to end, against the live tenant on the Thelio, 1 control and 2
-workers: the machines build, every host registers, Palette reports `Running`
-with every condition true, the kubeconfig works, `cluster-verify` passes, and
-teardown empties both sides. The add-on profile is verified the same way, and
-`just dashboard` opens Headlamp with no sign-in.
+The two layers are verified against the live tenant on the Thelio, with 1
+control node and 2 worker nodes. The recipes build the machines. Each host
+registers. Palette reports `Running` with each condition true. The kubeconfig
+operates. `cluster-verify` passes. The removal recipes empty the workstation and
+the tenant. The add-on profile is verified in the same way, and `just dashboard`
+opens Headlamp with no sign-in page.
 
 Continuous integration is verified end to end on `qemu:///session`, with the
 runner NOT in the `libvirt` group. The workstation and the tenant are both empty
@@ -138,13 +142,17 @@ after a run. `just ci-times` reports what it costs.
 The pinned combination is in the `justfile`, which is the only record of it. Run
 `just config` to see it, and `just palette-packs <name>` before you change one.
 
-**Still unverified**: more than one control-plane node (`CONTROL_COUNT=3`, where
-kube-vip has to fail over), a pack re-pin on a running cluster, and
-`runner-setup-undo` — the twin exists and is linted, and nothing has ever run it.
+**Not verified**: more than one control plane node (`CONTROL_COUNT=3`, where
+kube-vip must move the address). A new pack version on a cluster that operates.
+`runner-setup-undo`: the recipe exists and `just lint` examines it, but no
+person has run it.
 
 ## Prose
 
-The book, the README, and the code comments use ASD-STE100 Simplified Technical
-English: short sentences, active voice, one idea in each. A message that refuses
-must name the correction, because `set no-exit-message` makes it the only thing
-the user sees.
+Write all prose in ASD-STE100 Simplified Technical English. This applies to the
+book, the README, this file, the code comments, and the commit messages. Use
+short sentences. Use the active voice. Use one idea in each sentence. Do not use
+idioms or figures of speech.
+
+A message that refuses an operation must name the correction. `set
+no-exit-message` makes that message the only text that the user reads.

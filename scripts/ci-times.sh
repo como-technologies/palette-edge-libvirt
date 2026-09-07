@@ -6,10 +6,10 @@
 # `cluster-up`, and nothing in `just lint` could notice, because a number in a
 # document is not testable. A measurement is true of the day it was made.
 #
-# The end to end job builds a whole cluster on every push to `main` and every
-# night, so the pipeline already holds a measurement of the CURRENT pins, made
-# on the reference workstation. This reads it. There is no table to maintain,
-# and the answer is never stale.
+# The e2e job builds a full cluster on each push to `main`, and each night. Thus
+# the pipeline holds a measurement of the CURRENT pinned versions, from the
+# reference workstation. This script reads that measurement. There is no table
+# to maintain, and the answer is always current.
 #
 # It reads and changes nothing. `gh` supplies the credentials, so this needs no
 # key of its own.
@@ -33,9 +33,10 @@ command -v gh >/dev/null 2>&1 ||
      Install it:  https://cli.github.com
      Then:        gh auth login"
 
-# `command gh`, never a bare `gh`. An interactive shell function of that name is
-# exported into child shells, and one that reads GH_REPO with no default aborts
-# under `set -u` -- silently, when the standard error is redirected.
+# Use `command gh`. Do not use `gh` alone. An interactive shell function with
+# that name goes into each child shell. A function that reads GH_REPO with no
+# default value stops the script with `set -u`. It gives no message when the
+# standard error goes to a different file.
 command gh auth status >/dev/null 2>&1 ||
 	die "the GitHub CLI holds no credentials. Run: gh auth login"
 
@@ -72,8 +73,8 @@ def seconds(start, end):
     return (datetime.datetime.strptime(end, fmt)
             - datetime.datetime.strptime(start, fmt)).total_seconds()
 
-# The order of the steps is the order of the job, so the table reads as the
-# build runs. A step that one run skipped keeps its place.
+# The sequence of the steps is the sequence of the job. Thus the table shows the
+# same order as the build. A step that one run did not do keeps its position.
 order, rows = [], {}
 files = sorted(glob.glob(os.path.join(sys.argv[1], "*.json")),
                key=os.path.getmtime)
@@ -98,8 +99,8 @@ count = len(files)
 width = max([len(n) for n in order] + [4])
 
 def clock(value):
-    # Under a minute the seconds are the useful number. Over it, nobody reads
-    # 1232s as twenty minutes.
+    # Below one minute, seconds are the correct unit. Above one minute, minutes
+    # and seconds are easier to read than a large number of seconds.
     if value < 60:
         return "%.0fs" % value
     return "%dm%02ds" % (value // 60, value % 60)

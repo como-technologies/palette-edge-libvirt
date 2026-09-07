@@ -6,19 +6,22 @@
 # on the hosted CI runner, and they run in a second. `just lint` calls this
 # script for that reason.
 #
-# What they test is the part of the repository that prose alone verified until
-# now: the guards. Every one of them was written after a failure that cost an
-# afternoon -- a cluster name that libvirt takes and Palette refuses, a pod
-# range that swallows the cluster subnet, a list that counts a deleted cluster
-# for ever -- and each one is one `if` away from silently never firing again.
-# A guard that no test exercises is a comment.
+# The tests examine the guards. A guard is a test in a script that refuses a
+# condition. Each guard prevents a known failure:
+#
+#   a cluster name that libvirt accepts and Palette refuses
+#   a pod range that contains the cluster subnet
+#   a cluster list that counts a deleted cluster
+#
+# A small change to one `if` statement can stop a guard. The recipe then returns
+# 0 and gives no message. Thus each guard needs a test.
 #
 # What they do NOT test is the tenant and the machines. `just cluster-verify`
 # tests a live cluster and the e2e workflow builds one every night. Those need
 # a tenant, and this needs none: the two answer different questions.
 #
-# Each file in tests/ runs as its own process, so a stub that one file makes
-# for `api` or for a directory cannot reach the next one.
+# Each file in tests/ operates as a separate process. Thus a replacement
+# function for `api`, or a temporary directory, cannot reach the next file.
 #
 #   test.sh              every test file
 #   test.sh lib          the files whose name holds "lib"

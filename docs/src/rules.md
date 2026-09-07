@@ -10,9 +10,9 @@ same list at the top of the file:
 This page explains each rule. It holds no list of recipes. Run `just` to see the
 recipes, and see [Recipes](./recipes.md) for the naming pattern.
 
-The rules say what to build. [Writing a script](./scripts.md) says what goes
-wrong while you build it: the traps in bash, in `just`, in libvirt, and in
-mdBook that this repository fell into, and what each one costs.
+The rules give the requirements. [Writing a script](./scripts.md) lists the
+conditions that caused a failure in this repository. These conditions occur in
+bash, in `just`, in libvirt, and in mdBook.
 
 ## 1. Every action is a recipe
 
@@ -52,9 +52,9 @@ The scripts use the `skip` function from `scripts/lib.sh`:
 {{#include ../../scripts/lib.sh:skip}}
 ```
 
-A recipe that refuses instead of acting names the correction in the message. See
-[Tests](./tests.md): `just test` holds those refusals in place, because a guard
-that stops firing reports nothing at all.
+A recipe that refuses an operation names the correction in the message.
+`just test` examines those refusals. A guard that stops its operation gives no
+message. See [Tests](./tests.md).
 
 ## 4. Every recipe has a documentation comment
 

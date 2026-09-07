@@ -176,6 +176,5 @@ project.
 
 ## More
 
-- [Writing a script](./scripts.md) — the traps that each script guards against.
-- [The Palette API](./palette-api.md) — what the tenant answers, and what it
-  does not.
+- [Writing a script](./scripts.md) — the conditions that each script refuses.
+- [The Palette API](./palette-api.md) — the data that the tenant returns.

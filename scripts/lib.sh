@@ -203,15 +203,20 @@ require_pod_cidr() {
 # tfstate_has_resources PATH: return 0 when an OpenTofu state file names an
 # object that OpenTofu made.
 #
-# An empty state and an absent state both mean the same thing: this project has
-# no cluster layer. The difference matters to three recipes, and each one wants
-# a different answer to it -- `cluster-down` skips, `cluster-kubeconfig` stops,
-# and `remove-project` deletes the directory -- so the test lives here and the
-# decision stays with the caller.
+# An empty state and an absent state have the same meaning: this project has no
+# cluster layer. Three recipes use this test, and each one does a different
+# operation with the answer:
 #
-# A state that this cannot parse counts as "holds an object". The state is the
-# only record that connects the objects in Palette to this checkout, and a file
-# that cannot be read is not proof that there is nothing to lose.
+#   cluster-down          does nothing
+#   cluster-kubeconfig    stops with an error
+#   remove-project        deletes the directory
+#
+# Thus this function makes the test, and the caller makes the decision.
+#
+# For a state file that this function cannot read, the answer is "holds an
+# object". The state is the only record that connects this checkout to the
+# objects in Palette. A file that the function cannot read is not evidence that
+# the objects are absent.
 tfstate_has_resources() {
 	[ -s "$1" ] || return 1
 	python3 -c '

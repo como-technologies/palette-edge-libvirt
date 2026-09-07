@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Test scripts/seed-iso.sh: the one link between the workstation and Palette.
 #
-# The seed ISO carries the registration token and tells the agent which tenant,
-# which project, and which name to register under. Every mistake in it fails
-# late and quietly: the machine boots, cloud-init reports success, and the host
-# simply never appears in the console.
+# The seed ISO holds the registration token. It also gives the agent the tenant,
+# the project, and the name for the registration.
+#
+# An error in the seed causes a failure that occurs later and gives no message.
+# The machine starts. cloud-init reports a success. The host does not show in
+# the console.
 #
 # The script reaches no network, so a real seed is built here, with a token that
 # is not one. Nothing outside the temporary directory is touched.

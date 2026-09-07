@@ -15,9 +15,10 @@ set +e
 
 # stub_api BODY: answer every api call with this body, and record the call.
 #
-# The recorded call is a test of its own. `edge_host_list` and `project_list`
-# are POSTs because Palette stopped answering a GET on those paths in 2026-09,
-# and a reader that goes back to a GET returns HTTP 405 with no local symptom.
+# The recorded request is also a test. `edge_host_list` and `project_list` use
+# POST, because Palette stopped answering a GET on those paths in 2026-09. A
+# reader function that uses GET again receives HTTP 405. There is no other
+# symptom on the workstation.
 # The log is a FILE, not a variable. A reader runs `api` inside a command
 # substitution, and that is a subshell: a variable it sets is gone before the
 # assertion reads it, so every call looked like no call at all.
@@ -39,9 +40,10 @@ last_call() {
 
 # --- the API key ------------------------------------------------------------
 #
-# `infra-down` tested the key FILE, so a key given in the environment -- the
-# documented way, and the only way CI gives one -- skipped the Palette half of
-# the layer with no message and orphaned a host record for every machine.
+# `infra-down` examined the key FILE. A key in the environment is a correct
+# method, and it is the only method that continuous integration uses. Thus that
+# recipe did no Palette operation in this layer, and it gave no message. It left
+# one host record for each machine.
 
 accepts "a key in the environment is a key" \
 	env PALETTE_API_KEY=k HOME="$(tmpdir)" \
@@ -116,9 +118,9 @@ is "cluster_profile_list is still a GET" "GET v1/clusterprofiles?limit=50" "$(la
 
 # --- the registration tokens ------------------------------------------------
 #
-# One function holds this endpoint now. Three readers called it separately, and
-# four separate calls to `v1/projects` are what made the 2026-09 change cost a
-# day instead of a line.
+# One function holds this endpoint now. Three reader functions each called it
+# separately before. The repository had four separate calls to `v1/projects`,
+# thus the 2026-09 change needed four corrections.
 
 stub_api '{"items":[
   {"metadata":{"name":"iris","uid":"t1"},

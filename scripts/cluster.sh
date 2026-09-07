@@ -148,11 +148,13 @@ export TF_VAR_vip="${CLUSTER_VIP:-}"
 
 # --- the checks that only a build needs -------------------------------------
 #
-# require_cluster_name and require_pod_cidr are in lib.sh. Both compare a
-# setting of this layer with a setting of the layer below, so neither belongs to
-# one layer alone, and `just test` exercises both offline. net-up.sh runs the
-# name test for the layer below, so a name that Palette refuses stops
-# `just infra-up` instead of `just cluster-up` four minutes later.
+# require_cluster_name and require_pod_cidr are in lib.sh. Each one compares a
+# setting of this layer with a setting of the layer below. Thus neither one
+# belongs to a single layer, and `just test` examines both with no tenant.
+#
+# net-up.sh runs the name test for the layer below. Thus a name that Palette
+# refuses stops `just infra-up`. Without that test, the failure occurs in
+# `just cluster-up` four minutes later.
 
 # require_vip: stop unless the seed ISO and the cluster agree about the virtual
 # address.
@@ -178,9 +180,11 @@ require_vip() {
 # --- the state --------------------------------------------------------------
 
 # state_has_resources: return 0 when the state of THIS project names an object
-# that OpenTofu made. The test itself is tfstate_has_resources in lib.sh, which
-# `just test` exercises and project-remove.sh shares; this wrapper only holds
-# the path, because `state` is a variable of this script alone.
+# that OpenTofu made.
+#
+# tfstate_has_resources in lib.sh makes the test. `just test` examines that
+# function, and project-remove.sh also calls it. This function holds the path
+# only, because `state` is a variable of this script.
 state_has_resources() {
 	tfstate_has_resources "$state/terraform.tfstate"
 }

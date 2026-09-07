@@ -54,10 +54,12 @@ Two values go in **raw**, with no quotation marks added:
 | `@PALETTE_VIP_SKIP@` | it must stay a YAML boolean. `skip: "false"` is a string, and the agent reads it as one. |
 | `@AGENT_SCRIPT_URL@` | it already sits inside quotation marks in the template. |
 
-A quotation mark in the template gives `""false""` for the first and a broken
-command for the second. `just test` holds this in place: it renders a seed with
-an apostrophe in the project name and a quotation mark in the token, and it
-tests that the boolean is still a boolean. See [Tests](./tests.md).
+A quotation mark in the template gives `""false""` for the first value. It gives
+an incorrect command for the second value.
+
+`just test` examines this behaviour. It builds a seed with an apostrophe in the
+project name and a quotation mark in the token. Then it confirms that the
+boolean is still a boolean. See [Tests](./tests.md).
 
 ### Two files hold the token, not one
 
@@ -128,9 +130,10 @@ Remove the record when you rebuild a host and want a true test. The uid of an
 edge host is its name, so a rebuilt host takes the old record again. The old
 record then looks like a new registration, and it is not.
 
-**A host belongs to one cluster, and a virtual machine is never reused.** That
-is what makes `just infra-down` safe to remove every host record with the
-machines: a record whose machine is gone is garbage. Rebuild rather than repair.
+**A host belongs to one cluster. The recipes do not use a virtual machine a
+second time.** Thus `just infra-down` can remove each host record with the
+machines. A record has no use after its machine is gone. Build a new machine. Do
+not repair one.
 
 `just remove-project` refuses while a project holds a host, so the records go
 first.

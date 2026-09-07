@@ -261,10 +261,10 @@ password, sudo has no way to ask.
 The recipe names the two commands to run by hand. Run them, then run
 `just pool-up` again.
 
-All of the root work happens before the pool is defined, and that ordering is
-deliberate. An earlier version defined the pool first, so a failed `chown` left
-a pool that was defined, inactive, and unusable, and the next run reported
-"already defined" and failed in the same place.
+The recipe does each root operation before it defines the pool. This sequence
+is deliberate. An initial version defined the pool first. An unsuccessful
+`chown` then left a pool that was defined, inactive, and not usable. The next
+run reported "already defined", and then it failed at the same point.
 
 ## `just pool-down` says the parent belongs to root
 

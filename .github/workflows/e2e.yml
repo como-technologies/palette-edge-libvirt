@@ -4,36 +4,35 @@
 # What it can reach if that goes wrong: a shell as the runner account, and the
 # Palette API key, which carries every permission of the person who made it.
 #
-# Three properties keep an outsider off the workstation, and each one is load
-# bearing:
+# Three properties keep an outsider off the workstation. Each one is necessary:
 #
-#   1. There is NO `pull_request` trigger. A fork can fire none of push,
-#      schedule, or workflow_dispatch on this repository, so a fork has no path
-#      here. This holds whatever the branch settings are.
-#   2. A fork pull request needs approval from a maintainer, every time. On a
-#      `pull_request` event GitHub runs the workflow files OF THE PULL REQUEST,
-#      so a pull request can add a workflow of its own that names this runner.
-#      That is the only path here that needs no write access at all, which
-#      makes it the gate that matters most. The default policy,
-#      `first_time_contributors`, means the first time ONLY, so
-#      scripts/ci-setup.sh sets `all_external_contributors`.
-#   3. The job takes no third-party action. Every tool it needs is already on
-#      the runner, or a recipe of this repository installs it. A third-party
-#      action on a mutable tag would run on the workstation with no review at
-#      all.
+#   1. There is NO `pull_request` trigger. A fork cannot start push, schedule,
+#      or workflow_dispatch on this repository. Thus a fork has no path here.
+#      This is true for each branch setting.
+#   2. A fork pull request needs approval from a maintainer, each time. On a
+#      `pull_request` event, GitHub runs the workflow files OF THE PULL
+#      REQUEST. Thus a pull request can add a new workflow that names this
+#      runner. This is the only path here that needs no write access, and thus
+#      it gives the most protection. The default policy is
+#      `first_time_contributors`, and that value applies to the first time
+#      ONLY. Thus scripts/ci-setup.sh sets `all_external_contributors`.
+#   3. The job uses no third-party action. Each tool is on the runner, or a
+#      recipe of this repository installs it. A third-party action with a
+#      mutable tag operates on the workstation with no review.
 #
-# WRITE ACCESS IS THE REMAINING BOUNDARY, and there is no technical gate behind
-# it. Anybody who can put a commit on main runs code on the workstation. Branch
-# protection does not change that here: every account with write access to this
-# repository is an administrator, `enforce_admins` is false, and an
-# administrator can turn the rule off in one API call in any case. So the
-# protection rule is a guard against a slip, not against a person, and the real
-# control is the list of people with write access. Adding a writer grants a
-# shell on the workstation. Treat it that way.
+# WRITE ACCESS IS THE REMAINING BOUNDARY. There is no technical control behind
+# it. Each person who can put a commit on main runs code on the workstation.
 #
-# What limits the damage rather than preventing it: the runner holds no sudo and
-# is NOT in the `libvirt` group, and libvirt runs on qemu:///session, so a
-# compromise reaches one unprivileged account. See docs/src/ci.md.
+# Branch protection does not change this. Each account with write access to this
+# repository is an administrator. `enforce_admins` is false. An administrator
+# can also remove the rule with one API call. Thus the protection rule prevents
+# an accidental push, and it does not prevent a deliberate one. The control is
+# the list of persons with write access. Write access gives a shell on the
+# workstation.
+#
+# These conditions limit the damage. The runner has no sudo permission, and it
+# is NOT in the `libvirt` group. libvirt operates on qemu:///session. Thus an
+# attack reaches one account with no privileges. See docs/src/ci.md.
 #
 # The lab of this workflow is separate from any lab of the person who owns the
 # workstation: CLUSTER_NAME and CLUSTER_SUBNET both differ, and the subnet sits

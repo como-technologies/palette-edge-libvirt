@@ -59,15 +59,15 @@ That file names the bridges any account may join, and it names `br-cilab` only.
 **Nothing else.** The pool lives in the home directory of the runner, so no
 directory under `/var/lib/libvirt` is needed and no recipe asks for a password.
 
-Two more differences follow from that bridge, and both are in the scripts:
+That bridge causes two more differences. The scripts contain both of them:
 
-- A session domain attaches with `--network bridge=br-cilab`, not
+- A session domain attaches with `--network bridge=br-cilab`. It does not use
   `--network network=cilab-net`. The network belongs to the system connection,
-  so a session cannot name it; the bridge is what both connections share. The
-  dnsmasq of the system network still answers DHCP on the session taps.
-- The DHCP lease table belongs to the system connection too, so a session
-  cannot read it. `host-ip.sh` reads `ip neigh` on the bridge instead, and gets
-  the same answer.
+  and a session cannot name it. The two connections share the bridge. The
+  dnsmasq server of the system network answers DHCP on the session interfaces.
+- The DHCP lease table also belongs to the system connection, and a session
+  cannot read it. Thus `host-ip.sh` reads `ip neigh` on the bridge. It gets the
+  same answer.
 
 The scripts read `LIBVIRT_DEFAULT_URI` and take the right path for each: see
 `libvirt_session` and `pool_target` in `scripts/lib.sh`.
@@ -117,66 +117,68 @@ Four gates stand between an outsider and that.
 
 ### Write access is the boundary, and gate 3 is not
 
-Gate 3 does not make the statement people want it to make. `enforce_admins` is
-false, so an administrator pushes to `main` with no review and the runner
-executes that push.
+Gate 3 does not give the protection that its description suggests.
+`enforce_admins` is false. Thus an administrator pushes to `main` with no
+review, and the runner executes that code.
 
-Turning it on would not fix the statement either. **Every account with write
-access to this repository is an administrator**, and an administrator removes a
-protection rule in one API call. A rule that binds only the people who can
-delete it binds nobody. It stops a slip. It stops no person who decides
-otherwise.
+A value of `enforce_admins: true` does not correct this. **Each account with
+write access to this repository is an administrator.** An administrator removes
+a protection rule with one API call. A rule that applies only to the persons who
+can delete it applies to nobody. It prevents an accidental push. It does not
+prevent a deliberate one.
 
-Nor does a branch and a pull request add a gate by themselves. Somebody who can
-merge can merge what they wrote. The second-person check comes from the required
-approval, and only for a writer who is not an administrator — which, here, is
-nobody.
+A branch and a pull request also add no protection alone. A person who can merge
+can merge the code that the same person wrote. The required approval gives the
+check by a second person. That check applies only to a writer who is not an
+administrator, and there is no such writer here.
 
-So there is no technical gate behind write access. **Anybody who can put a
-commit on `main` runs code on this workstation.** The control is the list of
-people who have that access. Review it, keep it short, and treat adding a writer
-as granting a shell on the machine:
+Thus there is no technical control behind write access. **Each person who can
+put a commit on `main` runs code on this workstation.** The control is the list
+of persons with that access. Examine that list. Keep it short. Write access to
+this repository gives a shell on the machine:
 
 ```bash
 gh api repos/{owner}/{repo}/collaborators   --jq '.[] | "\(.login) \(.role_name) push=\(.permissions.push)"'
 ```
 
-Two settings would each close a part of this, and each costs something:
+Two settings each prevent a part of this condition. Each setting has a cost:
 
 | Change | Closes | Costs |
 | --- | --- | --- |
 | `enforce_admins: true` | an administrator's **accidental** push. Not a deliberate one. | every change needs a pull request |
 | a required reviewer on `lab` | a run that nobody approved, whatever reached `main` | every run waits for a click, the nightly one included |
 
-The second is the stronger of the two, because it gates the **run** and not the
-code, and no administrator right removes the need for the click without a
-deliberate settings change. `just ci-setup` sets neither. The repository is a
-laboratory on one workstation, and that is a judgement about cost, not a claim
-that the gates are complete.
+The second setting gives more protection. It applies to the **run** and not to
+the code. An administrator must change the setting to remove the approval step.
 
-### Gate 2 is the one that matters most
+`just ci-setup` sets neither one. This repository is a laboratory on one
+workstation. That decision is about cost. It is not a statement that the gates
+are complete.
 
-It is the only path to the runner that needs **no write access at all**. On a
-`pull_request` event GitHub runs the workflow files of the pull request, not the
-ones on `main`, so a pull request can add a workflow of its own that names the
-runner.
+### Gate 2 gives the most protection
 
-The default policy, `first_time_contributors`, means the first time **only**: a
-person whose pull request was merged once runs a workflow without approval ever
-after. `just ci-setup` sets `all_external_contributors` instead.
+It is the only path to the runner that needs **no write access**. On a
+`pull_request` event, GitHub runs the workflow files of the pull request. It
+does not run the files on `main`. Thus a pull request can add a new workflow
+that names the runner.
+
+The default policy is `first_time_contributors`. That value applies to the first
+time **only**. After a maintainer merges one pull request from a person, that
+person runs a workflow with no approval. Thus `just ci-setup` sets
+`all_external_contributors`.
 
 ### What limits the damage
 
-The gates above prevent access. These limit what access is worth:
+The gates above prevent access. These conditions limit the damage:
 
-- The runner holds **no sudo** and is **not** in the `libvirt` group, and
-  libvirt runs on `qemu:///session`, so a compromise reaches one unprivileged
-  account rather than root.
-- The Palette key reaches the job in the environment and never becomes a file,
-  so a run leaves no credential on the workstation.
-- The key is still a **tenant** credential with every permission of its owner.
-  Nothing on the workstation limits that, so rotate it if a run ever looks
-  wrong.
+- The runner has **no sudo** permission, and it is **not** in the `libvirt`
+  group. libvirt operates on `qemu:///session`. Thus an attack reaches one
+  account with no privileges, and not the root account.
+- The Palette key goes to the job in the environment. It does not become a file.
+  Thus a run leaves no credential on the workstation.
+- The key is a **tenant** credential with each permission of its owner. The
+  workstation does not limit that permission. Make a new key if a run shows an
+  incorrect condition.
 
 ## No third-party actions
 
@@ -281,18 +283,18 @@ CI_RUNS=10 just ci-times # a longer history
   whole job                                     16m03s    17m46s    13m35s     15m48s
 ```
 
-Almost all of it is `just cluster-up`, and almost all of that is a wait for
-Palette to install the packs on each node. The spread between runs is the
-tenant, not the workstation.
+`just cluster-up` uses almost all of the time. In that recipe, almost all of
+the time is a wait. Palette installs the packs on each node. The difference
+between the runs comes from the tenant, and not from the workstation.
 
-This book used to publish a table of times that somebody measured by hand. It
-went out of date the first time the pins changed — an add-on profile alone
-roughly doubled `cluster-up` — and no test could notice, because a number in a
-document is not testable. The recipe reads the pipeline instead, so the answer
-is never stale and there is no table to maintain.
+This book had a table of times from a manual measurement. That table became
+incorrect after the first change to the pinned versions. An add-on profile made
+`cluster-up` approximately two times longer. No test found the error, because a
+test cannot examine a number in a document.
 
-The recipe reads only what GitHub already recorded. It needs `gh` and its
-credentials, and it changes nothing.
+The recipe reads the pipeline. Thus the answer is always current, and there is
+no table to maintain. The recipe reads only the data that GitHub recorded. It
+needs `gh` and its credentials, and it changes nothing.
 
 ## Pin the runner again
 

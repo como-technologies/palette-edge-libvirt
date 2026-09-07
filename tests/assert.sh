@@ -22,9 +22,9 @@ PEL_TEMP=()
 # tmpdir: make a temporary directory and print it. The report trap below
 # removes every one at the end.
 #
-# A test file must not set a trap of its own. The EXIT trap is what prints the
-# tally, and a second `trap ... EXIT` replaces it, so the file then reports
-# nothing at all and the runner counts no test.
+# A test file must not set its own trap. The EXIT trap below prints the totals.
+# A second `trap ... EXIT` replaces that trap. The file then reports nothing,
+# and the runner counts no test.
 tmpdir() {
 	local dir
 	dir="$(mktemp -d)"
@@ -127,11 +127,13 @@ mode() {
 # The tally. scripts/test.sh reads the counts from PEL_TEST_COUNTS, so the
 # runner reports a total and no test file counts anything itself.
 #
-# The FIRST line takes the status that the file is exiting with, and a failure
-# there wins over the tally. A test file can stop before its last assertion --
-# `set -u` on a name that is not set does exactly that -- and a trap that
-# returned its own 0 would report "12 passed, 0 failed" for a file that ran
-# half of its tests. That is the one failure a test suite may never have.
+# The FIRST line reads the exit status of the file. A failure status has
+# priority over the totals.
+#
+# A test file can stop before its last assertion. `set -u` on a variable that is
+# not set causes this. A trap that returns its own status of 0 then reports
+# "12 passed, 0 failed" for a file that ran one half of its tests. A test suite
+# must not report a success for a file that stopped.
 pel_test_report() {
 	local status=$?
 	[ "${#PEL_TEMP[@]}" -eq 0 ] || rm -rf "${PEL_TEMP[@]}"

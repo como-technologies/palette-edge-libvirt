@@ -13,11 +13,11 @@
 #      only, so a run on a side branch executes and gets no credentials.
 #   3. main is protected: a merge needs one review and the `lint` check.
 #
-# BE HONEST ABOUT WHAT 3 BUYS. It does not guarantee that the runner executes
-# reviewed code. `enforce_admins` is false, so an administrator pushes straight
-# to main; and every account with write access to this repository is an
-# administrator, who could turn the rule off in one call whatever it is set to.
-# Gate 3 is a guard against a slip, not against a person.
+# GATE 3 GIVES LESS PROTECTION THAN ITS NAME SUGGESTS. It does not make sure
+# that the runner executes reviewed code. `enforce_admins` is false, thus an
+# administrator pushes directly to main. Each account with write access to this
+# repository is an administrator, and an administrator can remove the rule with
+# one call. Thus gate 3 prevents an accidental push only.
 #
 # So write access is the boundary, and it has no technical gate behind it.
 # Anybody who can put a commit on main runs code on the workstation. Review the

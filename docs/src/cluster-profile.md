@@ -88,12 +88,14 @@ same reason as the pod range above:
 {{#include ../../terraform/addon-profile.tf:dashboardvalues}}
 ```
 
-The pack does not need the sign-in at all. It runs Headlamp with `-in-cluster`
-and binds its service account to `cluster-admin`, so the backend reaches the API
-server with its own identity: `/clusters/main/version` answers 200 with a bearer
-token and without one. The sign-in was only ever the console's gate, and the
-pack also wires Palette OIDC for that path, which is the Connect button and not
-the port forward.
+The pack does not need the sign-in. It runs Headlamp with `-in-cluster`, and it
+binds the service account to `cluster-admin`. Thus the backend connects to the
+API server with its own identity. `/clusters/main/version` answers 200 with a
+bearer token, and also without one.
+
+The sign-in is the gate for the console only. The pack also configures Palette
+OIDC for that path. That path is the Connect button, and not the port
+forward.
 
 `unsafeUseServiceAccountToken` is Palette's name and the warning is real:
 whoever reaches the service gets `cluster-admin`. It is sound **here** because
@@ -123,11 +125,13 @@ ClusterProfileInvalidPackState: Cluster Profile operation not supported
 as pack spectro-k8s-dashboard:2.7.1 is disabled
 ```
 
-That is why this profile holds Headlamp. Measured in the same tenant,
-`headlamp`, `nginx`, `metrics-server`, `cert-manager`, `argo-cd`, and
-`spectro-proxy` all read `active`, and Spectro's Deprecated Packs page lists
-none of the disabled ones. The registry is the only reliable answer, so read the
-last column before you pin anything.
+This is the reason that the profile holds Headlamp.
+
+In the same tenant, these packs have the state `active`: `headlamp`, `nginx`,
+`metrics-server`, `cert-manager`, `argo-cd`, and `spectro-proxy`. The Deprecated
+Packs page of Spectro Cloud does not list the disabled packs. Thus the registry
+gives the only correct answer. Read the last column before you select a
+version.
 
 ### A pack name is not unique across clouds
 
@@ -259,11 +263,12 @@ it once:
 {{#include ../../scripts/lib.sh:tfstate}}
 ```
 
-A file that will not parse answers **yes**. The state is the only record that
-connects the objects in Palette to this checkout, so an unreadable file is not
-proof that there is nothing to lose. Answering "no" made `cluster-down` skip and
-leave the objects in the tenant, and made `remove-project` delete the only
-record of them.
+For a file that the function cannot read, the answer is **yes**. The state is
+the only record that connects this checkout to the objects in Palette. A file
+that the function cannot read is not evidence that the objects are absent.
+
+An answer of "no" caused two failures. `cluster-down` did nothing and left the
+objects in the tenant. `remove-project` deleted the only record of them.
 
 ## The hosts
 

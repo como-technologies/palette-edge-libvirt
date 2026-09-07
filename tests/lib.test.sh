@@ -45,9 +45,10 @@ is "short_path leaves another path alone" /etc/hosts "$(short_path /etc/hosts)"
 
 # --- require_cluster_name ---------------------------------------------------
 #
-# The name reaches libvirt and Palette, and each side refuses a different thing.
-# Palette applies its rule minutes after the machines are built under that name,
-# so this guard is what turns a lost build into a message in one second.
+# The name goes to libvirt and to Palette. Each one refuses a different name.
+# Palette applies its rule some minutes after the recipes build the machines
+# with that name. Thus this guard changes a failed build into a message in one
+# second.
 
 accepts "a name of 3 characters passes" require_cluster_name abc
 accepts "a name of 12 characters passes" require_cluster_name abcdefghijkl
@@ -69,9 +70,10 @@ refuses_with "an empty name is refused" \
 
 # --- require_pod_cidr -------------------------------------------------------
 #
-# The failure this prevents is late and quiet: the nodes go Ready, kubectl
-# works, and Palette sits in Provisioning for ever because the agent cannot
-# resolve a name. The pack default 192.168.0.0/16 is the value that causes it.
+# This guard prevents a failure that occurs later and gives no message. The
+# nodes become Ready. kubectl operates. Palette stays in Provisioning, because
+# the agent cannot resolve a name. The pack default value 192.168.0.0/16 causes
+# this condition.
 
 accepts "the default pod range passes" \
 	env POD_CIDR=10.244.0.0/16 CLUSTER_SUBNET=192.168.140 \
@@ -110,11 +112,12 @@ is "a session pool sits in the home directory" \
 
 # --- tfstate_has_resources --------------------------------------------------
 #
-# The state is the only record that connects the objects in Palette to this
-# checkout. `cluster-down` reads this to decide whether to skip, and
-# `remove-project` reads it to decide whether to delete the directory, so a
-# wrong answer here either leaves objects in the tenant or destroys the only
-# record of them.
+# The state is the only record that connects this checkout to the objects in
+# Palette. `cluster-down` reads this test and then decides to do nothing or to
+# continue. `remove-project` reads it and then decides to delete the directory.
+#
+# An incorrect answer causes one of two failures. It leaves objects in the
+# tenant, or it deletes the only record of them.
 
 work="$(tmpdir)"
 

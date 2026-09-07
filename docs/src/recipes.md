@@ -192,15 +192,15 @@ just cluster-verify    # the test suite
 just kubectl-uninstall # the twin of kubectl-install
 ```
 
-`cluster-verify` tests a cluster that exists. `cluster-up` returns 0 when
-Palette reports that it made the cluster, and that is not the same as a cluster
-that operates, so this reads the cluster itself: the nodes, the pod range, the
-packs, and a pod that resolves a name. The end to end job in continuous
-integration runs it, and so can you. See
-[Continuous integration](./ci.md#what-it-tests).
+`cluster-verify` examines a cluster that exists. `cluster-up` returns 0 when
+Palette reports that it made the cluster. That report is not the same as a
+cluster that operates. Thus this recipe reads the cluster: the nodes, the pod
+range, the packs, and a pod that resolves a name. The e2e job runs it, and you
+can also run it. See [Continuous integration](./ci.md#what-it-tests).
 
-It is one of the two test recipes, and the other needs nothing at all:
-`just test` covers the guards and the readers offline. See [Tests](./tests.md).
+This is one of the two test recipes. The other recipe needs nothing:
+`just test` examines the guards and the reader functions. See
+[Tests](./tests.md).
 
 It needs kubectl, and `kubectl-install` writes one into `~/.local/bin` with no
 root, exactly as `tofu-install` does.
@@ -280,21 +280,25 @@ just lint   # everything above, plus the format, the pairs, and the book
    [project rule 2](./rules.md#2-every-create-recipe-has-a-remove-recipe).
 3. `scripts/lint-params.sh` tests that the completion knows every recipe
    parameter.
-4. `scripts/lint-includes.sh` tests
-   [project rule 5](./rules.md#5-the-documentation-includes-the-source). Both
-   halves of every include: mdBook stops on a file that is absent, and it writes
-   a silent empty code block for an anchor that is absent.
+4. `scripts/lint-includes.sh` examines
+   [project rule 5](./rules.md#5-the-documentation-includes-the-source). It
+   examines the two parts of each include. mdBook stops for a file that is
+   absent. For an anchor that is absent, mdBook writes an empty code block and
+   gives no message.
 5. `shellcheck` tests every script and every test file.
 6. `scripts/test.sh` runs the offline suite. See [Tests](./tests.md).
 7. `just cluster-validate` tests the OpenTofu module, and `mdbook build` builds
    the book.
 
-`just cluster-validate` reaches **no tenant**. It needs no API key, no default
-project, and no state, so `just lint` runs in a checkout that has none of them —
-a lint that needs a credential is a lint that a new contributor cannot run. It
-still evaluates the variable validation rules, and one of those refuses an empty
-project name, so the script passes a placeholder and a temporary `TF_DATA_DIR`
-that keeps the provider out of the checkout.
+`just cluster-validate` connects to **no tenant**. It needs no API key, no
+default project, and no state. Thus `just lint` operates in a checkout that has
+none of them. A lint recipe that needs a credential is a lint recipe that a new
+contributor cannot run.
+
+`tofu validate` does evaluate the variable validation rules, and one rule
+refuses an empty project name. Thus the script gives a placeholder value. It
+also gives a temporary `TF_DATA_DIR`, which keeps the provider files out of the
+checkout.
 
 `just test` runs step 6 alone:
 

@@ -1,15 +1,15 @@
 # Tests
 
-This repository has two kinds of test, and they answer different questions.
+This repository has two test recipes. Each one answers a different question.
 
 | Recipe | Question | Needs |
 | --- | --- | --- |
-| `just test` | Do the guards and the readers behave? | Nothing. |
-| `just cluster-verify` | Does a real cluster work? | A cluster. |
+| `just test` | Do the guards and the readers operate correctly? | Nothing. |
+| `just cluster-verify` | Does a real cluster operate correctly? | A cluster. |
 
-`just lint` runs the first. The nightly e2e workflow runs the second, against a
-cluster that it builds and removes. See [Continuous
-integration](./ci.md).
+`just lint` runs the first recipe. The e2e workflow runs the second recipe
+against a cluster that it builds and then removes. See
+[Continuous integration](./ci.md).
 
 ## just test
 
@@ -18,76 +18,78 @@ integration](./ci.md).
 ```
 
 ```bash
-just test                # every test file
-just test seed           # the files whose name holds "seed"
+just test                # all test files
+just test seed           # the files with "seed" in the name
 ```
 
-The tests reach **nothing**: no libvirt, no Palette tenant, no network, and no
-file outside a temporary directory. So they run on a fresh checkout, they run on
-the hosted runner, and they finish in about a second.
+The tests use no libvirt, no Palette tenant, no network, and no file outside a
+temporary directory. Thus they operate in a new checkout, and they operate on
+the hosted runner. They take approximately one second.
 
-## What they cover
+## What the tests examine
 
-The tests are in `tests/`, one file for each subject:
+The test files are in `tests/`. There is one file for each subject.
 
 | File | Subject |
 | --- | --- |
-| `tests/lib.test.sh` | The tooling directories and the guards of `scripts/lib.sh`. |
-| `tests/palette-lib.test.sh` | The readers that turn a Palette answer into a value. |
-| `tests/seed-iso.test.sh` | The seed ISO: the render, the modes, and the refusals. |
+| `tests/lib.test.sh` | The tooling directories and the guards in `scripts/lib.sh`. |
+| `tests/palette-lib.test.sh` | The functions that read a Palette answer. |
+| `tests/seed-iso.test.sh` | The seed ISO: the values, the file modes, and the refusals. |
 
-They test the guards. Each guard in this repository was written after a failure
-that cost an afternoon:
+The tests examine the guards. A guard is a test in a script that refuses a
+condition. Each guard in this repository prevents a known failure:
 
-- a cluster name that libvirt accepts and Palette refuses, minutes after the
-  machines were built under that name
-- a pod range that holds the cluster subnet, which leaves Palette in
-  `Provisioning` for ever with every node Ready
-- a cluster list that counts a deleted cluster, so `just infra-down` refuses
-  for ever after a correct `just cluster-down`
-- a seed value with an apostrophe in it, or a `vip.skip` that stopped being a
-  boolean
+- A cluster name that libvirt accepts, but Palette refuses. Palette refuses the
+  name some minutes after the recipes build the machines with that name.
+- A pod range that contains the cluster subnet. Then all nodes become Ready,
+  `kubectl` operates, and Palette stays in `Provisioning`.
+- A cluster list that counts a deleted cluster. Then `just infra-down` refuses
+  after a correct `just cluster-down`.
+- A seed value with an apostrophe in it, or a `vip.skip` value that is not a
+  boolean.
 
-A guard is one `if` away from never firing again, and it fails silently when it
-stops: the recipe still returns 0, and the cost arrives an hour later. A guard
-that no test exercises is a comment.
+A guard can stop its operation after a small change to one `if` statement. The
+recipe then returns 0 and does not refuse the condition. The failure occurs
+later, and the message does not identify the cause. Thus each guard needs a
+test.
 
-## How the Palette readers are tested with no tenant
+## How the tests examine the Palette functions
 
-Each test replaces `api` with a function that prints a recorded answer and
-writes the request to a log. The reader then runs against the shape that the
-tenant really returns, and the test reads what the reader did with it.
+Each test replaces the `api` function with a function that prints a recorded
+answer. The test also writes the request to a log file. The reader function
+then operates on the data that the tenant sends, and the test examines the
+result.
 
-That log is a test of its own. `project_list` and `edge_host_list` are POSTs
-because Palette stopped answering a GET on those paths, and a reader that goes
-back to a GET returns HTTP 405 with no local symptom at all.
+The log file is also a test. `project_list` and `edge_host_list` use POST,
+because Palette does not answer a GET on those paths. A reader function that
+uses GET again receives HTTP 405. There is no other symptom on the workstation.
 
-## Writing a test
+## How to write a test
 
-A test file sources `tests/assert.sh` and calls assertions. It keeps no count
-and it sets no `trap`: the EXIT trap of that file prints the tally and sets the
-exit code.
+A test file includes `tests/assert.sh` and then calls the assertions. The test
+file counts nothing, and it sets no `trap`. The EXIT trap in `assert.sh` prints
+the totals and sets the exit code.
 
 ```bash
 {{#include ../../tests/assert.sh:assertions}}
 ```
 
-`refuses_with` is the one to reach for. A refusal in this repository names the
-correction, so the message is part of the behaviour and not decoration:
+Use `refuses_with` for a guard. A refusal in this repository names the
+correction, thus the message is part of the behaviour:
 
 ```bash
-refuses_with "13 characters: the bridge would not fit" \
+refuses_with "13 characters: the bridge name is too long" \
 	"network device takes 15" require_cluster_name abcdefghijklm
 ```
 
-Use `tmpdir` for a temporary directory. The report trap removes every one.
+Use `tmpdir` to make a temporary directory. The EXIT trap removes each one.
 
-## What they do not cover
+## What the tests do not examine
 
-Anything that needs libvirt or a tenant. That is deliberate: a test that needs
-either one does not run on a fresh checkout, and a test suite that people skip
-protects nothing.
+The tests do not examine libvirt or the tenant. This is deliberate. A test that
+needs libvirt or a tenant does not operate in a new checkout. Persons do not run
+a test suite that fails for that reason.
 
-`just cluster-verify` covers the other half. It tests a live cluster — the
-nodes, the pod range, the packs, and DNS — and the e2e workflow runs it against
-a cluster that it builds every night.
+`just cluster-verify` examines the other half. It examines a cluster that
+operates: the nodes, the pod range, the packs, and DNS. The e2e workflow runs it
+each night against a new cluster.

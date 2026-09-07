@@ -19,12 +19,13 @@ The first three rows are one time for each workstation. The last four take
 some minutes together, and almost all of that is a wait: Palette installs the
 packs on each node, and nothing here makes that faster.
 
-The times above are approximate on purpose. This page held a table of measured
-ones, and it went out of date the first time the pinned packs changed -- an
-add-on profile alone doubled `cluster-up`. The end to end job builds a whole
-cluster on every push to `main` and every night, so its run history holds real
-times for the current pins. Read those instead. See
-[Continuous integration](./ci.md).
+The times above are approximate. This is deliberate. This page had a table of
+measured times. That table became incorrect after the first change to the pinned
+packs. An add-on profile made `cluster-up` two times longer.
+
+The e2e job builds a full cluster on each push to `main`, and each night. Thus
+its history holds correct times for the current pinned versions. Read those
+times. See [Continuous integration](./ci.md).
 
 ## Let's do it in reverse
 
