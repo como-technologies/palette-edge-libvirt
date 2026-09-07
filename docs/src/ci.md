@@ -4,7 +4,7 @@ Two kinds of test run against this repository.
 
 | Test | Runner | Trigger | What it does |
 | --- | --- | --- | --- |
-| `ci`, `docs` | GitHub hosted | every push and pull request | `just lint`, and the book build |
+| `ci`, `docs` | GitHub hosted | every push and pull request | `just lint`, which runs `just test`, and the book build |
 | `e2e` | your workstation | push to `main`, a timer, and by hand | a real cluster, tested and removed |
 
 The hosted tests need no cluster, so they run on a machine that GitHub throws

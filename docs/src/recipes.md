@@ -173,12 +173,15 @@ just cluster-verify    # the test suite
 just kubectl-uninstall # the twin of kubectl-install
 ```
 
-`cluster-verify` is the test suite of the repository. `cluster-up` returns 0
-when Palette reports that it made the cluster, and that is not the same as a
-cluster that operates, so this reads the cluster itself: the nodes, the pod
-range, the packs, and a pod that resolves a name. The end to end job in
-continuous integration runs it, and so can you. See
+`cluster-verify` tests a cluster that exists. `cluster-up` returns 0 when
+Palette reports that it made the cluster, and that is not the same as a cluster
+that operates, so this reads the cluster itself: the nodes, the pod range, the
+packs, and a pod that resolves a name. The end to end job in continuous
+integration runs it, and so can you. See
 [Continuous integration](./ci.md#what-it-tests).
+
+It is one of the two test recipes, and the other needs nothing at all:
+`just test` covers the guards and the readers offline. See [Tests](./tests.md).
 
 It needs kubectl, and `kubectl-install` writes one into `~/.local/bin` with no
 root, exactly as `tofu-install` does.
@@ -247,18 +250,31 @@ functions for the Palette API. Both are sourced, never executed.
 
 ```bash
 just fmt    # format the justfile
-just lint   # test the format, the pairs, the scripts, and the docs build
+just test   # the offline suite: the guards and the readers, no tenant
+just lint   # everything above, plus the format, the pairs, and the book
 ```
 
-`just lint` runs five tests:
+`just lint` runs seven tests:
 
 1. `just --fmt --check` tests the format of the `justfile`.
 2. `scripts/lint-pairs.sh` tests
    [project rule 2](./rules.md#2-every-create-recipe-has-a-remove-recipe).
 3. `scripts/lint-params.sh` tests that the completion knows every recipe
    parameter.
-4. `shellcheck` tests every script.
-5. `mdbook build` builds the book, which tests every include path and every
-   anchor.
+4. `scripts/lint-includes.sh` tests
+   [project rule 5](./rules.md#5-the-documentation-includes-the-source). Both
+   halves of every include: mdBook stops on a file that is absent, and it writes
+   a silent empty code block for an anchor that is absent.
+5. `shellcheck` tests every script and every test file.
+6. `scripts/test.sh` runs the offline suite. See [Tests](./tests.md).
+7. `just cluster-validate` tests the OpenTofu module, and `mdbook build` builds
+   the book.
+
+`just test` runs step 6 alone:
+
+```bash
+just test        # every test file, about a second
+just test seed   # the files whose name holds "seed"
+```
 
 The GitHub Actions workflow runs `just lint` on each push and each pull request.

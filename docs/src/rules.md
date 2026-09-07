@@ -48,6 +48,10 @@ The scripts use the `skip` function from `scripts/lib.sh`:
 {{#include ../../scripts/lib.sh:skip}}
 ```
 
+A recipe that refuses instead of acting names the correction in the message. See
+[Tests](./tests.md): `just test` holds those refusals in place, because a guard
+that stops firing reports nothing at all.
+
 ## 4. Every recipe has a documentation comment
 
 `just` shows the comment above a recipe as the help text. Run `just` to see the

@@ -94,7 +94,7 @@ for h in items:
 	;;
 tokens)
 	info "registration tokens in this tenant"
-	body="$(api GET "v1/edgehosts/tokens?limit=100")"
+	body="$(token_list)"
 	printf '%s' "$body" | python3 -c '
 import json, sys
 items = json.load(sys.stdin).get("items") or []
@@ -278,6 +278,7 @@ for version in sorted(seen, key=key):
 '
 	;;
 *)
-	die "unknown action '$action'. Use projects, hosts, tokens, clusters, or packs."
+	die "unknown action '$action'. Use projects, hosts, tokens, clusters,
+     profiles, or packs."
 	;;
 esac

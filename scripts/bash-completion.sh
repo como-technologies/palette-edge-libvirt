@@ -53,7 +53,7 @@ emit() {
 #
 # _PEL_KINDS_FREE names the parameters that hold free text. They get no
 # completion on purpose.
-_PEL_KINDS="host project role action"
+_PEL_KINDS="host project role action filter"
 _PEL_KINDS_FREE="description pack version"
 # ANCHOR_END: kinds
 
@@ -118,6 +118,19 @@ _pel_projects() {
     done
 }
 
+# _pel_tests: the subject of each test file, so `just test <tab>` names what
+# there is to run. The justfile owns the checkout path, so this reads it there
+# and holds no list of its own.
+_pel_tests() {
+    local root file
+    root="$(just --evaluate root 2>/dev/null)" || return 0
+    [ -n "$root" ] && [ -d "$root/tests" ] || return 0
+    for file in "$root"/tests/*.test.sh; do
+        [ -e "$file" ] || continue
+        basename "$file" .test.sh
+    done
+}
+
 _pel_just_complete() {
     local cur recipe kind index
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -153,6 +166,9 @@ _pel_just_complete() {
         ;;
     action)
         mapfile -t COMPREPLY < <(compgen -W "plan apply destroy output kubeconfig" -- "$cur")
+        ;;
+    filter)
+        mapfile -t COMPREPLY < <(compgen -W "$(_pel_tests)" -- "$cur")
         ;;
     esac
     return 0

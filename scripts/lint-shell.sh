@@ -14,5 +14,11 @@ if ! command -v shellcheck >/dev/null 2>&1; then
 fi
 
 cd "$(repo_root)"
-shellcheck --external-sources scripts/*.sh
+
+# tests/ as well as scripts/. A test file is a shell script too, and a test
+# that no linter read is a test that can pass for the wrong reason.
+#
+# Do not start a comment line in this repository with the word that follows a
+# hash and names this tool: it reads that as a directive and fails to parse it.
+shellcheck --external-sources scripts/*.sh tests/*.sh
 info "shellcheck found no problems"

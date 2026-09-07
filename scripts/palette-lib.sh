@@ -91,13 +91,29 @@ else:
 	printf '%s' "$body"
 }
 
+# ANCHOR: tokenlist
+# token_list: print the JSON body that holds every registration token of the
+# tenant.
+#
+# One function holds this endpoint, and four readers call it. That is the same
+# lesson as `project_list` below, applied before Palette teaches it again: a
+# LIST of this API can become a POST with no notice, and the repository came to
+# correct `v1/projects` in four places because four places held the call.
+#
+# A token is a tenant object and not a project one, so this takes no ProjectUid
+# header. `spec.defaultProject` is what binds one to a project.
+token_list() {
+	api GET "v1/edgehosts/tokens?limit=100"
+}
+# ANCHOR_END: tokenlist
+
 # token_for_project UID: print the uid of the registration token that names
 # this project as its default project. Prints nothing if there is none.
 #
 # Palette refuses to delete a project while a token still names it.
 token_for_project() {
 	local body
-	body="$(api GET "v1/edgehosts/tokens?limit=100")" || return 1
+	body="$(token_list)" || return 1
 	printf '%s' "$body" | PEL_UID="$1" python3 -c '
 import json, os, sys
 want = os.environ["PEL_UID"]
@@ -112,7 +128,7 @@ for token in json.load(sys.stdin).get("items") or []:
 # token_name UID: print the name of one registration token.
 token_name() {
 	local body
-	body="$(api GET "v1/edgehosts/tokens?limit=100")" || return 1
+	body="$(token_list)" || return 1
 	printf '%s' "$body" | PEL_UID="$1" python3 -c '
 import json, os, sys
 want = os.environ["PEL_UID"]
@@ -126,7 +142,7 @@ for token in json.load(sys.stdin).get("items") or []:
 # token_value UID: print the registration token itself. Never log this value.
 token_value() {
 	local body
-	body="$(api GET "v1/edgehosts/tokens?limit=100")" || return 1
+	body="$(token_list)" || return 1
 	printf '%s' "$body" | PEL_UID="$1" python3 -c '
 import json, os, sys
 want = os.environ["PEL_UID"]

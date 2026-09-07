@@ -20,6 +20,7 @@
 - [Host registration](./edge-hosts.md)
 - [The cluster profile](./cluster-profile.md)
 - [The workstation](./workstation.md)
+- [Tests](./tests.md)
 - [Benchmark](./benchmark.md)
 - [Continuous integration](./ci.md)
 - [The tooling directories](./directories.md)

@@ -59,6 +59,9 @@ just nuke                # both layers, the token, and the project
 5. The documentation includes the source. It does not copy the source.
 
 Run `just` to see every recipe. Run `just config` to see the current settings.
+Run `just lint` before a commit: it tests the format, the pairs, the shell
+scripts, the guards, and the book. `just test` runs the guards alone, and it
+needs neither libvirt nor a tenant.
 
 ## Bash completion
 

@@ -148,8 +148,10 @@ export TF_VAR_vip="${CLUSTER_VIP:-}"
 
 # --- the checks that only a build needs -------------------------------------
 #
-# require_cluster_name is in lib.sh, because both layers need the same name.
-# net-up.sh runs it for the layer below, so a name that Palette refuses stops
+# require_cluster_name and require_pod_cidr are in lib.sh. Both compare a
+# setting of this layer with a setting of the layer below, so neither belongs to
+# one layer alone, and `just test` exercises both offline. net-up.sh runs the
+# name test for the layer below, so a name that Palette refuses stops
 # `just infra-up` instead of `just cluster-up` four minutes later.
 
 # require_vip: stop unless the seed ISO and the cluster agree about the virtual
@@ -173,37 +175,14 @@ require_vip() {
      again:  just seed-clean && just infra-down && just infra-up"
 }
 
-# require_pod_cidr: stop when the pod range holds the cluster subnet.
-#
-# Calico gives no NAT to a destination inside its own pool. A pod that asks the
-# gateway of the cluster network for DNS then gets no answer, and the cluster
-# waits for a name that it cannot resolve. The test compares only the first two
-# numbers, which is what a /16 pod range decides.
-require_pod_cidr() {
-	local pod="${POD_CIDR:-10.244.0.0/16}" subnet="${CLUSTER_SUBNET:-192.168.140}"
-	[ "${pod%%.*}.$(printf '%s' "${pod#*.}" | cut -d. -f1)" != \
-		"${subnet%%.*}.$(printf '%s' "${subnet#*.}" | cut -d. -f1)" ] ||
-		die "POD_CIDR is $pod and CLUSTER_SUBNET is ${subnet}.0/24, and the first
-     holds the second. Calico gives no NAT inside its own pool, so the pods
-     cannot reach the gateway of the cluster network.
-     Give POD_CIDR a range that holds neither the cluster subnet nor the
-     address of your workstation, for example 10.244.0.0/16."
-}
-
 # --- the state --------------------------------------------------------------
 
-# state_has_resources: return 0 when the state file names an object that
-# OpenTofu made. An empty state means this project has no cluster layer.
+# state_has_resources: return 0 when the state of THIS project names an object
+# that OpenTofu made. The test itself is tfstate_has_resources in lib.sh, which
+# `just test` exercises and project-remove.sh shares; this wrapper only holds
+# the path, because `state` is a variable of this script alone.
 state_has_resources() {
-	[ -s "$state/terraform.tfstate" ] || return 1
-	python3 -c '
-import json, sys
-try:
-    data = json.load(open(sys.argv[1]))
-except Exception:
-    sys.exit(1)
-sys.exit(0 if (data.get("resources") or []) else 1)
-' "$state/terraform.tfstate"
+	tfstate_has_resources "$state/terraform.tfstate"
 }
 
 # The state file holds the administrator kubeconfig of the cluster. Take the

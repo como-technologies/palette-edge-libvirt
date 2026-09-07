@@ -175,14 +175,7 @@ fi
 state="$(state_dir)/$name"
 if [ ! -d "$state" ]; then
 	skip "$(short_path "$state") is absent"
-elif [ -s "$state/terraform.tfstate" ] && python3 -c '
-import json, sys
-try:
-    data = json.load(open(sys.argv[1]))
-except Exception:
-    sys.exit(1)
-sys.exit(0 if (data.get("resources") or []) else 1)
-' "$state/terraform.tfstate"; then
+elif tfstate_has_resources "$state/terraform.tfstate"; then
 	warn "$(short_path "$state") still names an object in Palette.
          The directory stays. To remove the objects: just cluster-down"
 else

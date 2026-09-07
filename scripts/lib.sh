@@ -182,6 +182,49 @@ require_cluster_name() {
      with a letter and ends with a letter or a number."
 }
 
+# require_pod_cidr: stop when the pod range holds the cluster subnet.
+#
+# Calico gives no NAT to a destination inside its own pool. A pod that asks the
+# gateway of the cluster network for DNS then gets no answer, and the cluster
+# waits for a name that it cannot resolve. The test compares only the first two
+# numbers, which is what a /16 pod range decides.
+require_pod_cidr() {
+	local pod="${POD_CIDR:-10.244.0.0/16}" subnet="${CLUSTER_SUBNET:-192.168.140}"
+	[ "${pod%%.*}.$(printf '%s' "${pod#*.}" | cut -d. -f1)" != \
+		"${subnet%%.*}.$(printf '%s' "${subnet#*.}" | cut -d. -f1)" ] ||
+		die "POD_CIDR is $pod and CLUSTER_SUBNET is ${subnet}.0/24, and the first
+     holds the second. Calico gives no NAT inside its own pool, so the pods
+     cannot reach the gateway of the cluster network.
+     Give POD_CIDR a range that holds neither the cluster subnet nor the
+     address of your workstation, for example 10.244.0.0/16."
+}
+
+# ANCHOR: tfstate
+# tfstate_has_resources PATH: return 0 when an OpenTofu state file names an
+# object that OpenTofu made.
+#
+# An empty state and an absent state both mean the same thing: this project has
+# no cluster layer. The difference matters to three recipes, and each one wants
+# a different answer to it -- `cluster-down` skips, `cluster-kubeconfig` stops,
+# and `remove-project` deletes the directory -- so the test lives here and the
+# decision stays with the caller.
+#
+# A state that this cannot parse counts as "holds an object". The state is the
+# only record that connects the objects in Palette to this checkout, and a file
+# that cannot be read is not proof that there is nothing to lose.
+tfstate_has_resources() {
+	[ -s "$1" ] || return 1
+	python3 -c '
+import json, sys
+try:
+    data = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+sys.exit(0 if (data.get("resources") or []) else 1)
+' "$1"
+}
+# ANCHOR_END: tfstate
+
 # ANCHOR: session
 # libvirt_session: return 0 when the recipes talk to the session daemon.
 #

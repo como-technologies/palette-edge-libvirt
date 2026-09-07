@@ -42,6 +42,8 @@ just host-status NAME     # agent install progress
 just console NAME         # serial console, ctrl-] to exit
 just ls                   # every cluster VM with state and address
 
+just test [FILTER]        # the offline suite: no libvirt, no tenant, ~1s
+just lint                 # fmt, pairs, params, includes, shellcheck, test, docs
 just docs-serve           # book at http://localhost:3000 with live reload
 source <(just bash-completion)   # recipe + argument completion for this shell
 ```
@@ -55,9 +57,23 @@ correction that `die()` had just printed. The exit code is unchanged, and just's
 Boolean settings take the bare form: `set no-exit-message`, not `:= true`, or
 `just --fmt --check` fails.
 
-There is no test suite. `just lint` is the check that must pass: `just --fmt
---check`, `lint-pairs.sh` (rule 2), `lint-params.sh`, `lint-includes.sh`
-(rule 5), `shellcheck`, and `mdbook build docs`.
+`just lint` is the check that must pass: `just --fmt --check`, `lint-pairs.sh`
+(rule 2), `lint-params.sh`, `lint-includes.sh` (rule 5), `shellcheck`,
+`just test`, `cluster-validate`, and `mdbook build docs`.
+
+**`just test` is the offline suite, and it reaches nothing** — no libvirt, no
+tenant, no network, no file outside a temporary directory — so it runs on a
+fresh checkout and on the hosted runner in about a second. `tests/*.test.sh`,
+one file for each subject, with `tests/assert.sh` for the assertions. `just test
+seed` runs one file. What it holds in place is the GUARDS: every one of them was
+written after an expensive failure, each is one `if` away from never firing
+again, and a guard that stops firing reports nothing at all. It also pins the
+request shapes — `project_list` and `edge_host_list` are POSTs, `token_list` is
+still a GET — by logging what the reader asked for against a stubbed `api`. Add
+a test with a guard, and never write a `trap ... EXIT` in a test file: that trap
+prints the tally, and a second one silently discards it. `just cluster-verify`
+is the other half and needs a live cluster; the two answer different questions.
+See `docs/src/tests.md`.
 
 **mdBook does NOT fail on a missing anchor.** It fails on a missing *file*, but a
 `{{#include file:anchor}}` whose anchor was renamed renders as a silent empty
@@ -248,6 +264,15 @@ profile.
 because the seed sets `stylus.site.name`. `data "spectrocloud_appliance"` returns
 that name as `id`, so `cluster.tf` needs no uid lookup table — it reads one
 appliance per topology name, and the read itself proves the host registered.
+
+**An unreadable state file counts as HOLDING an object.** `tfstate_has_resources`
+in `lib.sh` is the one copy of that test now; `cluster.sh` and
+`project-remove.sh` shared two identical copies of it, and both answered "no
+resources" when the JSON would not parse. That is the unsafe direction in both
+places: `cluster-down` skipped and left the objects in Palette, and
+`remove-project` deleted the only record of them. A file that cannot be read is
+not proof that there is nothing to lose, so the function now returns 0 and the
+caller decides what to do.
 
 **Never chmod the whole state directory.** `TF_DATA_DIR` lives under it and holds
 the provider binary; a blanket `chmod 600` gives `fork/exec ...: permission

@@ -587,13 +587,20 @@ bash-completion-uninstall:
 fmt:
     just --fmt
 
-# Test the format, the recipes, the shell scripts, and the docs build
+# ANCHOR: test
+# Test the guards and the readers offline. Needs no libvirt and no tenant.
+test filter="":
+    @scripts/test.sh "{{ filter }}"
+# ANCHOR_END: test
+
+# Test the format, the recipes, the shell scripts, the guards, and the docs
 lint: _docs-theme-check
     just --fmt --check
     @scripts/lint-pairs.sh
     @scripts/lint-params.sh
     @scripts/lint-includes.sh
     @scripts/lint-shell.sh
+    @scripts/test.sh
     @if command -v tofu >/dev/null 2>&1; then just cluster-validate; \
         else echo "    OpenTofu is absent, so the module is not tested. Run: just tofu-install"; fi
     mdbook build docs
