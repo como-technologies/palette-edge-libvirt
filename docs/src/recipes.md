@@ -165,6 +165,25 @@ installs. It forwards a local port through the API server, so the cluster needs
 no ingress controller and the page asks for no sign-in. See
 [The add-on profile](./cluster-profile.md#the-add-on-profile).
 
+### Read your tenant
+
+```bash
+just palette-projects  # every project, and whether PALETTE_PROJECT names one
+just palette-hosts     # every host that registered
+just palette-tokens    # every token, and the project it registers into
+just palette-clusters  # uid, endpoint, profiles, and the console link
+just palette-profiles  # every cluster profile of the project
+just palette-packs edge-k8s        # the versions, and the state of each
+just palette-packs edge-k8s 1.33.13 # the default values of one version
+```
+
+These read Palette and change nothing. Run `just palette-projects` first when
+registration goes wrong: a wrong `PALETTE_PROJECT` gives no error anywhere, and
+this finds it in a second.
+
+[The Palette API](./palette-api.md) describes what each answer means, and the
+fields that do not say what they look like they say.
+
 ### Test the cluster
 
 ```bash

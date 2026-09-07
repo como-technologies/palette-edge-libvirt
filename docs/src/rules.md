@@ -10,6 +10,10 @@ same list at the top of the file:
 This page explains each rule. It holds no list of recipes. Run `just` to see the
 recipes, and see [Recipes](./recipes.md) for the naming pattern.
 
+The rules say what to build. [Writing a script](./scripts.md) says what goes
+wrong while you build it: the traps in bash, in `just`, in libvirt, and in
+mdBook that this repository fell into, and what each one costs.
+
 ## 1. Every action is a recipe
 
 Do not run a command by hand. Do not click a button in a web interface when a

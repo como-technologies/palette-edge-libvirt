@@ -19,6 +19,7 @@
 - [The cluster network](./network.md)
 - [Host registration](./edge-hosts.md)
 - [The cluster profile](./cluster-profile.md)
+- [The Palette API](./palette-api.md)
 - [The workstation](./workstation.md)
 - [Tests](./tests.md)
 - [Continuous integration](./ci.md)
@@ -26,4 +27,5 @@
 - [The project layout](./project-layout.md)
 - [Design decisions](./decisions.md)
 - [Project rules](./rules.md)
+- [Writing a script](./scripts.md)
 - [Troubleshooting](./troubleshooting.md)

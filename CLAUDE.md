@@ -186,6 +186,19 @@ anywhere: the host boots, the agent runs, and it simply never appears in
 Palette. `just palette-projects` catches it in a second. Run it before debugging
 anything else about registration.
 
+**The book now holds the long form of most of what follows.** These sections are
+the index; each fact below is written out, with the error text and the
+correction, on one of these pages. Correct BOTH when one changes, or delete the
+line here and keep the page:
+
+| Subject | Page |
+| --- | --- |
+| what the tenant answers, and the fields that lie | `docs/src/palette-api.md` |
+| the traps in bash, `just`, libvirt, and mdBook | `docs/src/scripts.md` |
+| the packs, the presets, and the pod range | `docs/src/cluster-profile.md` |
+| a failure and its correction | `docs/src/troubleshooting.md` |
+| the offline suite | `docs/src/tests.md` |
+
 ### The cluster layer (OpenTofu)
 
 **The pod range MUST be replaced.** `edge-k8s` defaults to

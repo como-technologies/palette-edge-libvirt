@@ -117,6 +117,38 @@ as pack spectro-k8s-dashboard:2.7.1 is disabled
 
 That is why this profile holds Headlamp.
 
+### A pack name is not unique across clouds
+
+`cni-calico` exists for aws, for gcp, for edge-native, and for more. So every
+`data "spectrocloud_pack"` names the cloud and the registry:
+
+```hcl
+cloud        = ["edge-native"]
+registry_uid = data.spectrocloud_registry.public.id
+```
+
+A pack of the wrong cloud resolves, and the plan is clean. Palette rejects it
+only when it builds the profile.
+
+### An add-on pack from Public Repo is not a Helm pack
+
+The obvious reading of the provider documentation is
+`spectrocloud_pack_simple` with `type = "helm"` for a Helm chart. It resolves,
+it plans clean, and the apply fails:
+
+```text
+Invalid parameter 'PackType'; caused by: PackType 'helm' is not matching
+with registry type 'pack' for pack ''
+```
+
+Public Repo is a **pack** registry. A pack that carries a Helm chart inside it
+is still a pack. Use `spectrocloud_pack`, leave `type` off the `pack` block so
+it takes the default `spectro`, and give the data source no `cloud`: an add-on
+pack carries the cloud type `all`, so a cloud filter finds nothing.
+
+`spectrocloud_pack_simple` with `type = "helm"` is for a Helm registry that you
+added yourself.
+
 ## Why the OS layer is different
 
 The BYOOS pack has two presets. The default is **Appliance Mode**, and that mode
@@ -126,7 +158,12 @@ and cloud-init installs the Palette agent. See
 [Design decisions](./decisions.md#agent-mode-not-edge-native).
 
 **Agent Mode** is the preset that matches, and
-`terraform/values/edge-native-byoi.yaml` selects it. That file is the one place
+`terraform/values/edge-native-byoi.yaml` selects it. The pack is
+`edge-native-byoi` with that preset, and **not** the pack that is literally
+named `byoi-agent-mode`: that one exists in Public Repo and reads
+`system_state: deprecated`. The preset is only values —
+`options.system.uri: "NA"`, plus the marker comment that the console reads to
+show the mode. That file is the one place
 in the profile that does not take the default values of its pack, so it carries
 the reason for each change.
 

@@ -173,3 +173,9 @@ when the machine is gone.
 the seeds, the registration token, the Palette project, and the environment
 file. The cloud image and the API key stay, because neither belongs to one
 project.
+
+## More
+
+- [Writing a script](./scripts.md) — the traps that each script guards against.
+- [The Palette API](./palette-api.md) — what the tenant answers, and what it
+  does not.

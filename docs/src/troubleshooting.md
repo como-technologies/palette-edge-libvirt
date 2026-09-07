@@ -232,6 +232,56 @@ skips a domain that exists. Build those machines again:
 just infra-down && just infra-up
 ```
 
+## `just net-up` reports "Numerical result out of range"
+
+The bridge of the cluster network is `br-$CLUSTER_NAME`, and a Linux interface
+name takes 15 characters. Over that, libvirt defines the network without a
+complaint and fails when it starts it.
+
+Give the cluster a name of 12 characters or fewer:
+
+```bash
+CLUSTER_NAME=<name> just infra-up
+```
+
+`just new-project` allocates a name that fits. `net-up.sh` tests the length
+before it defines anything, so this message now arrives in a second.
+
+The same test refuses a name that Palette would refuse: fewer than 3
+characters, an upper case letter, or a hyphen at the end. Palette applies its
+own rule at the moment it makes the cluster, which is minutes after the machines
+were built under that name.
+
+## `just pool-up` stops and asks for a password that it cannot read
+
+The recipe needs root one time, to make the pool directory under
+`/var/lib/libvirt/images` and to give it to you. With no terminal and no cached
+password, sudo has no way to ask.
+
+The recipe names the two commands to run by hand. Run them, then run
+`just pool-up` again.
+
+All of the root work happens before the pool is defined, and that ordering is
+deliberate. An earlier version defined the pool first, so a failed `chown` left
+a pool that was defined, inactive, and unusable, and the next run reported
+"already defined" and failed in the same place.
+
+## `just pool-down` says the parent belongs to root
+
+```text
+the parent of the pool directory belongs to root
+```
+
+`/var/lib/libvirt/images` is `drwx--x--x root:root`, and `rmdir` needs write
+permission on the **parent**, not on the directory. So `pool-down` removes the
+pool from libvirt and leaves an empty directory behind.
+
+This is not a fault and it needs no correction. The directory is empty, it holds
+no disk, and the next `just pool-up` uses it again.
+
+"The directory still holds a file" is a different message and does need one.
+Run `just infra-down`, which deletes the files that no domain names any more.
+
 ## `just image-fetch` fails
 
 The release name in `UBUNTU_RELEASE` does not exist, or the workstation has no
@@ -462,6 +512,26 @@ Or use another port for this run:
 
 ```bash
 DASHBOARD_PORT=9443 just dashboard
+```
+
+## The kubeconfig names a proxy address, not the virtual address
+
+`just cluster-kubeconfig` returns what Palette holds, and Palette now sometimes
+names its own proxy:
+
+```text
+server: https://cluster-<uid>.proxy.console.spectrocloud.com:443
+```
+
+Both paths work. The virtual address still answers
+(`https://$CLUSTER_VIP:6443/healthz` gives 200), and the workstation reaches it
+over the bridge. Use whichever the file names.
+
+The address does not answer ICMP, so `ping` proves nothing about it. The TCP
+connection is the test:
+
+```bash
+just cluster-verify
 ```
 
 ## `just cluster-up` reports that OpenTofu is absent
