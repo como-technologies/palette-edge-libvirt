@@ -14,6 +14,11 @@ create-missing = false
 [preprocessor.mermaid]
 command = "mdbook-mermaid"
 
+# Test each link while the book builds, with the rules in .mdbook-lint.toml.
+# `just lint` runs the same rules through scripts/lint-links.sh, so a broken
+# link stops `just docs` and `just docs-serve` as well.
+[preprocessor.lint]
+
 [output.html]
 git-repository-url = "https://github.com/como-technologies/palette-edge-libvirt"
 edit-url-template = "https://github.com/como-technologies/palette-edge-libvirt/edit/main/docs/{path}"

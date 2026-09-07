@@ -29,7 +29,7 @@ jobs:
         uses: extractions/setup-just@v2
 
       - name: Install mdbook and the preprocessors
-        run: cargo install --locked mdbook mdbook-mermaid mdbook-gruvbox
+        run: cargo install --locked mdbook mdbook-mermaid mdbook-gruvbox mdbook-lint
 
       - name: Build the book
         run: just docs

@@ -1,0 +1,38 @@
+# mdbook-lint: the link and include rules only.
+#
+# These five rules examine what no other test in this repository examines, and
+# what mdbook itself does not. Measured against mdbook 0.5.4, each of these
+# conditions builds the book with exit code 0 and no message:
+#
+#   a link to a heading that does not exist    ->  MDBOOK006
+#   a link to a page that does not exist       ->  MDBOOK002
+#
+# MDBOOK007 examines an {{#include}}, and it stays OFF.
+# scripts/lint-includes.sh makes that test, and it is correct on two cases that
+# MDBOOK007 reports wrongly:
+#
+#   an anchor name of 3 characters or less, such as `url`
+#     -> https://github.com/joshrotenberg/mdbook-lint/issues/498
+#   the escaped example \{{#include ...}} in rules.md, which mdBook does not
+#     process and this book prints as text
+#
+# Turn MDBOOK007 on and delete lint-includes.sh when both are corrected.
+#
+# The style rules stay off. Three of them contradict a decision of this
+# repository:
+#
+#   CONTENT005  wants an introduction below each page title. The quick start
+#               pages start at the first command on purpose.
+#   CONTENT004  wants title case in a heading. This book uses sentence case.
+#   MD013       wants a line limit that the tables and the error text exceed.
+#
+# See docs/src/recipes.md.
+enabled-rules = [
+  "MDBOOK002", # internal-link-validation: a link resolves to a file
+  "MDBOOK006", # internal-cross-references: a link resolves to a heading
+  "MD051",     # link-fragments: a fragment matches a heading of the same page
+  "CONTENT006",# no-broken-internal-links
+]
+
+fail-on-errors = true
+fail-on-warnings = true

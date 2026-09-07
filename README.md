@@ -91,11 +91,12 @@ diagrams and `mdbook-gruvbox` for the theme.
 | `genisoimage` or `xorriso` | Builds the seed ISO. |
 | `tofu` | Makes the cluster profile and the cluster. |
 | `mdbook`, `mdbook-mermaid`, `mdbook-gruvbox` | Builds the documentation. |
+| `mdbook-lint` | Tests each link of the book. |
 | `shellcheck` | Tests the shell scripts. |
 
 `just host-setup` installs the system packages, and `just tofu-install` installs
 OpenTofu into `~/.local/bin`. Install the `mdbook` tools with
-`cargo install mdbook mdbook-mermaid mdbook-gruvbox`.
+`cargo install mdbook mdbook-mermaid mdbook-gruvbox mdbook-lint`.
 
 ## Security
 

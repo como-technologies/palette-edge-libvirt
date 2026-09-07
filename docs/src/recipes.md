@@ -285,7 +285,7 @@ just test   # the offline suite: the guards and the readers, no tenant
 just lint   # everything above, plus the format, the pairs, and the book
 ```
 
-`just lint` runs seven tests:
+`just lint` runs eight tests:
 
 1. `just --fmt --check` tests the format of the `justfile`.
 2. `scripts/lint-pairs.sh` tests
@@ -297,9 +297,14 @@ just lint   # everything above, plus the format, the pairs, and the book
    examines the two parts of each include. mdBook stops for a file that is
    absent. For an anchor that is absent, mdBook writes an empty code block and
    gives no message.
-5. `shellcheck` tests every script and every test file.
-6. `scripts/test.sh` runs the offline suite. See [Tests](./tests.md).
-7. `just cluster-validate` tests the OpenTofu module, and `mdbook build` builds
+5. `scripts/lint-links.sh` tests each link with `mdbook-lint`. mdBook builds a
+   link to a page that is absent, and a link to a heading that is absent, with
+   exit code 0 and no message. `.mdbook-lint.toml` names the rules, and it says
+   which rules stay off and why. `docs/book.toml` runs the same rules as a
+   preprocessor, so `just docs` and `just docs-serve` stop as well.
+6. `shellcheck` tests every script and every test file.
+7. `scripts/test.sh` runs the offline suite. See [Tests](./tests.md).
+8. `just cluster-validate` tests the OpenTofu module, and `mdbook build` builds
    the book.
 
 `just cluster-validate` connects to **no tenant**. It needs no API key, no

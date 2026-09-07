@@ -22,9 +22,9 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v2
 
-      - name: Install mdbook and the preprocessors
+      - name: Install mdbook, the preprocessors, and the link linter
         run: |
-          cargo install --locked mdbook mdbook-mermaid mdbook-gruvbox
+          cargo install --locked mdbook mdbook-mermaid mdbook-gruvbox mdbook-lint
 
       # genisoimage is for `just test`, not for shellcheck: the seed tests build
       # a real CIDATA ISO with a token that is not one. Without the tool that

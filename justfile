@@ -611,6 +611,7 @@ lint: _docs-theme-check
     @scripts/lint-pairs.sh
     @scripts/lint-params.sh
     @scripts/lint-includes.sh
+    @scripts/lint-links.sh
     @scripts/lint-shell.sh
     @scripts/test.sh
     @if command -v tofu >/dev/null 2>&1; then just cluster-validate; \
