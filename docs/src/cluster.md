@@ -14,9 +14,10 @@ The recipe makes three objects in Palette:
 | add-on cluster profile | `<CLUSTER_NAME>-addon` |
 | cluster | `<CLUSTER_NAME>` |
 
-The control plane pool takes the `-cp-` hosts and the worker pool takes the
-`-wk-` hosts. The libvirt domain name and the Palette host name are the same, so
-`just ls` and the Palette host list agree.
+`just infra-up` named each machine `<CLUSTER_NAME>-cp-<N>` or
+`<CLUSTER_NAME>-wk-<N>`. The `cp` names go in the control plane pool, and the
+`wk` names go in the worker pool. A libvirt domain and its Palette host have the
+same name, so `just ls` and the Palette host list agree.
 
 Palette then installs the four packs on every node. That takes about 11 minutes
 for 1 control node and 2 workers. It installs the add-on profile after the
