@@ -14,7 +14,8 @@ The recipe makes the project in your tenant, makes a registration token for it,
 writes the environment file of the project, and makes that project the
 default.
 
-There is nothing to fill in afterwards.
+There is nothing to fill in afterwards. See
+[The project layout](./project-layout.md).
 
 ## 2. Confirm the result
 
@@ -25,11 +26,5 @@ just projects   # the projects that have a file, * marks the default
 `just projects` reads the local files. `just palette-projects` reads your
 tenant.
 
-## Next
-
-Create the hosts. See [Create the machines](./machines.md).
-
-## More
-
-[The project layout](./project-layout.md) describes the files, the order that
-`remove-project` uses, and how to run two clusters at the same time.
+When the new project has the `*`, continue to
+[Create the machines](./machines.md).

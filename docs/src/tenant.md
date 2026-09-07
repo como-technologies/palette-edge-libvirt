@@ -24,9 +24,4 @@ The first recipe reports the length of the key, never its value. The second
 recipe reads your tenant with that key, so a correct list proves that the key
 works.
 
-## Next
-
-See [Create a project](./project.md).
-
-The API key is the only value that you give by hand. `just new-project` writes
-every other value. [Settings](./settings.md) describes each one.
+When the list is correct, continue to [Create a project](./project.md).

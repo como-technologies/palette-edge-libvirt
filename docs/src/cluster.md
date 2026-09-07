@@ -124,15 +124,4 @@ the project all stay, so `just cluster-up` builds them again.
 Run it before `just infra-down`. That recipe refuses while the project holds a
 cluster, because a cluster whose machines are gone is impossible to repair.
 
-## Next
-
-The cluster is up. [Remove everything](./teardown.md) describes the way back
-down.
-
-## More
-
-[The cluster profile](./cluster-profile.md) describes the four packs, the
-virtual address, and where OpenTofu keeps its state.
-[Settings](./settings.md#the-cluster-layer) describes every value of this layer.
-[Architecture](./architecture.md) describes the two layers and the seam between
-them.
+To remove each object of the project, see [Remove everything](./teardown.md).

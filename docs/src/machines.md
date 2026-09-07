@@ -56,7 +56,11 @@ After the hosts register, remove the seed ISO from each one:
 just host-eject <host>
 ```
 
-The seed ISO holds your registration token. An ejected host keeps no copy.
+The seed ISO holds your registration token. An ejected host keeps no copy. See
+[Host registration](./edge-hosts.md).
+
+When every host is registered, continue to
+[Create the cluster](./cluster.md).
 
 ## Change the machines
 
@@ -72,16 +76,3 @@ file. [Settings](./settings.md#the-cluster-size) describes them.
 
 Virtual machines are cheap, and the tooling ties a host to one cluster. Build
 them again rather than change one in place.
-
-## Next
-
-Every host is registered and idle. [Create the cluster](./cluster.md).
-
-## More
-
-[Architecture](./architecture.md) describes the two layers, and where each part
-of the state lives.
-[Host registration](./edge-hosts.md) describes the seed ISO, the agent
-installation, and how to remove a host or rotate the token.
-[The cluster network](./network.md) describes the network definition and the
-address plan.
