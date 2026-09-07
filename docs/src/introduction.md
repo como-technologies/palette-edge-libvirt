@@ -31,7 +31,3 @@ also reads from the bottom up:
 | `just host-setup-undo` | libvirt, KVM, and the group membership. |
 
 *...and it's like we were never here* 😏
-
-## More
-
-[Getting started](./host-setup.md)
