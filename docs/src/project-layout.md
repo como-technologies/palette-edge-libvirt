@@ -31,6 +31,10 @@ The recipe does four things:
 Step 2 removes the last manual step. Nobody copies a token from the console.
 `PALETTE_TOKEN_DAYS` sets the lifetime, and the default is 90 days.
 
+Step 1 puts the description in `metadata.annotations.description`. Palette keeps
+it there and not in a `description` field, so a reader that looks for a field
+finds nothing.
+
 Step 3 chooses values that do not collide with an existing cluster:
 
 | Value | How the recipe chooses it |

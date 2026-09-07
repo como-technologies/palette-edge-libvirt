@@ -135,6 +135,29 @@ Report the two reasons apart. "The directory still holds a file" is worth
 saying. "The parent belongs to root" is not a fault, and a message that treats
 it as one sends a person looking for a mistake that they did not make.
 
+## Never hand libvirt a file inside the checkout
+
+libvirt gives every file that a domain uses to the `libvirt-qemu` user, and it
+does not give it back when the start fails. A seed ISO in the checkout would
+therefore stop belonging to you, and the seed directory is mode 0700, so the
+qemu user cannot enter it in the first place.
+
+`host-up.sh` copies the seed into the storage pool and attaches that copy.
+`host-down.sh` and `host-eject.sh` delete pool files. `seed-iso.sh` unlinks its
+output before it writes, so a seed that libvirt captured can still be rebuilt
+with no sudo.
+
+## Test for a usable credential, not for the file
+
+`infra-down` tested `[ -s "$(api_key_file)" ]`. A key given in the environment
+is the documented way to give one for a single command, and it is the only way
+that continuous integration gives one, so every CI run skipped the whole Palette
+half of the layer **without saying so** and orphaned a host record for every
+machine it deleted.
+
+`have_api_key` tests both sources. Use it where a missing key is a condition to
+report, and `need_api_key` where it is a reason to stop.
+
 ## A recipe must not wait for something that cannot happen
 
 `hosts-wait` asked the API every 15 seconds for the whole `REGISTER_TIMEOUT`,

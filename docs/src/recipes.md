@@ -289,6 +289,13 @@ just lint   # everything above, plus the format, the pairs, and the book
 7. `just cluster-validate` tests the OpenTofu module, and `mdbook build` builds
    the book.
 
+`just cluster-validate` reaches **no tenant**. It needs no API key, no default
+project, and no state, so `just lint` runs in a checkout that has none of them —
+a lint that needs a credential is a lint that a new contributor cannot run. It
+still evaluates the variable validation rules, and one of those refuses an empty
+project name, so the script passes a placeholder and a temporary `TF_DATA_DIR`
+that keeps the provider out of the checkout.
+
 `just test` runs step 6 alone:
 
 ```bash

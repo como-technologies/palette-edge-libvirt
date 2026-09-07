@@ -398,6 +398,10 @@ the DHCP pool. See [The virtual address](./cluster-profile.md#the-virtual-addres
 The recipe tests the value first, so this message reaches you only when
 `CLUSTER_VIP` names an address that Palette itself rejects.
 
+`host_config { host_endpoint_type }` looks like the setting for this and is
+not. It selects how services are published, and changing it does not give the
+cluster a control plane endpoint.
+
 ## `just cluster-up` reports that a host is not ready
 
 ```text

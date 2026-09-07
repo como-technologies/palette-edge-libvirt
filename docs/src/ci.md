@@ -59,6 +59,16 @@ That file names the bridges any account may join, and it names `br-cilab` only.
 **Nothing else.** The pool lives in the home directory of the runner, so no
 directory under `/var/lib/libvirt` is needed and no recipe asks for a password.
 
+Two more differences follow from that bridge, and both are in the scripts:
+
+- A session domain attaches with `--network bridge=br-cilab`, not
+  `--network network=cilab-net`. The network belongs to the system connection,
+  so a session cannot name it; the bridge is what both connections share. The
+  dnsmasq of the system network still answers DHCP on the session taps.
+- The DHCP lease table belongs to the system connection too, so a session
+  cannot read it. `host-ip.sh` reads `ip neigh` on the bridge instead, and gets
+  the same answer.
+
 The scripts read `LIBVIRT_DEFAULT_URI` and take the right path for each: see
 `libvirt_session` and `pool_target` in `scripts/lib.sh`.
 
