@@ -1,9 +1,5 @@
 # Create the machines
 
-This page builds the infrastructure layer: the network, the storage pool, the
-virtual machines, and the host record of each machine in Palette. It makes no
-Kubernetes cluster.
-
 `just config` shows the project that the recipes operate on now.
 
 ## 1. Build the layer

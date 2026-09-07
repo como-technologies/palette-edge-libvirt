@@ -1,8 +1,5 @@
 # Create the cluster
 
-This page builds the cluster layer: the cluster profile and the cluster, both in
-Palette. OpenTofu makes them from the hosts that the layer below registered.
-
 This is layer 2. `just infra-up` does not return until every host registers, so
 the layer below is ready when this page starts.
 
