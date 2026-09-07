@@ -2,7 +2,8 @@
 
 Three steps make a new workstation ready. Do them one time.
 
-Turn on the completion first:
+The bash completion is optional. It gives the recipe names and their
+arguments:
 
 ```bash
 just bash-completion-install   # every shell, from the next login
