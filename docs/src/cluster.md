@@ -72,32 +72,4 @@ guards the page, and that forward needs the administrator kubeconfig.
 
 See [The add-on profile](./cluster-profile.md#the-add-on-profile).
 
-## Change the combination
-
-Change a pack version in the project file, then build the layer again:
-
-```bash
-just cluster-plan
-just cluster-up
-```
-
-Palette replaces that layer on the running cluster. The hosts stay as they are.
-`just palette-packs <name>` lists the versions that the public registry offers.
-[Settings](./settings.md#the-cluster-layer) describes each value.
-
-To change the hosts themselves, see
-[Settings](./settings.md#the-cluster-size).
-
-## Remove the cluster
-
-```bash
-just cluster-down
-```
-
-This removes the cluster and both cluster profiles. The hosts, the machines, and
-the project all stay, so `just cluster-up` builds them again.
-
-Run it before `just infra-down`. That recipe refuses while the project holds a
-cluster, because a cluster whose machines are gone is impossible to repair.
-
 To remove each object of the project, see [Remove everything](./teardown.md).

@@ -22,7 +22,7 @@ also reads from the bottom up:
 
 | Type this | More |
 | --- | --- |
-| `just cluster-down` | [Remove the cluster](./cluster.md#remove-the-cluster). The cluster and the profile. The machines stay. |
+| `just cluster-down` | [Remove the cluster](./teardown.md#1-remove-the-cluster-layer). The cluster and the profile. The machines stay. |
 | `just infra-down` | The host records, the machines, the pool, and the network. Refuses while a cluster holds them. |
 | `just remove-project <project>` | The Palette project, its registration token, its settings, and its OpenTofu state. |
 | `just image-clean` | The Ubuntu cloud image in the cache. |

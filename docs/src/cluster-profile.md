@@ -165,6 +165,23 @@ pack carries the cloud type `all`, so a cloud filter finds nothing.
 `spectrocloud_pack_simple` with `type = "helm"` is for a Helm registry that you
 added yourself.
 
+## Change a pack version
+
+Change the value in the project file, then build the layer again:
+
+```bash
+just cluster-up
+```
+
+`just palette-packs <name>` lists the versions that the public registry offers,
+and the last column gives the state of each one. Read that column first: a
+`disabled` version stops the apply. See
+[Settings](./settings.md#the-cluster-layer).
+
+**This repository has not measured a pack change on a cluster that operates.**
+Each verified build made a new cluster. Palette replaces one layer of a running
+cluster by design, and nothing here confirms it.
+
 ## Why the OS layer is different
 
 The BYOOS pack has two presets. The default is **Appliance Mode**, and that mode
