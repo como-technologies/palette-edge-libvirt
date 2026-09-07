@@ -15,18 +15,6 @@ workstation, from Spectro Cloud Palette packs and libvirt virtual machines.
 | `just cluster-up` | [Create the cluster](./cluster.md). The profile and the cluster, in about 11 minutes. |
 | `just cluster-kubeconfig` | [Use the cluster](./cluster.md#5-use-the-cluster). Prints the administrator kubeconfig. |
 
-The first three rows are one time for each workstation. The last four take
-some minutes together, and almost all of that is a wait: Palette installs the
-packs on each node, and nothing here makes that faster.
-
-The times above are approximate. This is deliberate. This page had a table of
-measured times. That table became incorrect after the first change to the pinned
-packs. An add-on profile made `cluster-up` two times longer.
-
-The e2e job builds a full cluster on each push to `main`, and each night. Thus
-its history holds correct times for the current pinned versions. Read those
-times. See [Continuous integration](./ci.md).
-
 ## Let's do it in reverse
 
 Every recipe that makes something has a twin that removes it, so the table above
@@ -44,25 +32,6 @@ also reads from the bottom up:
 
 *...and it's like we were never here* 😏
 
-The whole reverse table takes **54 seconds**. A build waits for a workstation and
-for Palette; a teardown asks them both to stop, and they do.
-
-`just nuke` is the first three rows in one command. The last four stay, because
-none of them belongs to one project.
-
-`just api-key-clear` deletes a tenant credential that Palette does not show
-again, so it asks before it deletes.
-
-[Remove everything](./teardown.md) describes what each recipe leaves, and
-[project rule 2](./rules.md#2-every-create-recipe-has-a-remove-recipe) is why
-each one has a twin.
-
 ## More
 
-[Architecture](./architecture.md) names each part, and walks one machine from a
-cloud image to a node of the cluster.
-[Recipes](./recipes.md) describes the two layers and every recipe.
-[Troubleshooting](./troubleshooting.md) names the fix for each failure that this
-tooling has met.
-
-Read the [project rules](./rules.md) before you change the repository.
+[Getting started](./host-setup.md) explains each step.
