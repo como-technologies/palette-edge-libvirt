@@ -6,8 +6,8 @@
 #
 # Three properties keep an outsider off the workstation. Each one is necessary:
 #
-#   1. There is NO `pull_request` trigger. A fork cannot start push, schedule,
-#      or workflow_dispatch on this repository. Thus a fork has no path here.
+#   1. There is NO `pull_request` trigger. A fork cannot start push or
+#      workflow_dispatch on this repository. Thus a fork has no path here.
 #      This is true for each branch setting.
 #   2. A fork pull request needs approval from a maintainer, each time. On a
 #      `pull_request` event, GitHub runs the workflow files OF THE PULL
@@ -42,8 +42,6 @@ name: e2e
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: "0 7 * * *"
   workflow_dispatch:
 
 permissions:
@@ -65,9 +63,9 @@ jobs:
 
     # The environment holds PALETTE_API_KEY and admits protected branches only,
     # so a run on a side branch executes and receives no credentials. It has NO
-    # required reviewer: nothing here waits for a person, and the nightly build
-    # is why. Add one at Settings > Environments to gate each run as well as the
-    # code, and expect the nightly build to stop until somebody clicks.
+    # required reviewer: nothing here waits for a person. Add one at
+    # Settings > Environments to gate each run as well as the code, and expect
+    # each run to stop until somebody clicks.
     environment: lab
 
     # A hung registration waits 900s and OpenTofu waits 90 minutes. Neither one

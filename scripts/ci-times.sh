@@ -6,9 +6,9 @@
 # `cluster-up`, and nothing in `just lint` could notice, because a number in a
 # document is not testable. A measurement is true of the day it was made.
 #
-# The e2e job builds a full cluster on each push to `main`, and each night. Thus
-# the pipeline holds a measurement of the CURRENT pinned versions, from the
-# reference workstation. This script reads that measurement. There is no table
+# The e2e job builds a full cluster on each push to `main`. Thus the pipeline
+# holds a measurement of the CURRENT pinned versions, from the reference
+# workstation. This script reads that measurement. There is no table
 # to maintain, and the answer is always current.
 #
 # It reads and changes nothing. `gh` supplies the credentials, so this needs no
@@ -46,7 +46,7 @@ ids="$(command gh run list --workflow "$workflow" --status success \
 	--limit "$runs" --json databaseId --jq '.[].databaseId' 2>/dev/null || true)"
 
 [ -n "$ids" ] || die "no successful '$workflow' run to read.
-     The job builds a cluster on each push to main and every night.
+     The job builds a cluster on each push to main.
      To see what there is:  gh run list --workflow $workflow
      To start one now:      gh workflow run $workflow"
 

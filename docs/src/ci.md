@@ -5,7 +5,7 @@ Two kinds of test run against this repository.
 | Test | Runner | Trigger | What it does |
 | --- | --- | --- | --- |
 | `ci`, `docs` | GitHub hosted | every push and pull request | `just lint`, which runs `just test`, and the book build |
-| `e2e` | your workstation | push to `main`, a timer, and by hand | a real cluster, tested and removed |
+| `e2e` | your workstation | push to `main`, and by hand | a real cluster, tested and removed |
 
 The hosted tests need no cluster, so they run on a machine that GitHub throws
 away. The end to end test needs KVM, libvirt, and a Palette tenant, so it runs
@@ -102,7 +102,7 @@ key, which carries every permission of the person who made it.
 Four gates stand between an outsider and that.
 
 1. **The workflow names no `pull_request` trigger.** A fork cannot fire `push`,
-   `schedule`, or `workflow_dispatch`, so a fork has no path to the workstation.
+   or `workflow_dispatch`, so a fork has no path to the workstation.
 2. **A fork pull request needs approval.** On a `pull_request` event GitHub runs
    the workflow files of the pull request, not the ones on `main`, so a pull
    request can add a workflow of its own that names the runner. The approval
@@ -146,7 +146,7 @@ Two settings each prevent a part of this condition. Each setting has a cost:
 | Change | Closes | Costs |
 | --- | --- | --- |
 | `enforce_admins: true` | an administrator's **accidental** push. Not a deliberate one. | every change needs a pull request |
-| a required reviewer on `lab` | a run that nobody approved, whatever reached `main` | every run waits for a click, the nightly one included |
+| a required reviewer on `lab` | a run that nobody approved, whatever reached `main` | every run waits for a click |
 
 The second setting gives more protection. It applies to the **run** and not to
 the code. An administrator must change the setting to remove the approval step.
@@ -266,8 +266,7 @@ resolves a name. Every test above it passes on that cluster. See
 ## How long a build takes
 
 The job is the measurement. It builds a whole cluster on every push to `main`
-and every night, on the reference workstation, from the pins that the
-`justfile` holds now:
+on the reference workstation, from the pins that the `justfile` holds now:
 
 ```bash
 just ci-times            # the last 3 successful runs, step by step

@@ -150,7 +150,7 @@ Each path takes `{"filter":{},"sort":[]}`. Each path answers with the same
 The create operation continued to operate, and this made the failure difficult
 to find. `POST v1/projects` still made a project. Thus `just new-project` made a
 project and then could not read it. `just nuke` read an absent project and left
-it in the tenant. A nightly job made an unwanted project in each run, and then
+it in the tenant. The e2e job made an unwanted project in each run, and then
 reported that the tenant was empty.
 
 Each endpoint is now in one function only. There were four copies of the

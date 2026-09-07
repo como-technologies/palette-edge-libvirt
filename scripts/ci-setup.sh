@@ -25,7 +25,7 @@
 #
 # A fourth gate is available and this script does not set it: a required
 # reviewer on the environment. That one does gate the RUN rather than the code,
-# and it stops every run until a person approves, the nightly build included.
+# and it stops every run until a person approves.
 # Add it at Settings > Environments if you want that.
 #
 # The e2e workflow names no `pull_request` trigger, so a fork cannot reach the

@@ -90,4 +90,4 @@ a test suite that fails for that reason.
 
 `just cluster-verify` examines the other half. It examines a cluster that
 operates: the nodes, the pod range, the packs, and DNS. The e2e workflow runs it
-each night against a new cluster.
+against a new cluster on each push to `main`.

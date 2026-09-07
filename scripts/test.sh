@@ -17,7 +17,7 @@
 # 0 and gives no message. Thus each guard needs a test.
 #
 # What they do NOT test is the tenant and the machines. `just cluster-verify`
-# tests a live cluster and the e2e workflow builds one every night. Those need
+# tests a live cluster, and the e2e workflow builds one. Those need
 # a tenant, and this needs none: the two answer different questions.
 #
 # Each file in tests/ operates as a separate process. Thus a replacement
